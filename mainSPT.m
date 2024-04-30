@@ -14,10 +14,6 @@ file.path =  'D:\Documents\Unif\PhD\2020-Data\10 - Oct\Johannes\trap site__1 mov
 path2Cal  =  [];
 file.ext = '.ome.tif';
 
-% path2zCal = '..\data\Multiplane\ZCalibration\BeadsZCalibration_1';
-% path2File = '..\data\Multiplane\TL\TL-OD2-200msExposure_1';
-% path2Cal = '..\data\Multiplane\PlaneCalib\BeadsCalibrationZStack_1';
-
 detectParam.delta = 6;
 detectParam.chi2 = 20;
 info.type = 'normal';
