@@ -6,9 +6,9 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'E:\Results\SPT speed\After alignment\pH 11';
+file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\20240422_PAA\2D_calAuBP_200x60';
 file.ext   = '.ome.tif';
-path2Cal = 'E:\Results\SPT speed\2D cal ALL\28072023 2d cal (definitivo)';
+path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\20240422_PAA\2D_calAuBP_200x60';
 dimension = '3D';
 
 %detection parameter

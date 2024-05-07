@@ -1,4 +1,4 @@
-function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, Z1, Z2 )
+function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, Z1, Z2, multiModal )
 %GETFOCUSMETRIC gets information about when the channels are in focus.
 %Inspired in the work done in EPFL for 3D SOFI
 
@@ -42,6 +42,5 @@ function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, Z1, 
         fit(1:length(fitTmp),2*i-1:2*i,:) = fitTmp;
         in_focus(i).zpos = zFocus;
         [~,in_focus(i).frame] = min(abs(Z2-zFocus));
-    end
-    
+    end    
 end

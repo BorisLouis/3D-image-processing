@@ -56,24 +56,44 @@ end
 
 waitbar(.1,h,'Finding channels')
 % find channels
-[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( meanIm1, false, nChan );
-[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( meanIm2, false, nChan );
+% [ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( meanIm1, false, nChan );
+% [ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( meanIm2, false, nChan );
+[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan );
+[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan );
+if multiModal == true
+    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, false, nChan );
+    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, false, nChan );
+else
+end
 
 waitbar(.2,h,'getting ROIs')
 % get ROI
-commonwin = min([commonW1; commonW2]);
+commonwin = min([commonW1; commonW2; commonW3; commonW4]);
 imS = size(meanIm1);
+if multiModal == false
 [ cal.ROI ] = mpSetup.cali.defineROI( commonwin, chCentCam1, chCentCam2, imS );
+elseif multiModal == true
+    [ cal.ROI ] = mpSetup.cali.defineROIMultiModal( commonwin, chCentCam1, chCentCam2, chCentCam3, chCentCam4, imS );
+else
+end
 
 waitbar(.3,h,'getting channel data')
 % get data for each channel identified. chData has dim im_size1 im_size2
 % 4channels Nframes
 [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI );
+if multiModal == true
+    [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI );
+else
+end
 
 waitbar(.4,h,'getting focus metric')
 % getting the focus metric as used in EPFL we might want to change this to
 % a gradient method.
+if multiModal == false
 [ cal.focusMet, cal.inFocus, cal.fit ] = mpSetup.cali.getFocusMetric( chData1c, chData2c , Z1, Z2 );
+elseif multiModal == true
+    [ cal.focusMet, cal.inFocus, cal.fit ] = mpSetup.cali.getFocusMetricMultiModal( chData1c, chData2c, chData3c, chData4c, Z1, Z2 );
+end
 cal.Zpos = Z1;
 
 % figure(2)
@@ -92,7 +112,11 @@ waitbar(.5,h,'getting new order for channels')
 
 waitbar(.7,h,'getting image shifts')
 % find image shift in order to have the same ROIs to a pixel resoltuon
+if multiModal == false
 [ imShifts ] = mpSetup.cali.simpleImShift( cal.inFocus, chData1c, chData2c );
+elseif multiModal == true
+[ imShifts ] = mpSetup.cali.simpleImShiftMultiModal( cal.inFocus, chData1c, chData2c, chData3c, chData4c );
+end
 
 waitbar(.8,h,'refining ROIs')
 % refine the ROIs to consider the shifts
@@ -106,6 +130,7 @@ for i = 1:nChan
     rectangle('Position', cal.ROI(i,:))
 end
 title('Camera 1 with ROIs')
+
 subplot(2,1,2)
 imagesc(meanIm2)
 axis image

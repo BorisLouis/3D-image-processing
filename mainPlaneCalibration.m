@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'F:\03-Mars\21 - Tracking on Quadrupole\2DCal\test';
+file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\20240422_PAA\2D_calAuBP_200x60';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
