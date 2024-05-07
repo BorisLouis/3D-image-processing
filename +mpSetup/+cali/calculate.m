@@ -52,12 +52,7 @@ if size(movC1,1)>1000
     [chan2,chan4, idx2] = mpSetup.cali.splitMultiModalCamera(meanIm2);
 else 
     multiModal =false;
-
 end
-
-% % max projection image
-% max_im1 = max(movC1,[],3);
-% max_im2 = max(movC2,[],3);
 
 waitbar(.1,h,'Finding channels')
 % find channels
