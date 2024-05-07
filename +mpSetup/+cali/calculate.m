@@ -44,18 +44,25 @@ cal.flipCam2 = flipCam2;
 if cal.flipCam2
     movC2 = flip(movC2,2);
 end
+meanIm1 = mean(movC1,3);
+meanIm2 = mean(movC2,3);
+if size(movC1,1)>1000
+    multiModal = true;
+    [chan1,chan3, idx1] = mpSetup.cali.splitMultiModalCamera(meanIm1);
+    [chan2,chan4, idx2] = mpSetup.cali.splitMultiModalCamera(meanIm2);
+else 
+    multiModal =false;
+
+end
 
 % % max projection image
 % max_im1 = max(movC1,[],3);
 % max_im2 = max(movC2,[],3);
 
-meanIm1 = mean(movC1,3);
-meanIm2 = mean(movC2,3);
-
 waitbar(.1,h,'Finding channels')
 % find channels
 [ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( meanIm1, false, nChan );
-[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( meanIm2, false,nChan );
+[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( meanIm2, false, nChan );
 
 waitbar(.2,h,'getting ROIs')
 % get ROI
