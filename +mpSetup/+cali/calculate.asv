@@ -126,14 +126,6 @@ waitbar(.8,h,'refining ROIs')
 % refine the ROIs to consider the shifts
 [ cal.ROI ] = mpSetup.cali.refineROI( cal.ROI, imShifts );
 
-if multiModal == true
-    for i = 9:12
-    cal.ROI(i,2) = cal.ROI(i,2)+idx1
-    cal.ROI(i+4,2) = cal.ROI(i+4,2)+idx2
-    end
-end
-
-
 figure()
 subplot(2,1,1)
 imagesc(meanIm1)
@@ -149,20 +141,12 @@ if multiModal == true
 else
 end
 title('Camera 1 with ROIs')
-hold on 
 
 subplot(2,1,2)
 imagesc(meanIm2)
 axis image
 for i = nChan+1:2*nChan
     rectangle('Position', cal.ROI(i,:))
-end
-if multiModal == true
-    hold on
-    for i = (nChan*3+1):(nChan*4)
-    rectangle('Position', cal.ROI(i,:))
-    end
-else
 end
 title('Camera 2 with ROIs')
 

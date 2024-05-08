@@ -3,13 +3,14 @@ function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, chDa
 %Inspired in the work done in EPFL for 3D SOFI
 
     N = size(chData1c,4);
-    nChan = size(chData1c,3);
+    %nChan = size(chData1c,3);
+    nChan = 4;
     focus_met = zeros(N, nChan*2);
     fit = nan(N, nChan*2*2);
-    in_focus(nChan*2).cam   =  [];
-    in_focus(nChan*2).ch    =  [];
-    in_focus(nChan*2).frame =  [];
-    in_focus(nChan*2).zpos  =  [];
+    in_focus(nChan*4).cam   =  [];
+    in_focus(nChan*4).ch    =  [];
+    in_focus(nChan*4).frame =  [];
+    in_focus(nChan*4).zpos  =  [];
     
     for i = 1:nChan
         in_focus(i).cam   =  1;
@@ -46,7 +47,7 @@ function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, chDa
 
     for i = nChan*2+1:nChan*3
         in_focus(i).cam   =  3;
-        in_focus(i).ch    =  i-nChan;
+        in_focus(i).ch    =  i-nChan*2;
         % get image sequence for 2 channels to compare
         tmp=squeeze(chData3c(10:end-10,10:end-10,i-(nChan*2),:));
         
@@ -62,7 +63,7 @@ function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, chDa
 
     for i = nChan*3+1:nChan*4
         in_focus(i).cam   =  4;
-        in_focus(i).ch    =  i-nChan;
+        in_focus(i).ch    =  i-nChan*3;
         % get image sequence for 2 channels to compare
         tmp=squeeze(chData4c(10:end-10,10:end-10,i-(nChan*3),:));
         
