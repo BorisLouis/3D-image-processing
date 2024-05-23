@@ -1,4 +1,4 @@
-function [ neworder, inFocus ] = getNewOrder( inFocus )
+function [ neworder, inFocus] = getNewOrder( inFocus )
 %GETNEWORDER get the correct order to place consecutive planes together
 %   Detailed explanation goes here
     list = [inFocus.zpos];

@@ -10,7 +10,7 @@ function [ imShifts ] = simpleImShift( inFocus, cam1, cam2)
     if nPlanes == 2
         maxShift = 300;
     else
-        maxShift = 100;
+        maxShift = 300;
     end%[pixels]
     % generating mask, so I only look at a local max around shift 0 to
     % max_shift
