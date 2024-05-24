@@ -48,10 +48,12 @@ meanIm1 = mean(movC1,3);
 meanIm2 = mean(movC2,3);
 if size(movC1,1)>1000
     multiModal = true;
+    cal.multiModal = multiModal;
     [chan1,chan3, idx1] = mpSetup.cali.splitMultiModalCamera(meanIm1);
     [chan2,chan4, idx2] = mpSetup.cali.splitMultiModalCamera(meanIm2);
 else 
     multiModal =false;
+    cal.multiModal = multiModal;
 end
 
 waitbar(.1,h,'Finding channels')
@@ -97,7 +99,7 @@ if multiModal == true
     [ cal.focusMet2, cal.inFocus2, cal.fit2 ] = mpSetup.cali.getFocusMetric( chData3c, chData4c , Z1, Z2 );
     [ cal.neworder2, cal.inFocus2 ] = mpSetup.cali.getNewOrder( cal.inFocus2 );
     [ imShifts2 ] = mpSetup.cali.simpleImShift( cal.inFocus2, chData3c, chData4c);
-    [ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts2 );
+    %[ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts2 );
     for i = 1:4
         cal.ROI2(i,2) = cal.ROI2(i,2)+idx1
         cal.ROI2(i+4,2) = cal.ROI2(i+4,2)+idx2
@@ -150,8 +152,15 @@ if cal.correctInt
     [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1 );
     % calculate intensity correction
     [ cal.Icorrf1 ] = mpSetup.cali.findChInt( chData1c, chData2c, cal.inFocus1 );
-    maxInt = max(cal.fit(:,2:2:end),[],1);
-    cal.Icorrf = maxInt./max(maxInt);
+    maxInt1 = max(cal.fit1(:,2:2:end),[],1);
+    cal.Icorrf1 = maxInt1./max(maxInt1);
+    if multiModal == true
+        [ chData3c, chData3c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2);
+        [cal.Icorrf2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
+        maxInt2 = max(cal.fit2(:, 2:2:end), [],1);
+        cal.Icorrf2 = maxInt2./max(maxInt2);
+    else
+    end
 else
     cal.Icorrf = ones(8,1);
 end
