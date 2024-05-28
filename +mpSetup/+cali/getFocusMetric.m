@@ -12,7 +12,11 @@ function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, Z1, 
     in_focus(nChan*2).zpos  =  [];
     
     for i = 1:nChan
-        in_focus(i).cam   =  1;
+        if multiModal == 1
+            in_focus(i).cam = 3;
+        else 
+            in_focus(i).cam   =  1;
+        end
         in_focus(i).ch    =  i;
         % get image sequence for 2 channels to compare
         %remove border pixel due to bug with one data set, should not
@@ -29,7 +33,11 @@ function [ focus_met, in_focus, fit ] = getFocusMetric( chData1c, chData2c, Z1, 
     end
     
     for i = nChan+1:nChan*2
-        in_focus(i).cam   =  2;
+        if multiModal == 1
+            in_focus(i).cam = 4;
+        else 
+            in_focus(i).cam   =  2;
+        end
         in_focus(i).ch    =  i-nChan;
         % get image sequence for 2 channels to compare
         tmp=squeeze(chData2c(10:end-10,10:end-10,i-nChan,:));

@@ -1,6 +1,7 @@
-function [ finalShifts ] = simpleImShift2( inFocus, cam1, cam2)
+function [ finalShifts ] = simpleImShift2MultiModal( inFocus1, inFocus2, cam1, cam2, cam3, cam4)
 %SIMPLEIMSHIFT fast im shift calculation at the pixel resolution
 %   spatial cross-correlation algorithm to determine shift of coordinates
+    inFocus = table2struct([struct2table(inFocus1); struct2table(inFocus2)]);
     nPlanes = length(inFocus);
     imShifts = zeros(nPlanes-1,2);
     focus = inFocus(1).frame;
@@ -10,7 +11,7 @@ function [ finalShifts ] = simpleImShift2( inFocus, cam1, cam2)
     if nPlanes == 2
         maxShift = 300;
     else
-        maxShift = 30;
+        maxShift = 300; %normally 30
     end%[pixels]
     % generating mask, so I only look at a local max around shift 0 to
     % max_shift
@@ -22,24 +23,33 @@ function [ finalShifts ] = simpleImShift2( inFocus, cam1, cam2)
     
     for chIdx = 1:nPlanes-1
         %get the idx to the plane in order (1-2, 2-3,3-4...)
-        idxPlane1 = [inFocus.globalch]==chIdx;
-        idxPlane2 = [inFocus.globalch]==chIdx+1;
+        idxPlane1_1 = [inFocus1.globalch]==chIdx;
+        idxPlane2_1 = [inFocus2.globalch]==chIdx;
+        idxPlane1_2 = [inFocus1.globalch]==chIdx+1;
+        idxPlane2_2 = [inFocus2.globalch]==chIdx+1;
         %get the plane where there both equally focus from the mean of
         %their focus and extract the camera
-        focus     = round((inFocus(idxPlane1).frame+inFocus(idxPlane2).frame)/2);
-        camIdx1 = inFocus(idxPlane1).cam;
-        camIdx2 = inFocus(idxPlane2).cam;
-        
-        if camIdx1==1
-            imCh1 = cam1(:,:,inFocus(idxPlane1).ch,focus);
+        focus_1     = round((inFocus(idxPlane1_1).frame+inFocus(idxPlane2_1).frame)/2);
+        focus_2     = round((inFocus(idxPlane1_2).frame+inFocus(idxPlane2_2).frame)/2);
+        camIdx1_1 = inFocus1(idxPlane1_1).cam;
+        camIdx2_1 = inFocus1(idxPlane2_1).cam;
+        camIdx1_2 = inFocus2(idxPlane1_2).cam;
+        camIdx2_2 = inFocus2(idxPlane2_2).cam;
+
+        if camIdx1_1 == 1 && camIdx1_2 == 3;
+            imCh1 = cam1(:,:,inFocus1(idxPlane1_1).ch,focus);
+            imCh3 = cam1(:,:,inFocus2(idxPlane1_2).ch,focus);
         else
-            imCh1 = cam2(:,:,inFocus(idxPlane1).ch,focus);
+            imCh1 = cam2(:,:,inFocus1(idxPlane1_1).ch,focus);
+            imCh3 = cam2(:,:,inFocus2(idxPlane1_2).ch,focus);
         end
          
-        if camIdx2==1
-            imCh2 = cam1(:,:,inFocus(idxPlane2).ch,focus);
+        if camIdx2_1==1 && camIdx2_2 == 3;
+            imCh2 = cam1(:,:,inFocus1(idxPlane2_1).ch,focus);
+            imCh4 = cam1(:,:,inFocus2(idxPlane2_2).ch,focus);
         else
-            imCh2 = cam2(:,:,inFocus(idxPlane2).ch,focus);
+            imCh2 = cam2(:,:,inFocus(idxPlane2_1).ch,focus);
+            imCh4 = cam2(:,:,inFocus(idxPlane2_2).ch,focus);
         end
         
         % cross correlation
