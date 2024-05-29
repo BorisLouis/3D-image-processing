@@ -60,12 +60,18 @@ waitbar(.1,h,'Finding channels')
 % find channels
 [ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan );
 [ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan );
+commonwin = min([commonW1; commonW2]); 
+if multiModal == true
+    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, true, nChan );
+    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, true, nChan );
+    commonwin = min([commonW1; commonW2; commonW3; commonW4]); 
+else 
+end
 
 waitbar(.2,h,'getting ROIs')
 % get ROI
-commonwin1 = min([commonW1; commonW2]); 
 imS = size(meanIm1);
-[ cal.ROI1 ] = mpSetup.cali.defineROI( commonwin1, chCentCam1, chCentCam2, imS );
+[ cal.ROI1 ] = mpSetup.cali.defineROI( commonwin, chCentCam1, chCentCam2, imS );
 
 waitbar(.3,h,'getting channel data')
 % get data for each channel identified. chData has dim im_size1 im_size2
@@ -84,28 +90,34 @@ waitbar(.5,h,'getting new order for channels')
 
 waitbar(.7,h,'getting image shifts')
 % find image shift in order to have the same ROIs to a pixel resoltuon
-[ imShifts1 ] = mpSetup.cali.simpleImShift2( cal.inFocus1, chData1c, chData2c);
-
-waitbar(.8,h,'refining ROIs')
-% refine the ROIs to consider the shifts
-[ cal.ROI1 ] = mpSetup.cali.refineROI( cal.ROI1, imShifts1 );
 
 if multiModal == true
-    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, true, nChan );
-    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, true, nChan );
-    commonwin2 = min([commonW3; commonW4]);
-    [ cal.ROI2 ] = mpSetup.cali.defineROI( commonwin2, chCentCam3, chCentCam4, imS );
-    [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2 );
+    [ cal.ROI2 ] = mpSetup.cali.defineROI( commonwin, chCentCam3, chCentCam4, imS );
+    for i = 1:4
+        cal.ROI2FullCam(i,2) = cal.ROI2(i,2)+idx1;
+        cal.ROI2FullCam(i,1) = cal.ROI2(i,1);
+        cal.ROI2FullCam(i,3) = cal.ROI2(i,3);
+        cal.ROI2FullCam(i,4) = cal.ROI2(i,4);
+        cal.ROI2FullCam(i+4,2) = cal.ROI2(i+4,2)+idx2;
+        cal.ROI2FullCam(i+4,1) = cal.ROI2(i+4,1);
+        cal.ROI2FullCam(i+4,3) = cal.ROI2(i+4,3);
+        cal.ROI2FullCam(i+4,4) = cal.ROI2(i+4,4);
+    end
+    [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam );
     [ cal.focusMet2, cal.inFocus2, cal.fit2 ] = mpSetup.cali.getFocusMetric( chData3c, chData4c , Z1, Z2, 1);
     [ cal.neworder2, cal.inFocus2 ] = mpSetup.cali.getNewOrder( cal.inFocus2 );
-    %[ imShifts2 ] = mpSetup.cali.simpleImShift2( cal.inFocus2, chData3c, chData4c);
-    [ imShifts ] = mpSetup.cali.simpleImShift2MultiModal(cal.inFocus1, cal.inFocus2, chData1c, chData2c, chData3c, chData4c);
-    [ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts2 );
-    for i = 1:4
-        cal.ROI2(i,2) = cal.ROI2(i,2)+idx1
-        cal.ROI2(i+4,2) = cal.ROI2(i+4,2)+idx2
-    end
+    [ imShifts ] = mpSetup.cali.simpleImShift2Test(cal.inFocus1, cal.inFocus2, chData1c, chData2c, chData3c, chData4c)
+    %[ imShifts2 ] = mpSetup.cali.simpleImShift2(cal.inFocus2, chData3c, chData4c);
+    [ cal.ROI1, cal.ROI2, cal.ROI2FullCam ] = mpSetup.cali.refineROIMultiModal( cal.ROI1, cal.ROI2, cal.ROI2FullCam, imShifts );
+    %[ cal.ROI2FullCam] = mpSetup.cali.refineROI( cal.ROI2FullCam, imShifts2);
+    % [ imShifts3] = mpSetup.cali.simpleImShift2MultiModalCorrelation(cal.inFocus1, cal.inFocus2, chData1c, chData2c, chData3c, chData4c, cal.ROI1, cal.ROI2, cal.ROI2FullCam);
+    % [ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts3);
+    % [ cal.ROI2FullCam] = mpSetup.cali.refineROI( cal.ROI2FullCam, imShifts3);
 else
+    [ imShifts1 ] = mpSetup.cali.simpleImShift2( cal.inFocus1, chData1c, chData2c);
+    waitbar(.8,h,'refining ROIs')
+    % refine the ROIs to consider the shifts
+    [ cal.ROI1 ] = mpSetup.cali.refineROI( cal.ROI1, imShifts1 );
 end
 
 figure()
@@ -118,7 +130,7 @@ end
 if multiModal == true
     hold on
     for i = 1:nChan
-    rectangle('Position', cal.ROI2(i,:))
+    rectangle('Position', cal.ROI2FullCam(i,:))
     end
 else
 end
@@ -133,17 +145,18 @@ for i = nChan+1:2*nChan
 end
 if multiModal == true
     hold on
-    for i = 1:nChan
-    rectangle('Position', cal.ROI2(i,:))
+    for i = nChan+1:2*nChan
+    rectangle('Position', cal.ROI2FullCam(i,:))
     end
 else
 end
 title('Camera 2 with ROIs')
 
-
 mpSetup.cali.plotCal(meanIm1,meanIm2, cal.ROI1);
+sgtitle('Planes 1-8')
 if multiModal == true
-    mpSetup.cali.plotCal(meanIm1, meanIm2, cal.ROI2);
+    mpSetup.cali.plotCal(meanIm1, meanIm2, cal.ROI2FullCam);
+    sgtitle('Planes 9-15')
 else 
 end
 
@@ -156,7 +169,7 @@ if cal.correctInt
     maxInt1 = max(cal.fit1(:,2:2:end),[],1);
     cal.Icorrf1 = maxInt1./max(maxInt1);
     if multiModal == true
-        [ chData3c, chData3c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2);
+        [ chData3c, chData3c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam);
         [cal.Icorrf2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
         maxInt2 = max(cal.fit2(:, 2:2:end), [],1);
         cal.Icorrf2 = maxInt2./max(maxInt2);

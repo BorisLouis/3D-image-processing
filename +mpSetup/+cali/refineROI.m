@@ -1,4 +1,4 @@
-function [ ROI ] = refineROI( ROI, im_shifts )
+function [ ROI ] = refineROI( ROI, im_shifts, multiModal )
 %REFINEROI improves the ROI to have the smallest shifts possibles
 %   Detailed explanation goes here
     
@@ -21,6 +21,5 @@ function [ ROI ] = refineROI( ROI, im_shifts )
     ROI(:,2) = row_i;
     ROI(:,3) = col_w;
     ROI(:,1) = col_i;
-
 end
 
