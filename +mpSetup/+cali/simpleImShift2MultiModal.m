@@ -1,4 +1,4 @@
-function [ finalShifts ] = simpleImShift2Test( inFocus1, inFocus2, cam1, cam2, cam3, cam4)
+function [ finalShifts ] = simpleImShift2MultiModal( inFocus1, inFocus2, cam1, cam2, cam3, cam4)
 %SIMPLEIMSHIFT fast im shift calculation at the pixel resolution
 %   spatial cross-correlation algorithm to determine shift of coordinates
     nPlanes = length(inFocus2) + length(inFocus2);
@@ -48,13 +48,13 @@ function [ finalShifts ] = simpleImShift2Test( inFocus1, inFocus2, cam1, cam2, c
             imCh2 = cam2(:,:,inFocus1(idxPlane2).ch,focus12);
         end
 
-        if camIdx3==1
+        if camIdx3==3
             imCh3 = cam3(:,:,inFocus2(idxPlane3).ch,focus34);
         else
             imCh3 = cam4(:,:,inFocus2(idxPlane3).ch,focus34);
         end
 
-        if camIdx4==1
+        if camIdx4==3
             imCh4 = cam3(:,:,inFocus2(idxPlane4).ch,focus34);
         else
             imCh4 = cam4(:,:,inFocus2(idxPlane4).ch,focus34);
@@ -130,7 +130,7 @@ function [ finalShifts ] = simpleImShift2Test( inFocus1, inFocus2, cam1, cam2, c
 
     %reorder shifts
     %imShifts([inFocus.globalch],:) = tmpImShifts;
-    tmpImShifts2 = tmpImShifts2 + imShifts13(refPlane,:);
+    %tmpImShifts2 = tmpImShifts2 + imShifts13(refPlane,:);
     
     finalShifts1 = tmpImShifts1([inFocus1.globalch],:);
     finalShifts2 = tmpImShifts2([inFocus2.globalch],:);
