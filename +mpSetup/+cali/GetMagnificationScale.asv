@@ -47,9 +47,9 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         transformations{chIdx, 3} = config;
         transformations{chIdx, 4} = transf;
 
-        if SimilarityScore(chIdx, 1) < 0.10
+        if SimilarityScore(chIdx, 1) < 0.2
             config = "multimodal";
-
+    
             [optimizer,metric] = imregconfig(config);
             tform = imregtform(Plane9infocus,Plane1infocus,transf, optimizer, metric);
             movingRegistered = imwarp(Plane9infocus,tform,"OutputView",imref2d(size(Plane1infocus)));

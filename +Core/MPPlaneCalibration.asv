@@ -301,13 +301,9 @@ classdef MPPlaneCalibration < handle
             relZPos = cell2mat({inFocus.relZPos});
             cams    = cell2mat({inFocus.cam});
             
-            if i == 2
-                meanCam1 = mean(relZPos(cams==3));
-                meanCam2 = mean(relZPos(cams==4));
-            else
-                meanCam1 = mean(relZPos(cams==1));
-                meanCam2 = mean(relZPos(cams==2));
-            end
+            if multiModal == true
+            meanCam1 = mean(relZPos(cams==1));
+            meanCam2 = mean(relZPos(cams==2));
             
             dCam     = abs(meanCam1-meanCam2)*1000;
             
