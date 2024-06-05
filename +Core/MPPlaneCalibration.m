@@ -200,6 +200,7 @@ classdef MPPlaneCalibration < handle
                    obj.cal.file.Transformation{j,1}.Translation = mean(allTransformations{j,1}.Translation, 3);
                    obj.cal.file.Transformation{j,1}.R = mean(allTransformations{j,1}.R, 3);
                    obj.cal.file.Transformation{j,1}.A = mean(allTransformations{j,1}.A, 3);
+                   %obj.cal.file.Transformation{j,1} = simtform2d(mean(allTransformations{j,1}.Scale, 3), mean(allTransformations{j,1}.RotationAngle, 3), mean(allTransformations{j,1}.Translation, 3))
                 end
             else
             end
