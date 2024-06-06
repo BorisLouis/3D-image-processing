@@ -21,7 +21,11 @@ classdef MPParticleMovie < Core.MPMovie
         
         function set.candidatePos(obj,candidatePos)
             
-            assert(iscell(candidatePos), 'Expecting a cell containing candidate positions');
+            assert(iscell(candidatePos{1,1}), 'Expecting a cell containing candidate positions');
+            if obj.cal2D.multiModal == true
+                assert(iscell(candidatePos{2,1}), 'Expecting a cell containing candidate positions');
+            else
+            end
             obj.candidatePos = candidatePos;
             
         end
@@ -32,13 +36,22 @@ classdef MPParticleMovie < Core.MPMovie
              switch nargin
                     case 2
                         
-                        frames = 1: obj.calibrated.nFrames;
+                        frames = 1: obj.calibrated{1,1}.nFrames;
+                        if obj.cal2D.file.multiModal == true
+                           frames2 = 1: obj.calibrated{2,1}.nFrames;
+                        else
+                        end
                         disp('Running detection on every frame');
      
                         
                     case 3
                         
-                        [frames] = obj.checkFrame(frames,obj.calibrated.nFrames);
+                        [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
+                        if obj.cal2D.file.multiModal == true
+                            [frames2] = obj.checkFrame(frames,obj.calibrated{2,1}.nFrames);
+                        else
+                        end
+
                         
                     otherwise
                         
@@ -59,6 +72,10 @@ classdef MPParticleMovie < Core.MPMovie
                 assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                 assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
                 [candidate] = obj.detectCandidate(detectParam,frames);
+                if obj.cal2D.file.multiModal == true
+                    [candidate2] = obj.detectCandidate(detectParam, frames);
+                else
+                end
                 
             elseif ~isempty(candidate)
             else
@@ -75,9 +92,15 @@ classdef MPParticleMovie < Core.MPMovie
                 %save the data
                 fileName = sprintf('%s%scandidatePos.mat',obj.raw.movInfo.Path,'\');
                 save(fileName,'candidate');
+                if obj.cal2D.file.multiModal == true
+                    fileName = sprintf('%s%scandidatePos2.mat',obj.raw.movInfo.Path,'\');
+                    save(fileName,'candidate2');
+                else
+                end
             else
             end
-            obj.candidatePos = candidate;
+            candidates = {candidate: candidate2};
+            obj.candidatePos = candidates;
             obj.info.detectParam = detectParam;
         end
         
@@ -801,11 +824,19 @@ classdef MPParticleMovie < Core.MPMovie
 
             if(isempty(currentCandidate))
                 
-                candidate = cell(obj.calibrated.nFrames,1);
+                candidate = cell(obj.calibrated{1,1}.nFrames,1);
+                if obj.cal2D.file.multiModal == true
+                    candidate2 = cell(obj.calibrated{2,1}.nFrames,1);
+                else
+                end
                 
             else
                 
-                candidate = currentCandidate;
+                candidate = currentCandidate{1,1};
+                if obj.cal2D.file.multiModal == true
+                    candidate2 = currentCandidate{2,1};
+                else
+                end
                 
             end
            

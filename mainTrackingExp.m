@@ -37,7 +37,7 @@ trackingExp = Core.TrackingExperiment(file,path2Cal,info,path2SRCal,path2ZCal);
 trackingExp.retrieveMovies;
 
 %% test detection parameters
-frame =300;
+frame =60;
 testMov = trackingExp.trackMovies.mov1;
 testMov.findCandidatePos(detectParam,frame);
 testMov.showCandidate(frame);
