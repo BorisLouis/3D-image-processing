@@ -798,7 +798,7 @@ classdef MPParticleMovie < Core.MPMovie
             assert(~isempty(obj.calibrated),'Data should be calibrated to detect candidate');
             assert(isstruct(detectParam),'Detection parameter should be a struct with two fields');
             nFrames = length(frames);
-            currentCandidate = obj.candidatePos{multiModal, 1};
+            currentCandidate = obj.candidatePos;
             detectionMethod = obj.info.detectionMethod;
 
             if(isempty(currentCandidate))
@@ -807,7 +807,7 @@ classdef MPParticleMovie < Core.MPMovie
                 
             else
                 
-                candidate = currentCandidate;
+                candidate = currentCandidate{1,1};
                 
             end
            
@@ -822,7 +822,7 @@ classdef MPParticleMovie < Core.MPMovie
                 
                 position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
                     zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
-                [volIm] = obj.getFrame(frames(i), multiModal);
+                [volIm] = obj.getFrame(frames(i));
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes

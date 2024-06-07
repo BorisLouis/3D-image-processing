@@ -10,6 +10,7 @@ file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\d
 file.ext   = '.ome.tif';
 path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\20240513_spheric_PS_NPs_2Dcal_fluo';
 dimension = '3D';
+multiModal = 'on'; %multiModal on or off
 
 %detection parameter
 detectParam.delta = 6;
@@ -39,7 +40,10 @@ trackingExp.retrieveMovies;
 %% test detection parameters
 frame =60;
 testMov = trackingExp.trackMovies.mov1;
-testMov.findCandidatePos(detectParam,frame);
+testMov.findCandidatePos(detectParam,frame,1);
+if multiModal == 'on'
+    testMov.findCandidatePos(detectParam,frame,2);
+end
 testMov.showCandidate(frame);
 
 %% get TrackingData

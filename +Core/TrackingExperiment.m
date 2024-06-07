@@ -27,7 +27,7 @@ classdef TrackingExperiment < handle
             obj.info = info;
             obj.ZCal = zCalPath;
             obj.SRCal = SRCalPath;
-            
+
         end
         
         %Set function

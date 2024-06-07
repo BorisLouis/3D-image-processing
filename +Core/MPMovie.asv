@@ -52,11 +52,11 @@ classdef MPMovie < Core.Movie
             
         end
         
-        function set.calibrated(obj,calibrated,multiModal)
+        function set.calibrated(obj,calibrated)
             
-            assert(isstruct(calibrated{multiModal,1}),'Calibrated1 is expected to be a struct');
-            if multiModal == 2
-                assert(isstruct(calibrated{multiModal,1}), 'Calibrated2 is expected to be a struct');
+            assert(isstruct(calibrated{1,1}),'Calibrated1 is expected to be a struct');
+            if obj.cal2D.file.multiModal == true
+                assert(isstruct(calibrated{2,1}), 'Calibrated2 is expected to be a struct');
             else 
             end
             obj.calibrated = calibrated;
@@ -186,7 +186,7 @@ classdef MPMovie < Core.Movie
                 [frame2] = getFrame(obj,idx,obj.cal2D.file.multiModal+1);
             else 
             end
-            pxSize = obj.info.pxSize/1000;%in µm
+            pxSize = obj.info.pxSize/1000;%in Âµm
             scaleBarPx = scaleBar/pxSize;
             planes = size(frame,3);
             
@@ -244,7 +244,7 @@ classdef MPMovie < Core.Movie
                 hold on
                 x = size(currentIM,2)-scaleBarPx-(0.05*size(currentIM,2)):size(currentIM,2)-0.05*size(currentIM,2);
                 y = ones(1,length(x))*size(currentIM,1)-0.05*size(currentIM,2);
-                text(mean(x),mean(y)-0.04*size(currentIM,1),[num2str(scaleBar) ' µm'],'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',8);
+                text(mean(x),mean(y)-0.04*size(currentIM,1),[num2str(scaleBar) ' Âµm'],'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',8);
                 plot(x,y,'-w','LineWidth',2.5);
                 axis image;
                 
@@ -271,7 +271,7 @@ classdef MPMovie < Core.Movie
                 [data] = getFrame@Core.Movie(obj,idx);
                 
             elseif isstruct(obj.calibrated{multimodal,1})
-                fieldsN = fieldnames(obj.calibrated{multimodal, 1}.filePath);                
+                fieldsN = fieldnames(obj.calibrated{1, 1}.filePath);                
                 data = zeros(obj.calibrated{multimodal, 1}.Height,obj.calibrated{multimodal, 1}.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
