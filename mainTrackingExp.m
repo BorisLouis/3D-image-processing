@@ -14,7 +14,7 @@ multiModal = 'on'; %multiModal on or off
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 100;
+detectParam.chi2  = 20;
 detectParam.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 1000;%nm
@@ -40,24 +40,35 @@ trackingExp.retrieveMovies;
 %% test detection parameters
 frame =60;
 testMov = trackingExp.trackMovies.mov1;
-testMov.findCandidatePos(detectParam,frame,1);
+testMov.findCandidatePos(detectParam,1,frame);
+testMov.showCandidate(frame, 1);
 if multiModal == 'on'
-    testMov.findCandidatePos(detectParam,frame,2);
+    testMov.findCandidatePos(detectParam,2,frame);
+    testMov.showCandidate(frame, 2);
 end
-testMov.showCandidate(frame);
 
 %% get TrackingData
 
 
 val2Use = 'bestFocus';
-trackingExp.retrieveTrackData(detectParam,trackParam);
+trackingExp.retrieveTrackData(detectParam,trackParam,1);
+if multiModal == 'on'
+    trackingExp.retrieveTrackData(detectParam,trackParam,2);
+end
 
-traces = trackingExp.getTraces3D;
+traces = trackingExp.getTraces3D(1);
+if multiModal == 'on'
+    traces2 = trackingExp.getTraces3D(2);
+end
+
 
 
 %% Get Intensity
 
-[int,SNR] = trackingExp.getAvgIntensity;
+[int,SNR] = trackingExp.getAvgIntensity(1);
+if multiModal == 'on'
+    [int2,SNR2] = trackingExp.getAvgIntensity(2);
+end
 
 %% Get MSD
 

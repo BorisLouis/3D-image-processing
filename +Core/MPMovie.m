@@ -52,13 +52,10 @@ classdef MPMovie < Core.Movie
             
         end
         
-        function set.calibrated(obj,calibrated,multiModal)
+        function set.calibrated(obj,calibrated)
             
-            assert(isstruct(calibrated{multiModal,1}),'Calibrated1 is expected to be a struct');
-            if multiModal == 2
-                assert(isstruct(calibrated{multiModal,1}), 'Calibrated2 is expected to be a struct');
-            else 
-            end
+            assert(isstruct(calibrated{1,1}),'Calibrated1 is expected to be a struct');
+
             obj.calibrated = calibrated;
             
         end
@@ -260,7 +257,7 @@ classdef MPMovie < Core.Movie
             end
         end
         
-        function [data] = getFrame(obj,idx,multimodal)
+        function [data] = getFrame(obj,idx,multiModal)
             %Allow the user to extract data from a specific frame, behavior
             %depends on the calibration
             assert(length(idx)==1,'Only one frame at a time');
@@ -270,12 +267,12 @@ classdef MPMovie < Core.Movie
                 
                 [data] = getFrame@Core.Movie(obj,idx);
                 
-            elseif isstruct(obj.calibrated{multimodal,1})
-                fieldsN = fieldnames(obj.calibrated{multimodal, 1}.filePath);                
-                data = zeros(obj.calibrated{multimodal, 1}.Height,obj.calibrated{multimodal, 1}.Width,numel(fieldsN));
+            elseif isstruct(obj.calibrated{multiModal,1})
+                fieldsN = fieldnames(obj.calibrated{multiModal, 1}.filePath);                
+                data = zeros(obj.calibrated{multiModal, 1}.Height,obj.calibrated{multiModal, 1}.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
-                    [mov] = Load.Movie.tif.getframes(obj.calibrated{multimodal, 1}.filePath.(fieldsN{i}),idx);
+                    [mov] = Load.Movie.tif.getframes(obj.calibrated{multiModal, 1}.filePath.(fieldsN{i}),idx);
                     data(:,:,i) = mov;
                     
                 end
@@ -528,12 +525,12 @@ classdef MPMovie < Core.Movie
                calib2.nPlanes   = sum(~isTransmission{1,1})+sum(~isTransmission{2,1});
                idx2Plane = 1;
                for i = 1:size(data{2,1},3)
-                    data2Store = squeeze(data{2,1}(:,:,i,:));
-                    for j = 1:size(data2Store, 3)
-                        tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
-                        data2(:,:,j) = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
-                        data2Store2 = uint16(data2);
-                    end
+                    data2Store2 = squeeze(data{2,1}(:,:,i,:));
+                    % for j = 1:size(data2Store, 3)
+                    %     tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
+                    %     data2(:,:,j) = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
+                    %     data2Store2 = uint16(data2);
+                    % end
                     isTrans2 = isTransmission{2,1}(i);
                     if strcmpi(obj.info.type,'transmission')
                         data2Store2 = imcomplement(data2Store2);
@@ -588,8 +585,8 @@ classdef MPMovie < Core.Movie
                     
                     
                 end
-                calib2.Width  = size(data2,2);
-                calib2.Height = size(data2,1);
+                calib2.Width  = size(data{2,1},2);
+                calib2.Height = size(data{2,1},1);
                 fclose(fid2);
                 fName = [calDir2 filesep 'calibrated2.mat'];
                 save(fName,'calib2');

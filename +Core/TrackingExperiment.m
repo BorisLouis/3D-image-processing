@@ -127,8 +127,8 @@ classdef TrackingExperiment < handle
         
         %get 3D traces
         
-        function [traces3D] = getTraces3D(obj)
-            traces3D = obj.traces3D;
+        function [traces3D] = getTraces3D(obj, multiModal)
+            traces3D = obj.traces3D{multiModal, 1};
         end
         
         %Extract movie from path
@@ -178,9 +178,9 @@ classdef TrackingExperiment < handle
         
         %Calculate tracking traces
         
-        function retrieveTrackData(obj,detectParam, trackParam)
+        function retrieveTrackData(obj,detectParam, trackParam, multiModal)
             %Checking user input
-            assert(nargin==3, 'retrieveZCalData expects 2 inputs, 1)detection Parameters, tracking parameter');
+            assert(nargin==4, 'retrieveZCalData expects 3 inputs, 1)detection Parameters, tracking parameter, multiModal');
             assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
             assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
                 'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
@@ -194,29 +194,29 @@ classdef TrackingExperiment < handle
                 currentTrackMov = obj.trackMovies.(fieldsN{i});
                    
                 %Molecule detection
-                currentTrackMov.findCandidatePos(detectParam);
+                currentTrackMov.findCandidatePos(detectParam,1);
                 
                 %SR fitting
-                currentTrackMov.SRLocalizeCandidate(detectParam.detla);
-                refPlane = round(currentTrackMov.calibrated.nPlanes/2);
+                currentTrackMov.SRLocalizeCandidate(detectParam.delta, multiModal);
+                refPlane = round(currentTrackMov.calibrated{multiModal, 1}.nPlanes/2);
                 rot = true;
                 %apply SRCal
-                currentTrackMov.applySRCal(rot,refPlane);
+                currentTrackMov.applySRCal(rot,refPlane,multiModal);
                 
                 %apply ZCal
-                currentTrackMov.applyZCal;
+                currentTrackMov.applyZCal(multiModal);
                 
                 %Plane consolidation
-                frames = 1:currentTrackMov.calibrated.nFrames;
-                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh)
+                frames = 1:currentTrackMov.calibrated{multiModal,1}.nFrames;
+                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh, multiModal)
                 
                 %superResolve
-                currentTrackMov.superResolve;
+                currentTrackMov.superResolve(multiModal);
                 
                 %tracking occurs here
-                currentTrackMov.trackParticle(trackParam);
+                currentTrackMov.trackParticle(trackParam, multiModal);
                 
-                [traces] = currentTrackMov.getTraces;
+                [traces] = currentTrackMov.getTraces{multiModal,1};
                 fileN = cell(length(traces),1);
                 fileN(:,1) = {i};
            
@@ -242,7 +242,7 @@ classdef TrackingExperiment < handle
                 allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
             end
             
-            obj.traces3D = allTraces;
+            obj.traces3D{multiModal, 1} = allTraces;
             
 %             filename = [obj.path filesep 'traces3D.mat'];
 %             save(filename,'allTraces');
@@ -285,9 +285,9 @@ classdef TrackingExperiment < handle
             
         end
         
-        function [int,SNR] = getAvgIntensity(obj)
-            assert(~isempty(obj.traces3D),'You need to extract 3D traces before extracting average intensity');
-            traces = obj.traces3D;
+        function [int,SNR] = getAvgIntensity(obj, multiModal)
+            assert(~isempty(obj.traces3D{multiModal, 1}),'You need to extract 3D traces before extracting average intensity');
+            traces = obj.traces3D{multiModal, 1};
             nTraces = length(traces);
             int = zeros(nTraces,1);
             SNR = zeros(nTraces,1);
