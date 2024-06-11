@@ -350,31 +350,55 @@ classdef MPLocMovie < Core.MPParticleMovie
             
         end
                    
-        function showCorrLoc(obj,frames,multiModal)
-             part = obj.particles{multiModal, 1}.SRList;
+        function showCorrLoc(obj,multiModal, frames)
+            part1 = obj.particles{multiModal, 1}.SRList;
             switch nargin
-                case 1
-                    frames = min(part.t):max(part.t);
-                case 2 
+                case 2
+                    frames = min(part1.t):max(part1.t);
+                case 3 
                     [frames] = obj.checkFrame(frames,obj.raw.maxFrame(1));
             end
            
            
             figure()
             hold on
-            
-            sizeMarker =5;
-            scatter3(part.col,part.row,part.z,sizeMarker,part.z,'filled')
-            axis ij;
+            if multiModal == 2
+                subplot(1,2,multiModal-1)
+                sizeMarker = 5;
+                scatter3(part1.col,part1.row,part1.z,sizeMarker,part1.z,'filled')
+                axis ij;
+    
+                title('all Localization plotted frames 1-8');
+                xlabel('x position in nm');
+                ylabel('y position in nm');
+                zlabel('z position in nm');
+                hold on 
 
-            title('all Localization plotted');
-            xlabel('x position in nm');
-            ylabel('y position in nm');
-            zlabel('z position in nm');
-            
-            
-            hold off
-            
+                subplot(1,2,multiModal)
+                part2 = obj.particles{multiModal, 1}.SRList;
+                scatter3(part2.col,part2.row,part2.z,sizeMarker,part2.z,'filled')
+                axis ij;
+    
+                title('all Localization plotted frames 9-16');
+                xlabel('x position in nm');
+                ylabel('y position in nm');
+                zlabel('z position in nm');
+                hold off
+
+            else
+                sizeMarker = 5;
+                scatter3(part1.col,part1.row,part1.z,sizeMarker,part1.z,'filled')
+                axis ij;
+    
+                title('all Localization plotted frames 1-8');
+                xlabel('x position in nm');
+                ylabel('y position in nm');
+                zlabel('z position in nm');
+                
+                
+                hold off
+            end
+           
         end
         
     end

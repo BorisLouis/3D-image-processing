@@ -59,7 +59,7 @@ classdef MPParticleMovie < Core.MPMovie
                 %Localization occurs here
                 assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                 assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
-                [candidate] = obj.detectCandidate(detectParam,frames,1);
+                [candidate] = obj.detectCandidate(detectParam,frames,multiModal);
                 
             elseif ~isempty(candidate)
             else
@@ -339,9 +339,9 @@ classdef MPParticleMovie < Core.MPMovie
                     nsFig2 = ceil(nImages2/4);
                     
                     candidate2 = obj.getCandidatePos(idx, multiModal);
-                    rowPos2    = candidate.row;
-                    colPos2    = candidate.col;
-                    planeIdx2  = candidate.plane;
+                    rowPos2    = candidate2.row;
+                    colPos2    = candidate2.col;
+                    planeIdx2  = candidate2.plane;
 
                     for i = 1:nImages 
                         subplot(2,nImages,i)
@@ -368,7 +368,7 @@ classdef MPParticleMovie < Core.MPMovie
                         a.XTickLabel = [];
                         a.YTickLabel = [];
                         a.GridColor = [1 1 1];
-                        title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{multiModal, 1}.oRelZPos2(i))});
+                        title({['Plane ' num2str(i+8)],sprintf(' Zpos = %0.3f',obj.calibrated{multiModal, 1}.oRelZPos2(i))});
                         colormap('hot')
                         hold off  
                     end
@@ -763,28 +763,46 @@ classdef MPParticleMovie < Core.MPMovie
                 case 'load'
                     [file2Analyze] = Core.Movie.getFileInPath(Path, ext);
                     %Check if some candidate were already stored
-                    if any(contains({file2Analyze.name},'candidatePos1')==true)
-                        if multiModal == 1
-                           candidate = load([file2Analyze(1).folder filesep 'candidatePos1.mat']);
-                        else
-                           candidate = load([file2Analyze(1).folder filesep 'candidatePos2.mat']);
-                        end
-                        candidate = candidate.candidate;
-                        
-                        if size(candidate,1)== obj.calibrated{multiModal, 1}.nFrames
-                            run = false;
-                        else
-                           disp('Detection missing in some frames, rerunning detection');
-                           candidate = [];
-                           run = true;
-                        end
+                    if multiModal == 1 
+                        if any(contains({file2Analyze.name},'candidatePos1')==true)
+                            candidate = load([file2Analyze(1).folder filesep 'candidatePos1.mat']);
+                            candidate = candidate.candidate;
                             
-                    else
-                
-                        run = true;
-                        candidate =[];
-                
+                            if size(candidate,1)== obj.calibrated{multiModal, 1}.nFrames
+                                run = false;
+                            else
+                               disp('Detection missing in some frames, rerunning detection');
+                               candidate = [];
+                               run = true;
+                            end
+                                
+                        else
+                    
+                            run = true;
+                            candidate =[];
+                    
+                        end
+                    elseif multiModal == 2
+                        if any(contains({file2Analyze.name},'candidatePos2')==true)
+                            candidate = load([file2Analyze(1).folder filesep 'candidatePos2.mat']);
+                            candidate = candidate.candidate;
+                            
+                            if size(candidate,1)== obj.calibrated{multiModal, 1}.nFrames
+                                run = false;
+                            else
+                               disp('Detection missing in some frames, rerunning detection');
+                               candidate = [];
+                               run = true;
+                            end
+                                
+                        else
+                    
+                            run = true;
+                            candidate =[];
+                    
+                        end                        
                     end
+
                 case 'run'
                     run = true;
                     candidate =[];
@@ -883,7 +901,11 @@ classdef MPParticleMovie < Core.MPMovie
             if isempty(obj.candidatePos)
                 currentCandidate = obj.candidatePos;
             else
-                currentCandidate = obj.candidatePos{multiModal, 1}
+                if size(obj.candidatePos, 1) == 1
+                    currentCandidate = [];
+                elseif size(obj.candidatePos, 1) == 2
+                    currentCandidate = obj.candidatePos{multiModal, 1};
+                end
             end
             detectionMethod = obj.info.detectionMethod;
 
@@ -930,7 +952,17 @@ classdef MPParticleMovie < Core.MPMovie
                             else
                             end
                          case 'Intensity'
-                             
+                             if multiModal == 2
+                                 avIntline1 = mean(currentIM(:,100));
+                                 avIntline2 = mean(currentIM(:,150));
+                                 avIntline3 = mean(currentIM(:,200));
+                                 avIntline4 = mean(currentIM(:,250));
+                                 avIntline5 = mean(currentIM(:,300));
+
+                                 thresh = mean([avIntline1, avIntline2, avIntline3, avIntline4, avIntline5]);
+                                 currentIM(currentIM < thresh) = thresh;
+                             else
+                             end
                              bwImage = imbinarize(currentIM./max(currentIM(:)));
                              
                              SE = strel('disk',5);

@@ -13,9 +13,9 @@ dimension = '3D';
 multiModal = 'on'; %multiModal on or off
 
 %detection parameter
-detectParam.delta = 6;
-detectParam.chi2  = 20;
-detectParam.consThresh = 4;
+detectParam.delta = 6; %default 6
+detectParam.chi2  = 40; %default 30
+detectParam.consThresh = 4; %default 4
 %tracking parameter
 trackParam.radius  = 1000;%nm
 trackParam.memory  = 3;
@@ -75,9 +75,15 @@ end
 %[MSD,~] = trackingExp.getMSD(dimension);
 %% show traces
 
-trackingExp.showTraces(1);
+trackingExp.showTraces(1,1);
+if multiModal == 'on'
+    trackingExp.showTraces(2,1);
+end
 %% save Data
 
-trackingExp.saveData;
+trackingExp.saveData(1);
+if multiModal == 'on'
+    trackingExp.saveData(2);
+end
 
 

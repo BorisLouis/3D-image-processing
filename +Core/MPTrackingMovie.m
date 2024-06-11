@@ -63,7 +63,7 @@ classdef MPTrackingMovie < Core.MPLocMovie
             if or(isempty (ToTrack{1}),isempty(ToTrack{2}))
                 ToTrack(1) = [];
                 count = 1;
-                while or(isempty(ToTrack{1}),isempty(ToTrack{1}))
+                while or(isempty(ToTrack{1}),isempty(ToTrack{2}))
                     ToTrack(1) = [];
                     count = count+1;
                 end   
@@ -164,8 +164,8 @@ classdef MPTrackingMovie < Core.MPLocMovie
             %[trace3D] = obj.get3DTraces;
             
             obj.traces3D{multiModal,1} = TrackedData;
-            
-            filename =[obj.raw.movInfo.Path filesep 'Traces3D.mat'];
+            string = append('Traces3D_', num2str(multiModal), '.mat');
+            filename =[obj.raw.movInfo.Path filesep string];
             
             save(filename,'TrackedData');
             
@@ -174,7 +174,7 @@ classdef MPTrackingMovie < Core.MPLocMovie
         
         function showTraces(obj, multiModal)
             traces = obj.traces3D{multiModal,1};
-            obj.showCorrLoc;
+            obj.showCorrLoc(multiModal);
             
             gcf;
             

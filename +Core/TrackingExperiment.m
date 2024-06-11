@@ -194,7 +194,7 @@ classdef TrackingExperiment < handle
                 currentTrackMov = obj.trackMovies.(fieldsN{i});
                    
                 %Molecule detection
-                currentTrackMov.findCandidatePos(detectParam,1);
+                currentTrackMov.findCandidatePos(detectParam,multiModal);
                 
                 %SR fitting
                 currentTrackMov.SRLocalizeCandidate(detectParam.delta, multiModal);
@@ -263,14 +263,14 @@ classdef TrackingExperiment < handle
              currentMov.showCorrLoc;
         end
         
-        function showTraces(obj,idx)
+        function showTraces(obj, multiModal,idx)
              fieldsN = fieldnames(obj.trackMovies);
              maxIdx = length(fieldsN);
              assert(idx <= maxIdx,['Requested index to Movie is too large, only ' num2str(maxIdx) ' movies']);
              
              currentMov = obj.trackMovies.(fieldsN{idx});
              
-             currentMov.showTraces;
+             currentMov.showTraces(multiModal);
         end
         
         function evalAccuracy(obj,dim,idx)
@@ -350,24 +350,25 @@ classdef TrackingExperiment < handle
             
         end
         
-        function saveData(obj)
+        function saveData(obj, multiModal)
             
             trackRes = struct; 
             disp('Saving Data');
             
             if ~isempty(obj.traces3D)
                 
-                trackData = obj.traces3D;
-                MSDs = obj.MSD;
-                    
-                if ~isempty(MSDs)
+                trackData = obj.traces3D{multiModal, 1};
+                
+                if ~isempty(obj.MSD)
+                    MSDs = obj.MSD{multiModal, 1};
                     trackRes.MSD = MSDs;
                 end
                 
                 trackRes.traces = trackData; 
                 trackRes.info = obj.info;
                 trackRes.path = obj.path;
-                filename = [obj.path filesep 'trackResults.mat'];
+                fname = append('trackResults',num2str(multiModal),'.mat')
+                filename = [obj.path filesep fname];
                 save(filename,'trackRes');
                 disp('Data were succesfully saved');
     
