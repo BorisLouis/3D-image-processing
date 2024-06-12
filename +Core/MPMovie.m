@@ -12,6 +12,10 @@ classdef MPMovie < Core.Movie
     methods
         
         function obj = MPMovie(raw,cal,info)
+            if ~isfield(info,'multiModal')
+                info.multiModal = 0;
+            end
+
             
             obj = obj@Core.Movie(raw,info);
             
@@ -54,8 +58,7 @@ classdef MPMovie < Core.Movie
         
         function set.calibrated(obj,calibrated)
             
-            assert(isstruct(calibrated{1,1}),'Calibrated1 is expected to be a struct');
-
+            assert(isstruct(calibrated),'Calibrated is expected to be a struct');
             obj.calibrated = calibrated;
             
         end
@@ -76,8 +79,12 @@ classdef MPMovie < Core.Movie
                 %if there is 2 value, then calibrated folder exist and then we
                 %check if a calibration file is in there.
             elseif length(unique(idx2Calibrated))==2
-                
-                fullPath = [obj.raw.movInfo.Path filesep 'calibrated'];
+                if obj.info.multiModal == false
+                    name = 'calibrated1'
+                elseif obj.info.multiModal == true
+                    name = 'calibrated2'
+                end
+                fullPath = [obj.raw.movInfo.Path filesep name];
                 [file2Analyze] = obj.getFileInPath(fullPath, '.mat');
                 
                 if (~isempty(file2Analyze))
@@ -178,11 +185,7 @@ classdef MPMovie < Core.Movie
             %check the frame requested
             [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
             %Get the data of the requested frame
-            [frame] = getFrame(obj,idx,obj.cal2D.file.multiModal+1);
-            if obj.cal2D.file.multiModal == true
-                [frame2] = getFrame(obj,idx,obj.cal2D.file.multiModal+1);
-            else 
-            end
+            [frame] = getFrame(obj,idx);
             pxSize = obj.info.pxSize/1000;%in µm
             scaleBarPx = scaleBar/pxSize;
             planes = size(frame,3);
@@ -200,9 +203,9 @@ classdef MPMovie < Core.Movie
                 nsFig = ceil(planes/4);
             end
             
-            if ~isempty(obj.calibrated{obj.cal2D.file.multiModal+1, 1})
+            if ~isempty(obj.calibrated)
                 
-                zPos = obj.calibrated{obj.cal2D.file.multiModal+1, 1}.oRelZPos;
+                zPos = obj.calibrated.oRelZPos;
                 
             else
                 
@@ -257,29 +260,29 @@ classdef MPMovie < Core.Movie
             end
         end
         
-        function [data] = getFrame(obj,idx,multiModal)
+        function [data] = getFrame(obj,idx)
             %Allow the user to extract data from a specific frame, behavior
             %depends on the calibration
             assert(length(idx)==1,'Only one frame at a time');
-            [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1, multiModal));
+            [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
             %Behavior depend on status
-            if isempty(obj.calibrated{multiModal,1})
+            if isempty(obj.calibrated)
                 
                 [data] = getFrame@Core.Movie(obj,idx);
                 
-            elseif isstruct(obj.calibrated{multiModal,1})
-                fieldsN = fieldnames(obj.calibrated{multiModal, 1}.filePath);                
-                data = zeros(obj.calibrated{multiModal, 1}.Height,obj.calibrated{multiModal, 1}.Width,numel(fieldsN));
+            elseif isstruct(obj.calibrated)
+                fieldsN = fieldnames(obj.calibrated.filePath);                
+                data = zeros(obj.calibrated.Height,obj.calibrated.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
-                    [mov] = Load.Movie.tif.getframes(obj.calibrated{multiModal, 1}.filePath.(fieldsN{i}),idx);
+                    [mov] = Load.Movie.tif.getframes(obj.calibrated.filePath.(fieldsN{i}),idx);
                     data(:,:,i) = mov;
                     
                 end
             end
         end
         
-        function [data] = getPlane(obj,idx,frame,multiModal)
+        function [data] = getPlane(obj,idx,frame)
             %Allow the user to extract data from a specific plane, behavior
             %depends on the calibration
             switch nargin
@@ -289,14 +292,14 @@ classdef MPMovie < Core.Movie
             end
             assert(and(idx<9,idx>=1),'plane should be between 1 and 8');
             
-            [data] = Load.Movie.tif.getframes(obj.calibrated{multiModal, 1}.filePath.(sprintf('plane%d',idx)),frame);
+            [data] = Load.Movie.tif.getframes(obj.calibrated.filePath.(sprintf('plane%d',idx)),frame);
             
             
         end
         
         function [calibrated] = getCalibrated(obj)
             
-            calibrated = obj.calibrated{multiModal, 1};
+            calibrated = obj.calibrated;
             
         end
         
@@ -445,8 +448,8 @@ classdef MPMovie < Core.Movie
             if MP
                 cal = obj.cal2D.file;
             end
-            fid1 = fopen([calDir1 filesep 'CalibratedInfo1.txt'],'w');
-            fprintf(fid1,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
+            fid = fopen([calDir1 filesep 'CalibratedInfo.txt'],'w');
+            fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
             calib1.mainPath = calDir1;
             calib1.nPlanes = sum(~isTransmission{1,1});
 
@@ -482,7 +485,7 @@ classdef MPMovie < Core.Movie
                 %We also write a few info about the calibrated data in a
                 %text file
                 if MP
-                    fprintf(fid1,...
+                    fprintf(fid,...
                         'Image plane %d: Cam %d, Channel %d Col1: %d Col2: %d, Rel. Zpos: %0.3f \n ',...
                         i,cal.inFocus1(cal.neworder1(i)).cam,...
                         cal.inFocus1(cal.neworder1(i)).ch,...
@@ -492,16 +495,16 @@ classdef MPMovie < Core.Movie
                         cal.inFocus1(cal.neworder1(i)).relZPos);
                     calib1.camConfig = obj.cal2D.camConfig{1,1};
                 else
-                    fprintf(fid1,...
+                    fprintf(fid,...
                         'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
                     calib1.camConfig{1,1} = 'None';
                 end
                 if isTrans1
                 else
                     if MP
-                        calib1.oRelZPos1(idx2Plane) =  cal.inFocus1(cal.neworder1(i)).relZPos;
+                        calib1.oRelZPos(idx2Plane) =  cal.inFocus1(cal.neworder1(i)).relZPos;
                     else
-                        calib1.oRelZPos1(idx2Plane) = 0;
+                        calib1.oRelZPos(idx2Plane) = 0;
                     end
                     idx2Plane = idx2Plane+1;
                 end
@@ -510,27 +513,36 @@ classdef MPMovie < Core.Movie
             end
             calib1.Width  = size(data{1,1},2);
             calib1.Height = size(data{1,1},1);
-            fclose(fid1);
+            calib = calib1;
+            fclose(fid);
             fName = [calDir1 filesep 'calibrated1.mat'];
-            save(fName,'calib1');
+            save(fName,'calib');
 
-            if cal.multiModal == true 
+            if cal.multiModal == true
                calDir2 = [obj.raw.movInfo.Path filesep 'calibrated2'];
                calTransDir2 = [calDir2 filesep 'Transmission'];
-               fid2 = fopen([calDir1 filesep 'CalibratedInfo2.txt'],'w');
-               fprintf(fid2,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
                mkdir(calDir2);
                mkdir(calTransDir2);
+               fid2 = fopen([calDir2 filesep 'CalibratedInfo.txt'],'w');
+               fprintf(fid2,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
                calib2.mainPath = calDir2;
-               calib2.nPlanes   = sum(~isTransmission{1,1})+sum(~isTransmission{2,1});
-               idx2Plane = 1;
+               calib2.nPlanes = sum(~isTransmission{2,1});
+
                for i = 1:size(data{2,1},3)
-                    data2Store2 = squeeze(data{2,1}(:,:,i,:));
-                    % for j = 1:size(data2Store, 3)
-                    %     tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
-                    %     data2(:,:,j) = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
-                    %     data2Store2 = uint16(data2);
-                    % end
+                    data2Store = squeeze(data{2,1}(:,:,i,:));
+                    for j = 1:size(data2Store, 3)
+                        Min1 = mean(data2Store(:,100,j));
+                        Min2 = mean(data2Store(:,150,j));
+                        Min3 = mean(data2Store(:,200,j));
+                        Min4 = mean(data2Store(:,250,j));
+                        Min5 = mean(data2Store(:,300,j));
+                        Min = min([Min1, Min2, Min2, Min4, Min4]);
+                        tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
+                        data2(:,:,j) = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
+                        data2(data2 < Min) = Min;
+
+                        data2Store2 = uint16(data2);
+                    end
                     isTrans2 = isTransmission{2,1}(i);
                     if strcmpi(obj.info.type,'transmission')
                         data2Store2 = imcomplement(data2Store2);
@@ -559,7 +571,7 @@ classdef MPMovie < Core.Movie
                     %We also write a few info about the calibrated data in a
                     %text file
                     if MP
-                        fprintf(fid2,...
+                        fprintf(fid,...
                             'Image plane %d: Cam %d, Channel %d Col1: %d Col2: %d, Rel. Zpos: %0.3f \n ',...
                             i+8,cal.inFocus2(cal.neworder2(i)).cam,...
                             cal.inFocus2(cal.neworder2(i)).ch,...
@@ -569,32 +581,38 @@ classdef MPMovie < Core.Movie
                             cal.inFocus2(cal.neworder2(i)).relZPos);
                         calib2.camConfig = obj.cal2D.camConfig{1,2};
                     else
-                        fprintf(fid2,...
+                        fprintf(fid,...
                             'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
                         calib2.camConfig{2,1} = 'None';
                     end
                     if isTrans2
                     else
                         if MP
-                            calib2.oRelZPos2(idx2Plane) =  cal.inFocus2(cal.neworder2(i)).relZPos;
+                            calib2.oRelZPos(idx2Plane) =  cal.inFocus2(cal.neworder2(i)).relZPos;
                         else
-                            calib2.oRelZPos2(idx2Plane) = 0;
+                            calib2.oRelZPos(idx2Plane) = 0;
                         end
                         idx2Plane = idx2Plane+1;
                     end
                     
                     
                 end
-                calib2.Width  = size(data{2,1},2);
-                calib2.Height = size(data{2,1},1);
+                calib2.Width  = size(data2,2);
+                calib2.Height = size(data2,1);
                 fclose(fid2);
+                calib = struct([]);
+                calib = calib2;
                 fName = [calDir2 filesep 'calibrated2.mat'];
-                save(fName,'calib2');
+                save(fName,'calib');
 
             else
-                calib2 = struct([]);
             end
-            calib = {calib1; calib2};
+            calib = struct([]);
+            if obj.info.multiModal == false
+                calib = calib1;
+            else
+                calib = calib2;
+            end
         end
         
     end

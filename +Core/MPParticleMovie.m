@@ -26,20 +26,19 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
         
-        function findCandidatePos(obj,detectParam,multiModal,frames)
+        function findCandidatePos(obj,detectParam, frames)
             %Method to perform localization on each plane for each frame
             %Check if some candidate exists already in the folder (previously saved)
              switch nargin
-                    case 3
+                    case 2
                         
-                        frames = 1: obj.calibrated{multiModal,1}.nFrames;
+                        frames = 1: obj.calibrated.nFrames;
                         disp('Running detection on every frame');
      
                         
-                    case 4
+                    case 3
                         
-                        [frames] = obj.checkFrame(frames,obj.calibrated{multiModal,1}.nFrames);
-
+                        [frames] = obj.checkFrame(frames,obj.calibrated.nFrames);
                         
                     otherwise
                         
@@ -47,7 +46,7 @@ classdef MPParticleMovie < Core.MPMovie
                         
              end
             
-            [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat', multiModal);
+            [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
             
             %if we only ask 1 frame we always run
             if length(frames) == 1
@@ -59,7 +58,7 @@ classdef MPParticleMovie < Core.MPMovie
                 %Localization occurs here
                 assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                 assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
-                [candidate] = obj.detectCandidate(detectParam,frames,multiModal);
+                [candidate] = obj.detectCandidate(detectParam,frames);
                 
             elseif ~isempty(candidate)
             else
@@ -74,19 +73,18 @@ classdef MPParticleMovie < Core.MPMovie
             %if we only ask 1 frame we do not save
             if length(frames) >1
                 %save the data
-                fileName = sprintf('%s%scandidatePos%s.mat',obj.raw.movInfo.Path,'\',num2str(multiModal));
+                fileName = sprintf('%s%scandidatePos.mat',obj.raw.movInfo.Path,'\');
                 save(fileName,'candidate');
             else
             end
-            candidates = candidate;
-            obj.candidatePos{multiModal, 1} = candidates;
+            obj.candidatePos = candidate;
             obj.info.detectParam = detectParam;
         end
         
-        function [candidate] = getCandidatePos(obj, frames, multiModal)
+        function [candidate] = getCandidatePos(obj, frames)
             %Extract the position of the candidate of a given frame
             [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-            candidate = obj.candidatePos{multiModal, 1}{idx};
+            candidate = obj.candidatePos{idx};
             
             if isempty(candidate)
                 
@@ -95,27 +93,27 @@ classdef MPParticleMovie < Core.MPMovie
             end
         end  
         
-        function SRLocalizeCandidate(obj,roiSize, multiModal, frames)
-            assert(~isempty(obj.calibrated{multiModal, 1}),'Data should be calibrated to consolidate');
+        function SRLocalizeCandidate(obj,roiSize,frames)
+            assert(~isempty(obj.calibrated),'Data should be calibrated to consolidate');
             assert(~isempty(obj.info),'Information about the setup are missing to consolidate, please fill them in using giveInfo method');
-            assert(~isempty(obj.candidatePos{multiModal, 1}), 'No candidate found, please run findCandidatePos before consolidation');
+            assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before consolidation');
             
-            [run,locPos] = obj.existLocPos(obj.raw.movInfo.Path,'.mat', multiModal);
+            [run,locPos] = obj.existLocPos(obj.raw.movInfo.Path,'.mat');
             
             if run
                 switch nargin
 
-                    case 2
+                    case 1
                         roiSize = 6;
-                        frames = 1: obj.calibrated{multiModal, 1}.nFrames;
+                        frames = 1: obj.calibrated.nFrames;
                         disp('Running SRLocalization on every frame with ROI of 6 pixel radius');
 
-                    case 3
+                    case 2
 
-                        frames = 1: obj.calibrated{multiModal, 1}.nFrames;
+                        frames = 1: obj.calibrated.nFrames;
                         disp('Running SRLocalization on every frame');
 
-                    case 4
+                    case 3
 
                         [frames] = obj.checkFrame(frames);
 
@@ -125,7 +123,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                 end
                
-                locPos = cell(size(obj.candidatePos{multiModal, 1}));
+                locPos = cell(size(obj.candidatePos));
                 h = waitbar(0,'Fitting candidates ...');
                 nFrames = length(frames);
                 %Localization occurs here
@@ -133,8 +131,8 @@ classdef MPParticleMovie < Core.MPMovie
                     disp(['Fitting candidates: frame ' num2str(i) ' / ' num2str(nFrames)]);
                     idx = frames(i);
                     %#1 Extract Candidate Position for specific frame
-                    [data] = obj.getFrame(idx, multiModal);
-                    [frameCandidate] = obj.getCandidatePos(idx, multiModal);
+                    [data] = obj.getFrame(idx);
+                    [frameCandidate] = obj.getCandidatePos(idx);
                     
                     if isempty(frameCandidate)
                         
@@ -152,19 +150,19 @@ classdef MPParticleMovie < Core.MPMovie
             else
             end
                 %save the data
-            fileName = sprintf('%s%sSRLocPos%s.mat',obj.raw.movInfo.Path,'\',num2str(multiModal));
+            fileName = sprintf('%s%sSRLocPos.mat',obj.raw.movInfo.Path,'\');
             save(fileName,'locPos');
             
             %store in the object
-            obj.unCorrLocPos{multiModal, 1} = locPos;
-            obj.corrLocPos{multiModal, 1}   = locPos;
+            obj.unCorrLocPos = locPos;
+            obj.corrLocPos   = locPos;
         end
         
-        function [locPos] = getLocPos(obj, frames, multiModal)
+        function [locPos] = getLocPos(obj,frames)
              %Extract the position of the candidate of a given frame
             [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
           
-            locPos = obj.unCorrLocPos{multiModal, 1}{idx};
+            locPos = obj.unCorrLocPos{idx};
            
             if isempty(locPos)
                 
@@ -173,29 +171,29 @@ classdef MPParticleMovie < Core.MPMovie
             end
         end
         
-        function consolidatePlanes(obj,frames,consThresh, multiModal)
+        function consolidatePlanes(obj,frames,consThresh)
             %Consolidation refers to connect molecules that were localized
             %at similar position in different plane on a single frame.
-            assert(~isempty(obj.calibrated{multiModal, 1}),'Data should be calibrated to consolidate');
+            assert(~isempty(obj.calibrated),'Data should be calibrated to consolidate');
             assert(~isempty(obj.info),'Information about the setup are missing to consolidate, please fill them in using giveInfo method');
-            assert(~isempty(obj.candidatePos{multiModal, 1}), 'No candidate found, please run findCandidatePos before consolidation');
-            assert(~isempty(obj.unCorrLocPos{multiModal, 1}),'Localization needs to be performed before consolidation');
+            assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before consolidation');
+            assert(~isempty(obj.unCorrLocPos),'Localization needs to be performed before consolidation');
            
             %Check if some particles were saved already.
-            [run, particle] = obj.existParticles(obj.raw.movInfo.Path, '.mat', multiModal);
+            [run, particle] = obj.existParticles(obj.raw.movInfo.Path, '.mat');
             
             if run
                 %Check the number of function input
                 switch nargin
-                    case 2
+                    case 1
                         
-                        frames = 1: obj.calibrated{multiModal, 1}.nFrames;
+                        frames = 1: obj.calibrated.nFrames;
                         disp('Running consolidation on every frame with roi of 6 pixel');
                         consThresh = 4;
-                    case 3
+                    case 2
                         [frames] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                         consThresh = 4;                       
-                    case 4
+                    case 3
                         [frames] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                         assert(isnumeric(consThresh),'Consolidation threshold should be numeric');
                     otherwise
@@ -216,7 +214,7 @@ classdef MPParticleMovie < Core.MPMovie
                     disp(['Consolidating frame ' num2str(i) ' / ' num2str(nFrames)]);
                     idx = frames(i);
                     %#1 Extract localized Position for specific frame
-                    [fCandMet] = obj.getLocPos(multiModal, idx);
+                    [fCandMet] = obj.getLocPos(idx);
                     
                     if isempty(fCandMet)
                         
@@ -247,7 +245,7 @@ classdef MPParticleMovie < Core.MPMovie
                             %focusMetric((1-corrEllip)>0.3) = NaN;
                             
                             %Plane Consolidation occur here
-                            [part] = obj.planeConsolidation(fCandMet,focusMetric,consThresh, multiModal);
+                            [part] = obj.planeConsolidation(fCandMet,focusMetric,consThresh);
 
                             %we delete empty cells from the array
                             idx2Empty = cellfun(@isempty,part);
@@ -273,16 +271,16 @@ classdef MPParticleMovie < Core.MPMovie
                 particle.Traces     = [];
                 particle.nTraces    = [];
                 
-                fileName = sprintf('%s%sparticle%s.mat',obj.raw.movInfo.Path,'\',num2str(multiModal));
+                fileName = sprintf('%s%sparticle.mat',obj.raw.movInfo.Path,'\');
                 save(fileName,'particle');
             end
             %#4 Storing particles in the object
-            obj.particles{multiModal, 1} = particle;
+            obj.particles = particle;
         end
         
         function [particle] = getParticles(obj,frames)
             %GetParticles
-            [idx] = obj.checkFrame(frames,obj.calibrated{multiModal, 1}.nFrames(1));
+            [idx] = obj.checkFrame(frames,obj.calibrated.nFrames(1));
             particle = obj.particles.List{idx};
             
             if isempty(particle)
@@ -292,88 +290,42 @@ classdef MPParticleMovie < Core.MPMovie
             end
         end
         
-        function showCandidate(obj,idx, multiModal)
+        function showCandidate(obj,idx)
             %Display Candidate
             assert(length(idx)==1, 'Only one frame can be displayed at once');
             [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
-            assert(~isempty(obj.candidatePos{1,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+            assert(~isempty(obj.candidatePos{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
             
-            [frame] = getFrame(obj,idx, 1);
+            [frame] = getFrame(obj,idx);
             
             nImages = size(frame,3);
            
             nsFig = ceil(nImages/4);
             
-            candidate = obj.getCandidatePos(idx, 1);
+            candidate = obj.getCandidatePos(idx);
             rowPos    = candidate.row;
             colPos    = candidate.col;
             planeIdx  = candidate.plane;
             
             h = figure(2);
             h.Name = sprintf('Frame %d',idx);
-
-            if multiModal == 1
-                for i = 1:nImages 
-                    subplot(2,nImages/nsFig,i)
-                    hold on
-                    imagesc(frame(:,:,i))
-                    plot(colPos(planeIdx==i),rowPos(planeIdx==i),'g+','MarkerSize',10)
-                    axis image;
-                    grid on;
-                    a = gca;
-                    a.XTickLabel = [];
-                    a.YTickLabel = [];
-                    a.GridColor = [1 1 1];
-                    title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{multiModal, 1}.oRelZPos1(i))});
-                    colormap('hot')
-                    hold off  
-                end
-
-            elseif multiModal == 2
-                    assert(~isempty(obj.candidatePos{multiModal,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame (multimodal)');
-                    
-                    [frame2] = getFrame(obj,idx,multiModal);
-                    
-                    nImages2 = size(frame2,3);
-                   
-                    nsFig2 = ceil(nImages2/4);
-                    
-                    candidate2 = obj.getCandidatePos(idx, multiModal);
-                    rowPos2    = candidate2.row;
-                    colPos2    = candidate2.col;
-                    planeIdx2  = candidate2.plane;
-
-                    for i = 1:nImages 
-                        subplot(2,nImages,i)
-                        hold on
-                        imagesc(frame(:,:,i))
-                        plot(colPos(planeIdx==i),rowPos(planeIdx==i),'g+','MarkerSize',10)
-                        axis image;
-                        grid on;
-                        a = gca;
-                        a.XTickLabel = [];
-                        a.YTickLabel = [];
-                        a.GridColor = [1 1 1];
-                        title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{multiModal-1, 1}.oRelZPos1(i))});
-                        colormap('hot')
-                        hold on
-
-                        subplot(2,nImages2,i+nImages)
-                        hold on
-                        imagesc(frame2(:,:,i))
-                        plot(colPos2(planeIdx2==i),rowPos2(planeIdx2==i),'g+','MarkerSize',10)
-                        axis image;
-                        grid on;
-                        a = gca;
-                        a.XTickLabel = [];
-                        a.YTickLabel = [];
-                        a.GridColor = [1 1 1];
-                        title({['Plane ' num2str(i+8)],sprintf(' Zpos = %0.3f',obj.calibrated{multiModal, 1}.oRelZPos2(i))});
-                        colormap('hot')
-                        hold off  
-                    end
+            for i = 1:nImages
+                
+                subplot(2,nImages/nsFig,i)
+                hold on
+                imagesc(frame(:,:,i))
+                plot(colPos(planeIdx==i),rowPos(planeIdx==i),'g+','MarkerSize',10)
+                axis image;
+                grid on;
+                a = gca;
+                a.XTickLabel = [];
+                a.YTickLabel = [];
+                a.GridColor = [1 1 1];
+                title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated.oRelZPos(i))});
+                colormap('hot')
+                hold off
+                
             end
-
         end
         
         function showParticles(obj,idx)
@@ -399,7 +351,7 @@ classdef MPParticleMovie < Core.MPMovie
                     roiSize = obj.particles.roiSize;
                     nParticles = obj.particles.nParticles(idx);
                     h = gcf;
-                    nPlanes = obj.calibrated{multiModal, 1}.nPlanes;
+                    nPlanes = obj.calibrated.nPlanes;
                     colors = rand(nParticles,3);
                     %Display circled
                     for i = 1 : nPlanes
@@ -446,10 +398,10 @@ classdef MPParticleMovie < Core.MPMovie
             end
         end
         
-        function [candidateList] = planeConsolidation(obj,candMet,focusMetric,consThresh, multiModal)
+        function [candidateList] = planeConsolidation(obj,candMet,focusMetric,consThresh)
             %Loop through all candidate of a given frame and match them
             %between frame until none can be match or all are matched.
-            nPlanes = obj.calibrated{multiModal, 1}.nPlanes;
+            nPlanes = obj.calibrated.nPlanes;
             counter = 1;
             nPart = 0;
             maxIt = size(candMet,1);
@@ -490,7 +442,7 @@ classdef MPParticleMovie < Core.MPMovie
                 
                 particle(currentCand.plane,:) = currentCand;
                 nCheck = length(planes2Check);
-                camConfig = obj.calibrated{multiModal, 1}.camConfig;
+                camConfig = obj.calibrated.camConfig;
                 for i = 1:nCheck
                     
                     cand = candMet(candMet.plane == planes2Check(i),:);
@@ -756,53 +708,31 @@ classdef MPParticleMovie < Core.MPMovie
      
      methods (Access = protected)
         %method linked to candidate
-        function [run,candidate] = existCandidate(obj,Path,ext,multiModal)
+        function [run,candidate] = existCandidate(obj,Path,ext)
             
             runMethod = obj.info.runMethod;
             switch runMethod
                 case 'load'
                     [file2Analyze] = Core.Movie.getFileInPath(Path, ext);
                     %Check if some candidate were already stored
-                    if multiModal == 1 
-                        if any(contains({file2Analyze.name},'candidatePos1')==true)
-                            candidate = load([file2Analyze(1).folder filesep 'candidatePos1.mat']);
-                            candidate = candidate.candidate;
-                            
-                            if size(candidate,1)== obj.calibrated{multiModal, 1}.nFrames
-                                run = false;
-                            else
-                               disp('Detection missing in some frames, rerunning detection');
-                               candidate = [];
-                               run = true;
-                            end
-                                
+                    if any(contains({file2Analyze.name},'candidatePos')==true)
+                        candidate = load([file2Analyze(1).folder filesep 'candidatePos.mat']);
+                        candidate = candidate.candidate;
+                        
+                        if size(candidate,1)== obj.calibrated.nFrames
+                            run = false;
                         else
-                    
-                            run = true;
-                            candidate =[];
-                    
+                           disp('Detection missing in some frames, rerunning detection');
+                           candidate = [];
+                           run = true;
                         end
-                    elseif multiModal == 2
-                        if any(contains({file2Analyze.name},'candidatePos2')==true)
-                            candidate = load([file2Analyze(1).folder filesep 'candidatePos2.mat']);
-                            candidate = candidate.candidate;
                             
-                            if size(candidate,1)== obj.calibrated{multiModal, 1}.nFrames
-                                run = false;
-                            else
-                               disp('Detection missing in some frames, rerunning detection');
-                               candidate = [];
-                               run = true;
-                            end
-                                
-                        else
-                    
-                            run = true;
-                            candidate =[];
-                    
-                        end                        
+                    else
+                
+                        run = true;
+                        candidate =[];
+                
                     end
-
                 case 'run'
                     run = true;
                     candidate =[];
@@ -810,41 +740,23 @@ classdef MPParticleMovie < Core.MPMovie
         end
         
         %method linked to fitting
-        function [run,SRLocPos] = existLocPos(obj,Path,ext, multiModal) 
+        function [run,SRLocPos] = existLocPos(obj,Path,ext) 
             runMethod = obj.info.runMethod;
             switch runMethod
                 case 'load'
                     [file2Analyze] = Core.Movie.getFileInPath(Path, ext);
                     %Check if some candidate were already stored
-                    
-                    if multiModal == 1 
-                        if any(contains({file2Analyze.name},'SRLocPos1')==true)
-                            SRLocPos = load([file2Analyze(1).folder filesep 'SRLocPos1.mat']);
-    
-                            name = fieldnames(SRLocPos);
-                            SRLocPos = SRLocPos.(name{1});
-                            run = false;
-                        else
-                    
-                             run = true;
-                            SRLocPos =[];
-                    
-                        end
-                    elseif multiModal == 2
-                        if any(contains({file2Analyze.name},'SRLocPos2')==true)
-                            SRLocPos = load([file2Analyze(1).folder filesep 'SRLocPos2.mat']);
-    
-                            name = fieldnames(SRLocPos);
-                            SRLocPos = SRLocPos.(name{1});
-                            run = false;
-                        else
-                    
-                            run = true;
-                            SRLocPos =[];
-                    
-                        end
+                    if any(contains({file2Analyze.name},'SRLocPos')==true)
+                        SRLocPos = load([file2Analyze(1).folder filesep 'SRLocPos.mat']);
+                        name = fieldnames(SRLocPos);
+                        SRLocPos = SRLocPos.(name{1});
+                        run = false;
+                    else
+                
+                         run = true;
+                        SRLocPos =[];
+                
                     end
-                    
                 case 'run'
                      run = true;
                      SRLocPos =[];
@@ -852,37 +764,23 @@ classdef MPParticleMovie < Core.MPMovie
         end
         
         %method Linked to particles/planeConsolidation
-        function [run, particle] = existParticles(obj,Path, ext, multiModal)
+        function [run, particle] = existParticles(obj,Path, ext)
             
             runMethod = obj.info.runMethod;
             switch runMethod
                 case 'load'
                     [file2Analyze] = Core.Movie.getFileInPath(Path, ext);
                     %Check if some candidate were already stored
-                    if multiModal == 1
-                        if any(contains({file2Analyze.name},'particle1')==true)
-                            particle = load([file2Analyze(1).folder filesep 'particle1.mat']);
-                            particle = particle.particle;
-                            run = false;
-                        else
-                    
-                            run = true;
-                            particle = [];
-                    
-                        end                        
-                    elseif multiModal == 2 
-                        if any(contains({file2Analyze.name},'particle2')==true)
-                            particle = load([file2Analyze(1).folder filesep 'particle2.mat']);
-                            particle = particle.particle;
-                            run = false;
-                        else
-                    
-                            run = true;
-                            particle = [];
-                    
-                        end
+                    if any(contains({file2Analyze.name},'particle')==true)
+                        particle = load([file2Analyze(1).folder filesep 'particle.mat']);
+                        particle = particle.particle;
+                        run = false;
+                    else
+                
+                        run = true;
+                        particle = [];
+                
                     end
-
                     
                 case 'run'
                     
@@ -893,25 +791,17 @@ classdef MPParticleMovie < Core.MPMovie
         end
         
         %Methods linked to Candidate
-        function [candidate] = detectCandidate(obj,detectParam,frames,multiModal)
+        function [candidate] = detectCandidate(obj,detectParam,frames)
             %Do the actual localization
-            assert(~isempty(obj.calibrated{multiModal, 1}),'Data should be calibrated to detect candidate');
+            assert(~isempty(obj.calibrated),'Data should be calibrated to detect candidate');
             assert(isstruct(detectParam),'Detection parameter should be a struct with two fields');
             nFrames = length(frames);
-            if isempty(obj.candidatePos)
-                currentCandidate = obj.candidatePos;
-            else
-                if size(obj.candidatePos, 1) == 1
-                    currentCandidate = [];
-                elseif size(obj.candidatePos, 1) == 2
-                    currentCandidate = obj.candidatePos{multiModal, 1};
-                end
-            end
+            currentCandidate = obj.candidatePos;
             detectionMethod = obj.info.detectionMethod;
 
             if(isempty(currentCandidate))
                 
-                candidate = cell(obj.calibrated{multiModal,1}.nFrames,1);
+                candidate = cell(obj.calibrated.nFrames,1);
                 
             else
                 
@@ -930,7 +820,7 @@ classdef MPParticleMovie < Core.MPMovie
                 
                 position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
                     zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
-                [volIm] = obj.getFrame(frames(i), multiModal);
+                [volIm] = obj.getFrame(frames(i));
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes
@@ -952,17 +842,7 @@ classdef MPParticleMovie < Core.MPMovie
                             else
                             end
                          case 'Intensity'
-                             if multiModal == 2
-                                 avIntline1 = mean(currentIM(:,100));
-                                 avIntline2 = mean(currentIM(:,150));
-                                 avIntline3 = mean(currentIM(:,200));
-                                 avIntline4 = mean(currentIM(:,250));
-                                 avIntline5 = mean(currentIM(:,300));
-
-                                 thresh = mean([avIntline1, avIntline2, avIntline3, avIntline4, avIntline5]);
-                                 currentIM(currentIM < thresh) = thresh;
-                             else
-                             end
+                             
                              bwImage = imbinarize(currentIM./max(currentIM(:)));
                              
                              SE = strel('disk',5);
@@ -1112,8 +992,8 @@ classdef MPParticleMovie < Core.MPMovie
 
         end
         
-        function [doAvg]  = checkDoAverage(obj,ellip, multiModal)
-            camConfig = obj.calibrated{multiModal, 1}.camConfig;
+        function [doAvg]  = checkDoAverage(obj,ellip)
+            camConfig = obj.calibrated.camConfig;
             switch camConfig
                 case 'fullRange'
 

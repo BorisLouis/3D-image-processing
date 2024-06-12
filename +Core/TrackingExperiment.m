@@ -27,7 +27,7 @@ classdef TrackingExperiment < handle
             obj.info = info;
             obj.ZCal = zCalPath;
             obj.SRCal = SRCalPath;
-
+            
         end
         
         %Set function
@@ -127,8 +127,8 @@ classdef TrackingExperiment < handle
         
         %get 3D traces
         
-        function [traces3D] = getTraces3D(obj, multiModal)
-            traces3D = obj.traces3D{multiModal, 1};
+        function [traces3D] = getTraces3D(obj)
+            traces3D = obj.traces3D;
         end
         
         %Extract movie from path
@@ -148,7 +148,7 @@ classdef TrackingExperiment < handle
                     count = count+1;
                     file.path = file2Analyze.folder;
                     file.ext  = obj.ext;
-                    tmp = Core.MPTrackingMovie(file , obj.cal2D,obj.info, obj.SRCal.path, obj.ZCal.path);
+                    tmp = Core.MPTrackingMovie(file , obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path);
                     
                     if count == 1
                         tmp.giveInfo;
@@ -178,9 +178,9 @@ classdef TrackingExperiment < handle
         
         %Calculate tracking traces
         
-        function retrieveTrackData(obj,detectParam, trackParam, multiModal)
+        function retrieveTrackData(obj,detectParam, trackParam)
             %Checking user input
-            assert(nargin==4, 'retrieveZCalData expects 3 inputs, 1)detection Parameters, tracking parameter, multiModal');
+            assert(nargin==3, 'retrieveZCalData expects 2 inputs, 1)detection Parameters, tracking parameter');
             assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
             assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
                 'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
@@ -194,29 +194,29 @@ classdef TrackingExperiment < handle
                 currentTrackMov = obj.trackMovies.(fieldsN{i});
                    
                 %Molecule detection
-                currentTrackMov.findCandidatePos(detectParam,multiModal);
+                currentTrackMov.findCandidatePos(detectParam);
                 
                 %SR fitting
-                currentTrackMov.SRLocalizeCandidate(detectParam.delta, multiModal);
-                refPlane = round(currentTrackMov.calibrated{multiModal, 1}.nPlanes/2);
+                currentTrackMov.SRLocalizeCandidate(detectParam.delta);
+                refPlane = round(currentTrackMov.calibrated.nPlanes/2);
                 rot = true;
                 %apply SRCal
-                currentTrackMov.applySRCal(rot,refPlane,multiModal);
+                currentTrackMov.applySRCal(rot,refPlane);
                 
                 %apply ZCal
-                currentTrackMov.applyZCal(multiModal);
+                currentTrackMov.applyZCal;
                 
                 %Plane consolidation
-                frames = 1:currentTrackMov.calibrated{multiModal,1}.nFrames;
-                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh, multiModal)
+                frames = 1:currentTrackMov.calibrated.nFrames;
+                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh)
                 
                 %superResolve
-                currentTrackMov.superResolve(multiModal);
+                currentTrackMov.superResolve;
                 
                 %tracking occurs here
-                currentTrackMov.trackParticle(trackParam, multiModal);
+                currentTrackMov.trackParticle(trackParam);
                 
-                [traces] = currentTrackMov.getTraces{multiModal,1};
+                [traces] = currentTrackMov.getTraces;
                 fileN = cell(length(traces),1);
                 fileN(:,1) = {i};
            
@@ -242,7 +242,7 @@ classdef TrackingExperiment < handle
                 allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
             end
             
-            obj.traces3D{multiModal, 1} = allTraces;
+            obj.traces3D = allTraces;
             
 %             filename = [obj.path filesep 'traces3D.mat'];
 %             save(filename,'allTraces');
@@ -263,14 +263,14 @@ classdef TrackingExperiment < handle
              currentMov.showCorrLoc;
         end
         
-        function showTraces(obj, multiModal,idx)
+        function showTraces(obj,idx)
              fieldsN = fieldnames(obj.trackMovies);
              maxIdx = length(fieldsN);
              assert(idx <= maxIdx,['Requested index to Movie is too large, only ' num2str(maxIdx) ' movies']);
              
              currentMov = obj.trackMovies.(fieldsN{idx});
              
-             currentMov.showTraces(multiModal);
+             currentMov.showTraces;
         end
         
         function evalAccuracy(obj,dim,idx)
@@ -285,9 +285,9 @@ classdef TrackingExperiment < handle
             
         end
         
-        function [int,SNR] = getAvgIntensity(obj, multiModal)
-            assert(~isempty(obj.traces3D{multiModal, 1}),'You need to extract 3D traces before extracting average intensity');
-            traces = obj.traces3D{multiModal, 1};
+        function [int,SNR] = getAvgIntensity(obj)
+            assert(~isempty(obj.traces3D),'You need to extract 3D traces before extracting average intensity');
+            traces = obj.traces3D;
             nTraces = length(traces);
             int = zeros(nTraces,1);
             SNR = zeros(nTraces,1);
@@ -350,25 +350,29 @@ classdef TrackingExperiment < handle
             
         end
         
-        function saveData(obj, multiModal)
+        function saveData(obj)
             
             trackRes = struct; 
             disp('Saving Data');
             
             if ~isempty(obj.traces3D)
                 
-                trackData = obj.traces3D{multiModal, 1};
-                
-                if ~isempty(obj.MSD)
-                    MSDs = obj.MSD{multiModal, 1};
+                trackData = obj.traces3D;
+                MSDs = obj.MSD;
+                    
+                if ~isempty(MSDs)
                     trackRes.MSD = MSDs;
                 end
                 
                 trackRes.traces = trackData; 
                 trackRes.info = obj.info;
                 trackRes.path = obj.path;
-                fname = append('trackResults',num2str(multiModal),'.mat')
-                filename = [obj.path filesep fname];
+                if obj.info.multiModal == false
+                    name = 'trackResults1.mat';
+                elseif obj.info.multiModal == true
+                    name = 'trackResults2.mat';
+                end
+                filename = [obj.path filesep name];
                 save(filename,'trackRes');
                 disp('Data were succesfully saved');
     

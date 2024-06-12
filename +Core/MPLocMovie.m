@@ -92,25 +92,25 @@ classdef MPLocMovie < Core.MPParticleMovie
             
         end
         
-        function applySRCal(obj, rot, refPlane, multiModal)
-            assert(~isempty(obj.unCorrLocPos{multiModal, 1}),'You need to find candidate and SR Localized them before applying corrections');
+        function applySRCal(obj, rot, refPlane)
+            assert(~isempty(obj.unCorrLocPos),'You need to find candidate and SR Localized them before applying corrections');
            
-            if isempty(obj.corrLocPos{multiModal, 1})
+            if isempty(obj.corrLocPos)
                 
-                    obj.corrLocPos = obj.unCorrLocPos{multiModal, 1};
+                    obj.corrLocPos = obj.unCorrLocPos;
                     
             end
             
             if(~isempty(obj.SRCal))
             
-                if nargin <3
+                if nargin <2
                     refPlane = 5;
                 end
 
-                data = obj.unCorrLocPos{multiModal, 1};
+                data = obj.unCorrLocPos;
                 
-                nPlanesCal = size(obj.SRCal{multiModal, 1}.trans,1)+1;
-                nPlanesFile = obj.calibrated{multiModal, 1}.nPlanes;
+                nPlanesCal = size(obj.SRCal.trans,1)+1;
+                nPlanesFile = obj.calibrated.nPlanes;
                 assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in SR calibration and file');
             
                 
@@ -124,34 +124,34 @@ classdef MPLocMovie < Core.MPParticleMovie
                             data2Corr = currData(currData.plane==currentPlane,{'row','col','plane'});
 
                             if rot
-                                corrMat = obj.SRCal{multiModal, 1}.rot;
+                                corrMat = obj.SRCal.rot;
                                 [corrData] = Core.MPSRCalMovie.applyRot(data2Corr, corrMat,refPlane);
 
                             else
-                                corrMat = obj.SRCal{multiModal, 1}.trans;
+                                corrMat = obj.SRCal.trans;
                                  [corrData] = Core.MPSRCalMovie.applyTrans(data2Corr,corrMat,refPlane);                    
                             end
 
                             %we store the corrected data
-                            obj.corrLocPos{multiModal, 1}{i}(currData.plane==currentPlane,{'row','col','plane'}) = corrData;
+                            obj.corrLocPos{i}(currData.plane==currentPlane,{'row','col','plane'}) = corrData;
 
                         end
                     end
 
                 end
-                obj.corrected{multiModal, 1}.XY = true;
+                obj.corrected.XY = true;
                 disp('========> DONE ! <=========');
             else
-                obj.corrected{multiModal, 1}.XY = false;
+                obj.corrected.XY = false;
                 disp('========> DONE ! <=========');
                 warning('SR Calibration not found, no correction was applied');
             end
 
         end
         
-        function applyZCal(obj, multiModal)
+        function applyZCal(obj)
             disp('Applying Z Calibration... ');
-            assert(~isempty(obj.unCorrLocPos{multiModal, 1}),'Need to fit before applying the calibration');
+            assert(~isempty(obj.unCorrLocPos),'Need to fit before applying the calibration');
             if isempty(obj.ZCal)
                 
                 warning('Z Calibration needed to correct the data, using Intensity instead');
@@ -159,25 +159,21 @@ classdef MPLocMovie < Core.MPParticleMovie
                     error('zMethod is selected is PSFE while no z calibration was provided')
                 end
              
-                obj.corrected{multiModal, 1}.Z = false;
+                obj.corrected.Z = false;
                 disp('========> DONE ! <=========');
             end
             
-            if isempty(obj.corrLocPos{multiModal, 1})
-                obj.corrLocPos{multiModal, 1} = obj.unCorrLocPos{multiModal, 1};
+            if isempty(obj.corrLocPos)
+                obj.corrLocPos = obj.unCorrLocPos;
                 warning('Z calibration is currently being applied on non-SRCorrected (X-Y) data');
             end
             
-            data = obj.corrLocPos{multiModal, 1};
-            if isempty(obj.ZCal)
-                zCal = obj.ZCal;
-            else
-                zCal = obj.ZCal{multiModal, 1};
-            end
+            data = obj.corrLocPos; 
+            zCal = obj.ZCal;
             zMethod = obj.info.zMethod;
             
             if or(strcmp(zMethod,'Intensity'),strcmp(zMethod,'3DFit'))
-                obj.corrected{multiModal, 1}.Z = false;
+                obj.corrected.Z = false;
                
             elseif strcmp(zMethod,'PSFE')
             
@@ -187,7 +183,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 %Here we translate ellipticity into z position based on
                 %calibration
                 nPlanesCal = size(zCal.calib,1);
-                nPlanesFile = obj.calibrated{multiModal, 1}.nPlanes;
+                nPlanesFile = obj.calibrated.nPlanes;
                 assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in Z calibration and file');
 
                 disp('Applying Z Calibration using PSFE and ZCal');
@@ -209,15 +205,15 @@ classdef MPLocMovie < Core.MPParticleMovie
                 %plane
 
                 ellipRange = zCal.fitZParam.ellipRange;
-                nPlanes = obj.calibrated{multiModal, 1}.nPlanes;
+                nPlanes = obj.calibrated.nPlanes;
                 zRange = cell(nPlanes,1);
                 
                 for i = 1 : nPlanes
                     zRange{i} = obj.getZRange(ellipRange,zCal,i,method);
                 end
                 
-                obj.corrected{multiModal, 1}.Z = true;
-                obj.calibrated{multiModal, 1}.zRange = zRange;
+                obj.corrected.Z = true;
+                obj.calibrated.zRange = zRange;
                 
             else
                 error('Unknown Z method');
@@ -226,10 +222,10 @@ classdef MPLocMovie < Core.MPParticleMovie
             disp('=======> DONE ! <========');
         end
         
-        function [locPos] = getLocPos(obj,multiModal,frames)
+        function [locPos] = getLocPos(obj,frames)
              %Extract the position of the candidate of a given frame
             [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-            locPos = obj.corrLocPos{multiModal, 1}{idx};
+            locPos = obj.corrLocPos{idx};
             
             if isempty(locPos)
                 
@@ -238,16 +234,16 @@ classdef MPLocMovie < Core.MPParticleMovie
             end
         end
                 
-        function superResolve(obj, multiModal)
+        function superResolve(obj)
             disp('super resolving positions ... ');
            
             %Check if some particle were super resolved already:
-            [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat',multiModal);
+            [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
            
             if run
-                data2Resolve = obj.particles{multiModal, 1}.List;
-                nPlanes = obj.calibrated{multiModal, 1}.nPlanes;
-                nParticles = sum(obj.particles{multiModal, 1}.nParticles);
+                data2Resolve = obj.particles.List;
+                nPlanes = obj.calibrated.nPlanes;
+                nParticles = sum(obj.particles.nParticles);
                 pxSize = obj.info.pxSize;
                 SRList = table(zeros(nParticles,1),...
                         zeros(nParticles,1), zeros(nParticles,1), zeros(nParticles,1),...
@@ -280,7 +276,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                         
                     else
                         
-                        fData = obj.getFrame(i, multiModal);
+                        fData = obj.getFrame(i);
                         ROIRad = ceil(obj.info.FWHM_px/2+1);
                         
                         for j = 1:length(frameData)
@@ -302,7 +298,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                                     else
                          
                                         partVolIm = obj.getPartVolIm(partData,ROIRad,fData);
-                                        [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm,multiModal);
+                                        [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm);
 
                                     end
 
@@ -339,66 +335,42 @@ classdef MPLocMovie < Core.MPParticleMovie
                 SRList(isnan(SRList.row),:) = [];
             end
             
-            obj.particles{multiModal, 1}.SRList = SRList;
+            obj.particles.SRList = SRList;
             particle = obj.particles;
           
             %Save the data
-            fileName = sprintf('%s%sparticle%s.mat',obj.raw.movInfo.Path,'\',num2str(multiModal));
+            fileName = sprintf('%s%sparticle.mat',obj.raw.movInfo.Path,'\');
             profile('off')
             save(fileName,'particle');
             disp('========> DONE ! <=========');
             
         end
                    
-        function showCorrLoc(obj,multiModal, frames)
-            part1 = obj.particles{multiModal, 1}.SRList;
+        function showCorrLoc(obj,frames)
+             part = obj.particles.SRList;
             switch nargin
-                case 2
-                    frames = min(part1.t):max(part1.t);
-                case 3 
+                case 1
+                    frames = min(part.t):max(part.t);
+                case 2 
                     [frames] = obj.checkFrame(frames,obj.raw.maxFrame(1));
             end
            
            
             figure()
             hold on
-            if multiModal == 2
-                subplot(1,2,multiModal-1)
-                sizeMarker = 5;
-                scatter3(part1.col,part1.row,part1.z,sizeMarker,part1.z,'filled')
-                axis ij;
-    
-                title('all Localization plotted frames 1-8');
-                xlabel('x position in nm');
-                ylabel('y position in nm');
-                zlabel('z position in nm');
-                hold on 
+            
+            sizeMarker =5;
+            scatter3(part.col,part.row,part.z,sizeMarker,part.z,'filled')
+            axis ij;
 
-                subplot(1,2,multiModal)
-                part2 = obj.particles{multiModal, 1}.SRList;
-                scatter3(part2.col,part2.row,part2.z,sizeMarker,part2.z,'filled')
-                axis ij;
-    
-                title('all Localization plotted frames 9-16');
-                xlabel('x position in nm');
-                ylabel('y position in nm');
-                zlabel('z position in nm');
-                hold off
-
-            else
-                sizeMarker = 5;
-                scatter3(part1.col,part1.row,part1.z,sizeMarker,part1.z,'filled')
-                axis ij;
-    
-                title('all Localization plotted frames 1-8');
-                xlabel('x position in nm');
-                ylabel('y position in nm');
-                zlabel('z position in nm');
-                
-                
-                hold off
-            end
-           
+            title('all Localization plotted');
+            xlabel('x position in nm');
+            ylabel('y position in nm');
+            zlabel('z position in nm');
+            
+            
+            hold off
+            
         end
         
     end
@@ -506,14 +478,10 @@ classdef MPLocMovie < Core.MPParticleMovie
   
         end
     
-        function [zPos,inRange] = getZPosition(obj,val2Z,zCal,currentPlane,method,multiModal)
+        function [zPos,inRange] = getZPosition(obj,val2Z,zCal,currentPlane,method)
             
-            if multiModal == 1
-                relZ = obj.calibrated{multiModal, 1}.oRelZPos1;
-            else
-                relZ = obj.calibrated{multiModal, 1}.oRelZPos2;
-            end
-           
+            relZ = obj.calibrated.oRelZPos;
+
             zRange = zCal.fitZParam.zRange;
             zRange = zRange{currentPlane};
             zVec = zRange(1):1:zRange(2); %Here we assume accuracy >= 1nm
@@ -541,12 +509,9 @@ classdef MPLocMovie < Core.MPParticleMovie
 
         end
         
-        function [zRange] = getZRange(obj,ellipRange,zCal,currentPlane,method,multiModal)
-            if multiModal == 1
-                relZ = obj.calibrated{multiModal, 1}.oRelZPos1;
-            else
-                relZ = obj.calibrated{multiModal, 1}.oRelZPos2;
-            end
+        function [zRange] = getZRange(obj,ellipRange,zCal,currentPlane,method)
+            
+            relZ = obj.calibrated.oRelZPos;
                        
             zVec = -2000:1:2000; %Here we assume accuracy >= 1nm
             
@@ -572,10 +537,10 @@ classdef MPLocMovie < Core.MPParticleMovie
              
         end
         
-        function [data]  = resolveXYZ(obj,partData,multiModal)
+        function [data]  = resolveXYZ(obj,partData)
          
             pxSize = obj.info.pxSize;
-            ellipRange = obj.ZCal{multiModal, 1}.fitZParam.ellipRange;  
+            ellipRange = obj.ZCal.fitZParam.ellipRange;  
 
             idx2Keep = and(partData.ellip > ellipRange(1), partData.ellip < ellipRange(2));
             partData(~idx2Keep,:) = table(nan);
@@ -617,16 +582,13 @@ classdef MPLocMovie < Core.MPParticleMovie
             
         end
          
-        function [data] = resolveXYZInt(obj,partData,partVolIm,multiModal)
+        function [data] = resolveXYZInt(obj,partData,partVolIm)
           
             pxSize = obj.info.pxSize;
           
             bf = partData.plane(3);
-            if multiModal == 1
-                planePos = obj.calibrated{multiModal, 1}.oRelZPos1;
-            else
-                planePos = obj.calibrated{multiModal, 1}.oRelZPos2;
-            end
+            planePos = obj.calibrated.oRelZPos;
+            
             %Get ROI XZ, YZ scaled to same pixel size
             [Mag] = Core.MPLocMovie.getZPhasorMag(partVolIm);
 
@@ -677,15 +639,11 @@ classdef MPLocMovie < Core.MPParticleMovie
    
         end
         
-        function [data] = resolveXYZ3DFit(obj,partData,ROI,multiModal)
+        function [data] = resolveXYZ3DFit(obj,partData,ROI)
              
             pxSize = obj.info.pxSize;
             bf = partData.plane(3);
-            if multiModal == 1
-                planePos = obj.calibrated{multiModal, 1}.oRelZPos1;
-            else
-                planePos = obj.calibrated{multiModal, 1}.oRelZPos2;
-            end
+            planePos = obj.calibrated.oRelZPos;
 
             x0 = mean([ROIs(3) ROIs(4)])*pxSize;
             y0 = mean([ROIs(1) ROIs(2)])*pxSize;
@@ -739,7 +697,7 @@ classdef MPLocMovie < Core.MPParticleMovie
             else
                 for i = 1: nMethod
                   currentMethod = names{i};
-                  currentAccuracy = obj.ZCal{multiModal, 1}.zAccuracy.(names{i}).BestFocus;
+                  currentAccuracy = obj.ZCal.zAccuracy.(names{i}).BestFocus;
                   
                   %Here accuracy should be small (high accuracy mean small
                   %number)
@@ -765,56 +723,31 @@ classdef MPLocMovie < Core.MPParticleMovie
     end
     
     methods (Static)
-        function [run, SRList] = existZResParticles(runMethod,Path, ext, multiModal)
+        function [run, SRList] = existZResParticles(runMethod,Path, ext)
             SRList = [];
             switch runMethod
                 case 'load'
                     [file2Analyze] = Core.Movie.getFileInPath(Path, ext);
                     %Check if some candidate were already stored
-                    if multiModal == 1
-                        if any(contains({file2Analyze.name},'particle1')==true)
-                            particle = load([file2Analyze(1).folder filesep 'particle1.mat']);
-                            
-                            particle = particle.particle;
-                            if isfield(particle,'SRList')
-                                if ~isempty(particle.SRList)
-                                    run = false;
-                                    SRList = particle.SRList;
-                                else
-                                    run = true;
-                                end
+                    if any(contains({file2Analyze.name},'particle')==true)
+                        particle = load([file2Analyze(1).folder filesep 'particle.mat']);
+                        particle = particle.particle;
+                        if isfield(particle,'SRList')
+                            if ~isempty(particle.SRList)
+                                run = false;
+                                SRList = particle.SRList;
                             else
                                 run = true;
                             end
                         else
-                    
                             run = true;
-                            
-                    
                         end
-                    elseif multiModal == 2
-                        if any(contains({file2Analyze.name},'particle2')==true)
-                            particle = load([file2Analyze(1).folder filesep 'particle2.mat']);
-                            
-                            particle = particle.particle;
-                            if isfield(particle,'SRList')
-                                if ~isempty(particle.SRList)
-                                    run = false;
-                                    SRList = particle.SRList;
-                                else
-                                    run = true;
-                                end
-                            else
-                                run = true;
-                            end
-                        else
-                    
-                            run = true;
-                            
-                    
-                        end
+                    else
+                
+                        run = true;
+                        
+                
                     end
-
                     
                 case 'run'
                     

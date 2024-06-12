@@ -19,25 +19,25 @@ classdef MPTrackingMovie < Core.MPLocMovie
             traces = obj.traces3D;
         end
         
-        function trackParticle(obj, trackParam, multiModal)
+        function trackParticle(obj,trackParam)
             
-            %track the particle in the Z direction (3rd dimension here)
-            assert(~isempty(obj.calibrated{multiModal,1}),'Data should be calibrated to do ZzCalibrationration');
-            assert(~isempty(obj.candidatePos{multiModal,1}), 'No candidate found, please run findCandidatePos before zzCalibrationration');
-            assert(~isempty(obj.particles{multiModal,1}), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
-            assert(~isempty(obj.corrected{multiModal,1}),'Data needs to be corrected before tracking');
+             %track the particle in the Z direction (3rd dimension here)
+            assert(~isempty(obj.calibrated),'Data should be calibrated to do ZzCalibrationration');
+            assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before zzCalibrationration');
+            assert(~isempty(obj.particles), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
+            assert(~isempty(obj.corrected),'Data needs to be corrected before tracking');
             
-            if or(~and(obj.corrected{multiModal,1}.XY,obj.corrected{multiModal,1}.Z),isempty(obj.SRCal))
+            if or(~and(obj.corrected.XY,obj.corrected.Z),isempty(obj.SRCal))
                 
                 warning('Some corrections were not applied to the data');
             
             end
             
             switch nargin
-                case 2
+                case 1
                     trackParam.radius = 300; %in nm
                     trackParam.memory = 3;
-                case 3
+                case 2
                     
                 otherwise
                     error('too many input arguments')
@@ -46,7 +46,7 @@ classdef MPTrackingMovie < Core.MPLocMovie
             assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
                 'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
            
-            DataToTrack = obj.particles{multiModal, 1}.SRList;
+            DataToTrack = obj.particles.SRList;
             ImMax = max(DataToTrack.t);
             % get the timing of each frame
             if ~isfield(obj.raw.movInfo,'timing')
@@ -158,23 +158,23 @@ classdef MPTrackingMovie < Core.MPLocMovie
             
             TrackedData = Core.trackingMethod.ConvertFinalOutput( TrackedData_data,AllParticles,AllField);
             
-            obj.particles{multiModal,1}.traces = TrackedData;
-            obj.particles{multiModal,1}.nTraces = length(TrackedData);
+            obj.particles.traces = TrackedData;
+            obj.particles.nTraces = length(TrackedData);
             
             %[trace3D] = obj.get3DTraces;
             
-            obj.traces3D{multiModal,1} = TrackedData;
-            string = append('Traces3D_', num2str(multiModal), '.mat');
-            filename =[obj.raw.movInfo.Path filesep string];
+            obj.traces3D = TrackedData;
+            
+            filename =[obj.raw.movInfo.Path filesep 'Traces3D.mat'];
             
             save(filename,'TrackedData');
             
             
         end
         
-        function showTraces(obj, multiModal)
-            traces = obj.traces3D{multiModal,1};
-            obj.showCorrLoc(multiModal);
+        function showTraces(obj)
+            traces = obj.traces3D;
+            obj.showCorrLoc;
             
             gcf;
             
@@ -609,10 +609,10 @@ classdef MPTrackingMovie < Core.MPLocMovie
     end
     methods (Access = private)
         
-        function [traces3D ] = get3DTraces(obj, multiModal)
-            partList = obj.particles{multiModal, 1}.SRList;
-            traces = obj.particles{multiModal, 1}.traces;
-            nTraces = obj.particles{multiModal, 1}.nTraces;
+        function [traces3D ] = get3DTraces(obj)
+            partList = obj.particles.SRList;
+            traces = obj.particles.traces;
+            nTraces = obj.particles.nTraces;
             
             traces3D = cell(nTraces,1);
             fCounter = ones(nTraces,1);

@@ -12,7 +12,7 @@ else
     
     if abs(S1-S2) > 3*min([S1,S2])
         warning('One cam is much brighter than the other, assuming Transmission data');
-        nChan = size(cal.ROI1,1)/2;
+        nChan = size(cal.ROI,1)/2;
         if S1< S2
             
             isTransmission1 = [zeros(nChan,1);ones(nChan,1)];
@@ -78,15 +78,7 @@ else
     if cal.multiModal == true
         h = waitbar(0,'Please wait applying calibration');
         waitbar(.2,h,'Gettingg channel data')
-        [ chC3_0, chC4_0 ] = mpSetup.cali.getChData( cam1, cam2, cal.ROI2FullCam );
-        for k = 1:size(chC3_0, 4)
-            for z = 1:size(chC3_0, 3)
-                tform = simtform2d(cal.Transformation{z,1}.Scale, cal.Transformation{z,1}.RotationAngle, cal.Transformation{z,1}.Translation);
-                chC3(:,:,z,k) = uint16(imwarp(double(chC3_0(:,:,z,k)), tform, "OutputView", imref2d(size(double(chC1(:,:,z,k))))));
-                chC4(:,:,z,k) = uint16(imwarp(double(chC4_0(:,:,z,k)), tform, "OutputView", imref2d(size(double(chC2(:,:,z,k))))));
-            end
-        end
-
+        [ chC3, chC4 ] = mpSetup.cali.getChData( cam1, cam2, cal.ROI2FullCam );
         sTmp2 = size(chC3);
         sTmp2(3) = sTmp2(3)*2;
         data2 = ones(sTmp2,'uint16');
