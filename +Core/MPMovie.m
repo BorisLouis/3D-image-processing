@@ -527,6 +527,7 @@ classdef MPMovie < Core.Movie
                fprintf(fid2,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
                calib2.mainPath = calDir2;
                calib2.nPlanes = sum(~isTransmission{2,1});
+               idx2Plane = 1;
 
                for i = 1:size(data{2,1},3)
                     data2Store = squeeze(data{2,1}(:,:,i,:));
