@@ -13,10 +13,10 @@ dimension = '3D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 30;
+detectParam.chi2  = 60;
 detectParam.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 500;%nm
+trackParam.radius  = 100;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
@@ -25,7 +25,7 @@ info.runMethod = 'load'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
-info.detectionMethod = 'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
+info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 
@@ -38,7 +38,7 @@ trackingExp = Core.TrackingExperiment(file,path2Cal,info,path2SRCal,path2ZCal);
 trackingExp.retrieveMovies;
 
 %% test detection parameters
-frame = 1;
+frame = 50;
 testMov = trackingExp.trackMovies.mov1;
 testMov.findCandidatePos(detectParam,frame);
 testMov.showCandidate(frame);

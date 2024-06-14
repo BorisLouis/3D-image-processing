@@ -339,7 +339,12 @@ classdef MPLocMovie < Core.MPParticleMovie
             particle = obj.particles;
           
             %Save the data
-            fileName = sprintf('%s%sparticle.mat',obj.raw.movInfo.Path,'\');
+            if obj.info.multiModal == false
+                folder = 'calibrated1';
+            elseif obj.info.multiModal == true
+                folder = 'calibrated2';
+            end
+            fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
             profile('off')
             save(fileName,'particle');
             disp('========> DONE ! <=========');

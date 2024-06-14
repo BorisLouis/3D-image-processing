@@ -121,7 +121,14 @@ classdef MPMovie < Core.Movie
                             end
                         end
                         
-                        fullpath = [file2Analyze.folder filesep file2Analyze.name];
+                        % find the calibrated.mat file in the folder
+                        for i = 1:length(file2Analyze)
+                            k = strfind(convertCharsToStrings(file2Analyze(i).name), 'calibrated'); 
+                            if k == 1
+                                idx = i;
+                            end
+                        end
+                        fullpath = [file2Analyze(idx).folder filesep file2Analyze(idx).name];
                         tmp = load(fullpath);
                         calibrate = tmp.calib;
                         fieldN = fieldnames(calibrate.filePath);
@@ -548,8 +555,8 @@ classdef MPMovie < Core.Movie
                     if strcmpi(obj.info.type,'transmission')
                         data2Store2 = imcomplement(data2Store2);
                     end
-                    fieldN = sprintf('plane%d',i+8);
-                    fName = sprintf('calibratedPlane%d.tif',i+8);
+                    fieldN = sprintf('plane%d',i);
+                    fName = sprintf('calibratedPlane%d.tif',i);
                     if isTrans2
                         fPathTiff = [calTransDir2 filesep fName];
                         calib2.transPath.(fieldN) = fPathTiff;

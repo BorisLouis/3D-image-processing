@@ -6,17 +6,17 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'F:\multicolor_polarization\20240527_PAA_NPs\PS NPs 300 nm fluo\10 min';
+file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\tracking_test';
 file.ext   = '.ome.tif';
 path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\20240513_spheric_PS_NPs_2Dcal_fluo';
 dimension = '3D';
 
 %detection parameter
-detectParam.delta = 4;
-detectParam.chi2  = 100;
-detectParam.consThresh = 1;
+detectParam.delta = 6;
+detectParam.chi2  = 60;
+detectParam.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 500;%nm
+trackParam.radius  = 100;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
@@ -25,7 +25,7 @@ info.runMethod = 'load'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
-info.detectionMethod = 'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
+info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 0; %first check the 'normal' planes no multiModal (0)
 
@@ -36,7 +36,7 @@ trackingExp = Core.TrackingExperiment(file,path2Cal,info,path2SRCal,path2ZCal);
 trackingExp.retrieveMovies;
 
 %% test detection parameters
-frame =850;
+frame =60;
 testMov = trackingExp.trackMovies.mov1;
 testMov.findCandidatePos(detectParam,frame);
 testMov.showCandidate(frame);

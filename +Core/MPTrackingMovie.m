@@ -165,7 +165,13 @@ classdef MPTrackingMovie < Core.MPLocMovie
             
             obj.traces3D = TrackedData;
             
-            filename =[obj.raw.movInfo.Path filesep 'Traces3D.mat'];
+            if obj.info.multiModal == false
+                folder = 'calibrated1';
+            elseif obj.info.multiModal == true
+                folder = 'calibrated2';
+            end
+            path = append(obj.raw.movInfo.Path, filesep, folder, filesep);
+            filename =[path 'Traces3D.mat'];
             
             save(filename,'TrackedData');
             

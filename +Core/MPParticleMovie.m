@@ -45,8 +45,13 @@ classdef MPParticleMovie < Core.MPMovie
                         error('too many inputs');
                         
              end
-            
-            [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
+             if obj.info.multiModal == false
+                folder = 'calibrated1';
+             elseif obj.info.multiModal == true
+                folder = 'calibrated2';
+             end
+             path = append(obj.raw.movInfo.Path, filesep, folder);
+             [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
             
             %if we only ask 1 frame we always run
             if length(frames) == 1
@@ -73,7 +78,13 @@ classdef MPParticleMovie < Core.MPMovie
             %if we only ask 1 frame we do not save
             if length(frames) >1
                 %save the data
-                fileName = sprintf('%s%scandidatePos.mat',obj.raw.movInfo.Path,'\');
+                if obj.info.multiModal == false
+                    folder = 'calibrated1';
+                elseif obj.info.multiModal == true
+                    folder = 'calibrated2';
+                end
+                  
+                fileName = sprintf('%s%s%s%scandidatePos.mat',obj.raw.movInfo.Path,'\',folder,'\');
                 save(fileName,'candidate');
             else
             end
@@ -97,8 +108,13 @@ classdef MPParticleMovie < Core.MPMovie
             assert(~isempty(obj.calibrated),'Data should be calibrated to consolidate');
             assert(~isempty(obj.info),'Information about the setup are missing to consolidate, please fill them in using giveInfo method');
             assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before consolidation');
-            
-            [run,locPos] = obj.existLocPos(obj.raw.movInfo.Path,'.mat');
+            if obj.info.multiModal == false
+                folder = 'calibrated1';
+            elseif obj.info.multiModal == true
+                folder = 'calibrated2';
+            end
+            path = append(obj.raw.movInfo.Path, filesep, folder);
+            [run,locPos] = obj.existLocPos(path,'.mat');
             
             if run
                 switch nargin
@@ -150,7 +166,12 @@ classdef MPParticleMovie < Core.MPMovie
             else
             end
                 %save the data
-            fileName = sprintf('%s%sSRLocPos.mat',obj.raw.movInfo.Path,'\');
+            if obj.info.multiModal == false
+                folder = 'calibrated1';
+            elseif obj.info.multiModal == true
+                folder = 'calibrated2'
+            end
+            fileName = sprintf('%s%s%s%sSRLocPos.mat',obj.raw.movInfo.Path,'\', folder, '\');
             save(fileName,'locPos');
             
             %store in the object
@@ -180,7 +201,13 @@ classdef MPParticleMovie < Core.MPMovie
             assert(~isempty(obj.unCorrLocPos),'Localization needs to be performed before consolidation');
            
             %Check if some particles were saved already.
-            [run, particle] = obj.existParticles(obj.raw.movInfo.Path, '.mat');
+            if obj.info.multiModal == false
+                folder = 'calibrated1';
+            elseif obj.info.multiModal == true
+                folder = 'calibrated2'
+            end
+            path = append(obj.raw.movInfo.Path, filesep, folder);
+            [run, particle] = obj.existParticles(path, '.mat');
             
             if run
                 %Check the number of function input
@@ -271,7 +298,12 @@ classdef MPParticleMovie < Core.MPMovie
                 particle.Traces     = [];
                 particle.nTraces    = [];
                 
-                fileName = sprintf('%s%sparticle.mat',obj.raw.movInfo.Path,'\');
+                if obj.info.multiModal == false
+                    folder = 'calibrated1';
+                elseif obj.info.multiModal == true
+                    folder = 'calibrated2';
+                end
+                fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
                 save(fileName,'particle');
             end
             %#4 Storing particles in the object
