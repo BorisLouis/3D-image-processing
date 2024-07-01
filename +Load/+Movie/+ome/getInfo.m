@@ -83,6 +83,12 @@ movieInfo.expT = frameInfo(1).expT;
 time = [frameInfo.time];
 t1   = time(1:2:end);
 t2 =   time(2:2:end);
+if (length(t1)~=length(t2))
+    [frameInfo] = fixCamTiming(frameInfo); 
+    time = [frameInfo.time];
+    t1   = time(1:2:end);
+    t2 =   time(2:2:end);
+end
 assert(length(t1) == length(t2),'timing of each camera have different sizes');
 timing = mean([t1;t2],1);
 timing = timing-timing(1);
