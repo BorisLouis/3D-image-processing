@@ -218,6 +218,7 @@ classdef SRCalibration < handle
 
             %Saving
             SRCal = obj.calib.corr;
+            
             fileName = sprintf('%s%sSRCalibration.mat',obj.path,'\');
             save(fileName,'SRCal');
             

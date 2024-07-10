@@ -464,6 +464,7 @@ classdef MPMovie < Core.Movie
             
             for i = 1:size(data{1,1},3)
                 data2Store1 = squeeze(data{1,1}(:,:,i,:));
+
                 isTrans1 = isTransmission{1,1}(i);
                 if strcmpi(obj.info.type,'transmission')
                     data2Store1 = imcomplement(data2Store1);
@@ -539,17 +540,13 @@ classdef MPMovie < Core.Movie
                for i = 1:size(data{2,1},3)
                     data2Store = squeeze(data{2,1}(:,:,i,:));
                     for j = 1:size(data2Store, 3)
-                        Min1 = mean(data2Store(:,100,j));
-                        Min2 = mean(data2Store(:,150,j));
-                        Min3 = mean(data2Store(:,200,j));
-                        Min4 = mean(data2Store(:,250,j));
-                        Min5 = mean(data2Store(:,300,j));
-                        Min = min([Min1, Min2, Min2, Min4, Min4]);
+                        Min = min(data2Store(:,:,j), [], 'all');
+                        Min2 = mean(data2Store(:,:,j), 'all');
                         tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
-                        data2(:,:,j) = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
-                        data2(data2 < Min) = Min;
+                        data2 = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
+                        data2(data2 < Min) = Min2;
+                        data2Store2(:,:,j) = uint16(data2);
 
-                        data2Store2 = uint16(data2);
                     end
                     isTrans2 = isTransmission{2,1}(i);
                     if strcmpi(obj.info.type,'transmission')

@@ -6,17 +6,17 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\tracking_test';
+file.path  = 'F:\multicolor_polarization\20240527_PAA_NPs\PS NPs 300 nm fluo\10 min';
 file.ext   = '.ome.tif';
 path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\20240513_spheric_PS_NPs_2Dcal_fluo';
 dimension = '3D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 60;
+detectParam.chi2  = 40;
 detectParam.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 100;%nm
+trackParam.radius  = 500;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file

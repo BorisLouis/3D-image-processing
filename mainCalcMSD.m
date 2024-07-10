@@ -3,16 +3,16 @@ clear ;
 close all;
 
 %% USER INPUT
-expTime = 0.01; %in sec
+expTime = 0.10; %in sec
 T = 296.15; %temperature in Kelvin
-R = 0.285; %Radius of particle in um;
+R = 0.150; %Radius of particle in um;
 fitRDiff = 4; %in number of data
-minSize = 50; %frames
+minSize = 40; %frames
 ext = '.mat';
-path = 'F:\Boris - Leuven\Sergey\2019\DDM - Data\500\500nmInfDil-BrightField-DDM_10ms';
+path = 'F:\multicolor_polarization\20240527_PAA_NPs\PS NPs 300 nm fluo\10 min';
 %% Loading
 folder = dir(path);
-idx = contains({folder.name},'trackResults.mat');
+idx = contains({folder.name},'trackResults2.mat');
 folder(~idx) = [];
 
 f2Load = [folder(1).folder filesep folder(1).name];
@@ -47,7 +47,7 @@ for i = 1:length(currMov)
     tau = (1:length(msdx))'*expTime;
     allMSDX(i,1:length(msdx)) = msdx;
     DX   = MSD.getDiffCoeff(msdx,tau,fitRDiff,'1D');
-    nX   = MSD.getViscosity(DX,R,T);z
+    nX   = MSD.getViscosity(DX,R,T);
     aX   = MSD.getDiffTypeAlpha(msdx,expTime);
     vX   = coord(1,1) - coord(end,1)/10^3/(length(coord)*expTime); %um/s
 

@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\20240513_spheric_PS_NPs_2Dcal_fluo';
+file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_cal';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
