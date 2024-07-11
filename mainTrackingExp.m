@@ -6,9 +6,9 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'F:\multicolor_polarization\20240527_PAA_NPs\PS NPs 300 nm fluo\10 min';
+file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\diffusion_1';
 file.ext   = '.ome.tif';
-path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\20240513_spheric_PS_NPs_2Dcal_fluo';
+path2Cal = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_cal';
 dimension = '3D';
 
 %detection parameter
@@ -27,7 +27,7 @@ info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if usi
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
-info.multiModal = 1; %multiModal (1) or not (0)
+info.multiModal = 0; %multiModal (1) or not (0)
 
 %% create experiments
 
@@ -63,7 +63,6 @@ traces = trackingExp.getTraces3D;
 
 trackingExp.showTraces(1);
 %% save Data
-
 trackingExp.saveData;
 
 
