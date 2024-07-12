@@ -28,6 +28,7 @@ info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.euDist = 20; %Error distance between particles in different channels
+info.multiTracking = 'MultiColor'; %MultiColor or Rotation
 
 %% create experiments
 trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,path2ZCal);

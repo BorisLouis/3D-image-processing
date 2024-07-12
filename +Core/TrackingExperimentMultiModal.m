@@ -10,6 +10,7 @@ classdef TrackingExperimentMultiModal < handle
     ZCal
     SRCal
     traces3D
+    traces3Dcommon
     MSD
         
     end
@@ -274,49 +275,60 @@ classdef TrackingExperimentMultiModal < handle
         function ConsolidateChannels(obj)
             
             Tresh = obj.info.euDist
+            obj.traces3Dcommon = struct([]);
             %Extract traces per channel
             for i = 1:(size(obj.traces3D, 1)./2)
                 Traces0 = obj.traces3D{(i*2)-1,1};
                 Traces1 = obj.traces3D{(i*2),1};
             end
             
+            Trajec0 = struct([]);
+            Trajec1 = struct([]);
             %Open traces for channel one and two, check them one by one
             for j = 1:size(Traces0, 1)
                 CurrentPartCh0 = Traces0{j,1};
-                for k = 1:size(traces1, 1);
+                for k = 1:size(Traces1, 1);
                     CurrentPartCh1 = Traces1{k,1};
 
                     % Check if particles have the same Timestamp:
                     SameTime = ismember(CurrentPartCh0.t, CurrentPartCh1.t);
-                    Particle0 = struct([]);
-                    Particle1 = struct([]);
+                    Trace0 = struct([]);
+                    Trace1 = struct([]);
                     for l = 1:length(SameTime)
-                        if SameTime == true
-                           Time = CurrentPartCh0(l).t;
-                           rowCh0 = CurrentPartCh0(l).row;
-                           colCh0 = CurrentPartCh0(l).col;
-                           zCh0 = CurrentPartCh0(l).z;
+                        if SameTime(l) == true
+                           Time = CurrentPartCh0.t(l);
+                           rowCh0 = CurrentPartCh0.row(l);
+                           colCh0 = CurrentPartCh0.col(l);
+                           zCh0 = CurrentPartCh0.z(l);
 
                            TimesCh1 = ismember(Time,CurrentPartCh1.t);
                            idx = find(TimesCh1);
 
-                           rowCh1 = CurrentPartCh1(idx).row;
-                           colCh1 = CurrentPartCh1(idx).col;
-                           zCh1 = CurrentPartCh1(idx).z;
+                           rowCh1 = CurrentPartCh1.row(idx);
+                           colCh1 = CurrentPartCh1.col(idx);
+                           zCh1 = CurrentPartCh1.z(idx);
 
                            EuDist = sqrt((rowCh0 - rowCh1).^2 + (colCh0 - colCh1).^2 + (zCh0 - zCh1).^2);
-                           checkRes = EuDist < Thresh;
+                           checkRes = EuDist < Tresh;
 
                            if checkRes == true
-                               Trace0{end+1, 1} = CurrentPartCh1(idx);
-                               Trace1{end+1, 1} = CurrentPartCh1(idx);
+                               if obj.info.multiTracking == 'MultiColor'
+                               Trace0(end+1, :) = CurrentPartCh0(idx,:);
+                               Trace1(end+1, :) = CurrentPartCh1(idx,:);
+
+                               elseif obj.info.multiTracking == 'Rotation'
+                               Trace0 = CurrentPartCh0;
+                               Trace1 = CurrentPartCh1;  
+
+                               SameTime = 0;
+                               end
                            else
                            end
                         else
                         end
                     end
-                    Trajec0{end+1} = Particle0;
-                    Trajec1{end+1} = Particle1;
+                    Trajec0{end+1} = Trace0;
+                    Trajec1{end+1} = Trace1;
                 end
             end
             obj.traces3Dcommon = {Trajec0; Trajec1};
