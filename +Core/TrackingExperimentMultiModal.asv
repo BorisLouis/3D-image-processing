@@ -284,7 +284,6 @@ classdef TrackingExperimentMultiModal < handle
                                     
             Trajec0 = struct([]);
             Trajec1 = struct([]);
-            AlreadyChecked = [];
             %Open traces for channel one and two, check them one by one
             h1 = waitbar(0,'Consolidating Channels - Initializing');
             h2 = waitbar(0,'Consolidating Channels - Initializing');
@@ -292,7 +291,6 @@ classdef TrackingExperimentMultiModal < handle
             pos_w2=[pos_w1(1) pos_w1(2)+pos_w1(4) pos_w1(3) pos_w1(4)];
             set(h2,'position',pos_w2,'doublebuffer','on');
             set(h1,'doublebuffer','on');
-            
 
             for j = 1:size(Traces0, 1)
                 CurrentPartCh0 = Traces0{j,1};
@@ -302,9 +300,6 @@ classdef TrackingExperimentMultiModal < handle
                 Stop = 0;
 
                 for k = 1:size(Traces1, 1);
-                    if ismember(k, AlreadyChecked)
-                        continue
-                    end
                     CurrentPartCh1 = Traces1{k,1};
 
                     string2 = append('Consolidating Channels - Channel 1 particle ', num2str(k), '/', num2str(max(size(Traces1,1))));
@@ -334,8 +329,7 @@ classdef TrackingExperimentMultiModal < handle
     
                            if checkRes == true
                                Trace0 = CurrentPartCh0;
-                               Trace1 = CurrentPartCh1; 
-                               AlreadyChecked(end+1,1) = k;
+                               Trace1 = CurrentPartCh1;  
                                Stop = 1;
                                break
                            end
@@ -374,30 +368,14 @@ classdef TrackingExperimentMultiModal < handle
              currentMov.showCorrLoc;
         end
         
-        % function showTraces(obj,idx)
-        %      fieldsN = fieldnames(obj.trackMovies);
-        %      maxIdx = length(fieldsN);
-        %      assert(idx <= maxIdx,['Requested index to Movie is too large, only ' num2str(maxIdx) ' movies']);
-        % 
-        %      currentMov = obj.trackMovies.(fieldsN{idx});
-        % 
-        %      currentMov.showTraces;
-        % end
-
-        function showTraces(obj)
-            figure()
-            for j = 1:length(obj.traces3Dcommon)
-                traces = obj.traces3Dcommon{j,1};
-                
-                subplot(round(j./2), 2, j)
-                hold on 
-                for i = 1: length(traces)
-                    currentTrace = traces{i};
-                    plot3(currentTrace.col, currentTrace.row, currentTrace.z)
-                    
-                end
-                hold on
-            end
+        function showTraces(obj,idx)
+             fieldsN = fieldnames(obj.trackMovies);
+             maxIdx = length(fieldsN);
+             assert(idx <= maxIdx,['Requested index to Movie is too large, only ' num2str(maxIdx) ' movies']);
+             
+             currentMov = obj.trackMovies.(fieldsN{idx});
+             
+             currentMov.showTraces;
         end
         
         function evalAccuracy(obj,dim,idx)
@@ -414,20 +392,20 @@ classdef TrackingExperimentMultiModal < handle
         
         function [int,SNR] = getAvgIntensity(obj)
             assert(~isempty(obj.traces3Dcommon),'You need to extract 3D traces before extracting average intensity');
-            for j = 1:length(obj.traces3Dcommon)
-                traces = obj.traces3Dcommon{j,1};
+            for i = 1:length(obj.traces3Dcommon)
+                traces = obj.traces3Dcommon;
                 nTraces = length(traces);
                 int = zeros(nTraces,1);
                 SNR = zeros(nTraces,1);
                 for i = 1: length(traces)
                     currentTrace = traces{i};
-                    intensity(i) = mean(currentTrace.intensity);
-                    SNRatio(i) = mean(currentTrace.SNR);
+                    int(i) = mean(currentTrace.intensity);
+                    SNR(i) = mean(currentTrace.SNR);
                     
                 end
                 
-                int(j,1) = mean(intensity);
-                SNR(j,1) = mean(SNRatio);
+                int(i,1) = mean(int);
+                SNR(i,1) = mean(SNR);
             end
            
             
@@ -487,21 +465,24 @@ classdef TrackingExperimentMultiModal < handle
             if ~isempty(obj.traces3Dcommon)
                 
                 for i = 1:length(obj.traces3Dcommon)
-                    trackData = obj.traces3Dcommon{i,1};
-                    MSDs = obj.MSD;
-                        
-                    if ~isempty(MSDs)
-                        trackRes.MSD = MSDs;
-                    end
+                trackData = obj.traces3Dcommon{i,1};
+                MSDs = obj.MSD;
                     
-                    trackRes.traces = trackData; 
-                    trackRes.info = obj.info;
-                    trackRes.path = obj.path;
-                    name = append('trackResults',num2str(i),'.mat');
-                    filename = [obj.path filesep name];
-                    save(filename,'trackRes');
-                    disp('Data were succesfully saved');
+                if ~isempty(MSDs)
+                    trackRes.MSD = MSDs;
                 end
+                
+                trackRes.traces = trackData; 
+                trackRes.info = obj.info;
+                trackRes.path = obj.path;
+                if obj.info.multiModal == false
+                    name = 'trackResults1.mat';
+                elseif obj.info.multiModal == true
+                    name = 'trackResults2.mat';
+                end
+                filename = [obj.path filesep name];
+                save(filename,'trackRes');
+                disp('Data were succesfully saved');
     
             else
                 

@@ -6,7 +6,7 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\diffusion_1';
+file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\diffusion_2';
 file.ext   = '.ome.tif';
 path2Cal = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_Cal';
 dimension = '3D';
@@ -56,7 +56,7 @@ trackingExp.ConsolidateChannels;
 [int,SNR] = trackingExp.getAvgIntensity;
 
 %% show traces
-trackingExp.showTraces(1);
+trackingExp.showTraces;
 
 %% save Data
 trackingExp.saveData;
