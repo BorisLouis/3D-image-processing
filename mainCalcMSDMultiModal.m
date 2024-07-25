@@ -5,18 +5,16 @@ close all;
 %% USER INPUT
 expTime = 0.10; %in sec
 T = 296.15; %temperature in Kelvin
-R = 0.200; %Radius of particle in um;
-fitRDiff = 4; %in number of data
-minSize = 4; %frames
+R1 = 0.150; %Radius of particle in um for channel 1 (planes 1-8);
+R2 = 0.150; %Radius of particle in um for channel 1 (planes 9-16);
+MultiModal = 'MultiColor'; %MultiColor or Rotational tracking
+fitRDiff = 3; %in number of data
+minSize = 40; %frames
 ext = '.mat';
 path = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\diffusion_1';
-MultiModalChannels = 0; %0 if Channels 1-8, 1 if Channels 9-16
-
-
 %% Loading
 folder = dir(path);
-name = append('trackResults', num2str(MultiModalChannels+1), '.mat');
-idx = contains({folder.name},name);
+idx = contains({folder.name},'trackResults2.mat');
 folder(~idx) = [];
 
 f2Load = [folder(1).folder filesep folder(1).name];
@@ -121,10 +119,8 @@ tau = (1:length(meanMSDR))'*expTime;
 DR   = MSD.getDiffCoeff(meanMSDR,tau,fitRDiff,'3D');
 nR   = MSD.getViscosity(DR,R,T);
 
-disp(['Planes ' num2str(MultiModalChannels*8+1) '-' num2str(MultiModalChannels*8+8) ': ' 'The diffusion coefficient is ' num2str(DR) ' \mum^2/s and the viscosity is ' num2str(nR) ' cp']);
+disp(['The diffusion coefficient is ' num2str(DR) ' \mum^2/s and the viscosity is ' num2str(nR) ' cp']);
 %%
-name = append('msdRes', num2str(MultiModalChannels+1), '.mat');
-filename = [path filesep 'msdRes1.mat'];
+filename = [path filesep 'msdRes.mat'];
 save(filename,'allRes');
 h = msgbox('Data succesfully saved');
-
