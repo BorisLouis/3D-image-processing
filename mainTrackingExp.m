@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = [];
+path2SRCal = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 
 %file info
-file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\diffusion_1';
+file.path  = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\200nm_PS_MC_NPs_in_water_1-25_dilution\sample1_meaurement__1';
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_cal';
+path2Cal = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 dimension = '3D';
 
 %detection parameter
@@ -27,7 +27,7 @@ info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if usi
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
-info.multiModal = 0; %multiModal (1) or not (0)
+info.multiModal = 1; %multiModal (1) or not (0)
 
 %% create experiments
 

@@ -54,6 +54,8 @@ if size(movC1,1)>1000
 else 
     multiModal =false;
     cal.multiModal = multiModal;
+    chan1 = meanIm1;
+    chan2 = meanIm2;
 end
 
 waitbar(.1,h,'Finding channels')

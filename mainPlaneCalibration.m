@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_cal';
+file.path  = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';

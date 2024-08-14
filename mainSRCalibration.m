@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_cal';
+file.path = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 file.ext  = '.ome.tif';
-path2Cal  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_cal';
+path2Cal  = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -14,7 +14,7 @@ info.runMethod = 'load';
 info.frame2Load = 'all';
 info.fitMethod = 'Phasor';
 info.zMethod   = 'Intensity';
-info.multiModal = 1;
+info.multiModal = 0;
 info.detectionMethod = 'MaxLR'; 
 
 testSRCal = Core.SRCalibration(file,path2Cal,info);

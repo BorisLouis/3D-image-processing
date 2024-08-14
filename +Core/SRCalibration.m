@@ -114,8 +114,9 @@ classdef SRCalibration < handle
         end
         
         function retrieveSRCalData(obj,detectParam, trackParam)
+            MultiModal = obj.info.multiModal + 1;
             fieldsN = fieldnames(obj.SRCalMovies);
-            nPlanes = obj.SRCalMovies.(fieldsN{1}).calibrated.nPlanes;
+            nPlanes = obj.SRCalMovies.(fieldsN{MultiModal}).calibrated.nPlanes;
             %Checking user input
             assert(nargin==3, 'retrieveSRCalData expects 3 inputs, 1)detection Parameters, fit z parameter, tracking parameter');
             assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
@@ -193,7 +194,12 @@ classdef SRCalibration < handle
             
             %Saving
             SRCal = obj.calib.corr;
-            fileName = sprintf('%s%sSRCalibration.mat',obj.path,'\');
+            multiModal = obj.info.multiModal;
+            if multiModal == 1
+               fileName = sprintf('%s%sSRCalibration2.mat',obj.path,'\');
+            else
+               fileName = sprintf('%s%sSRCalibration.mat',obj.path,'\');
+            end
             save(fileName,'SRCal');
 
         end
@@ -218,9 +224,14 @@ classdef SRCalibration < handle
 
             %Saving
             SRCal = obj.calib.corr;
-            
-            fileName = sprintf('%s%sSRCalibration.mat',obj.path,'\');
+            multiModal = obj.info.multiModal;
+            if multiModal == 1
+               fileName = sprintf('%s%sSRCalibration2.mat',obj.path,'\');
+            else
+               fileName = sprintf('%s%sSRCalibration.mat',obj.path,'\');
+            end
             save(fileName,'SRCal');
+
             
         end
         

@@ -9,6 +9,7 @@ classdef TrackingExperimentMultiModal < handle
     info
     ZCal
     SRCal
+    SRCal2
     traces3D
     traces3Dcommon
     MSD
@@ -24,7 +25,8 @@ classdef TrackingExperimentMultiModal < handle
             obj.cal2D = cal2D;
             obj.info = info;
             obj.ZCal = zCalPath;
-            obj.SRCal = SRCalPath;          
+            obj.SRCal = SRCalPath; 
+            obj.SRCal2 = SRCalPath;
         end
 
         %Set function
@@ -74,6 +76,7 @@ classdef TrackingExperimentMultiModal < handle
                 obj.SRCal.path = SRCal;
             else
                 assert(isfolder(SRCal), 'The given path is not a folder');
+               
 
                 %Check Given path
                 [file2Analyze] = Core.Movie.getFileInPath(SRCal,'SRCalibration.mat');
@@ -93,6 +96,41 @@ classdef TrackingExperimentMultiModal < handle
                 end
             end
             
+        end
+
+        function set.SRCal2(obj,SRCal)
+            if isempty(SRCal)
+                obj.SRCal2.cal = SRCal;
+                obj.SRCal2.path = SRCal;
+            else
+                assert(isfolder(SRCal), 'The given path is not a folder');
+
+                if isfield(obj.info, 'multiModal')
+                    if obj.info.multiModal == true
+                        MultiModal = 1;
+                    end
+                elseif isfield(obj.info, 'multiTracking')
+                    MultiModal = 1;
+                end
+
+                if MultiModal == true
+                     [file2Analyze] = Core.Movie.getFileInPath(SRCal,'SRCalibration2.mat');
+
+                    if isempty(file2Analyze)
+                        error('No SR calibration file found in the given folder');
+                    else
+                        fileName = [file2Analyze.folder filesep file2Analyze.name];
+                        cal = load(fileName);
+                        field = fieldnames(cal);
+                        cal = cal.(field{1});
+                        assert(and(isstruct(cal), and(isfield(cal,'trans'),isfield(cal,'rot'))),...
+                            'SR calibration is supposed to be a struct with 2 fields');
+    
+                        obj.SRCal2.cal = cal;
+                        obj.SRCal2.path = SRCal;
+                    end
+                end
+            end
         end
 
          function set.ZCal(obj,zCal)
@@ -167,7 +205,7 @@ classdef TrackingExperimentMultiModal < handle
                     count = count+1;
                     file.path = file2Analyze.folder;
                     file.ext  = obj.ext;
-                    tmp = Core.MPTrackingMovie(file , obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path);
+                    tmp = Core.MPTrackingMovie(file , obj.cal2D, obj.info, obj.SRCal2.path, obj.ZCal.path);
                     
                     if count == 1
                         tmp.giveInfo;

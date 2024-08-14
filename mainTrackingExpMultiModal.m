@@ -3,17 +3,17 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = [];
+path2SRCal = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 
 %file info
-file.path  = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\diffusion_2';
+file.path  = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\200nm_PS_MC_NPs_in_water_1-25_dilution\sample1_meaurement__1';
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\20240704_water_MC_PS_NPs_300nm\2D_Cal';
+path2Cal = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
 dimension = '3D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 60;
+detectParam.chi2  = 40;
 detectParam.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 500;%nm
@@ -27,7 +27,7 @@ info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if usi
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
-info.euDist = 20; %Error distance between particles in different channels
+info.euDist = 50; %Error distance between particles in different channels
 info.multiTracking = 'MultiColor'; %MultiColor or Rotation
 
 %% create experiments
@@ -37,7 +37,7 @@ trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,pa
 trackingExp.retrieveMovies;
 
 %% test detection parameters
-frame =60;
+frame = 23;
 testMov = trackingExp.trackMovies.mov1;
 testMov.findCandidatePos(detectParam,frame);
 testMov.showCandidate(frame);

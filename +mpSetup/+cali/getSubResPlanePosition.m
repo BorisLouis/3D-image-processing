@@ -30,7 +30,13 @@ index2 = id+id2;
 
 fwhmx = ZPos(index2) - ZPos(index1);
 
+if isempty(fwhmx) == true
+    fwhmx = 2*(ZPos(id) - ZPos(index1));
+end
+
 delta = fwhmx/2;
+
+
 range = and(ZPos>ZPos(id)-delta,ZPos<ZPos(id)+delta);
 
 ZPos2Use = ZPos(range);
