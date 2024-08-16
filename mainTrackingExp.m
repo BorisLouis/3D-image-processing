@@ -6,14 +6,14 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'E:\Users\Boris\Documents\TmpData - MuEn\Test Guillaume';
+file.path  = 'E:\Users\Boris\Documents\TmpData - MuEn\data2Boris\ensembled data\data\';
 file.ext   = '.ome.tif';
-path2Cal = 'E:\Users\Boris\Documents\TmpData - MuEn\Test Guillaume';
+path2Cal = 'E:\Users\Boris\Documents\TmpData - MuEn\data2Boris\ensembled data\2D Cal';
 dimension = '3D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 60;
+detectParam.chi2  = 40;
 detectParam.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 1000;%nm
@@ -26,7 +26,7 @@ info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
-info.calibrate = true; %true to recalibrate;
+info.calibrate = false; %true to recalibrate;
 
 %% create experiments
 
