@@ -58,7 +58,7 @@ classdef MPMovie < Core.Movie
         
         function set.calibrated(obj,calibrated)
             
-            assert(isstruct(calibrated),'Calibrated is expected to be a struct');
+            assert(iscell(calibrated),'Calibrated is expected to be a struct');
             obj.calibrated = calibrated;
             
         end
@@ -79,98 +79,97 @@ classdef MPMovie < Core.Movie
                 %if there is 2 value, then calibrated folder exist and then we
                 %check if a calibration file is in there.
             elseif length(unique(idx2Calibrated))==2
-                if obj.info.multiModal == false
-                    name = 'calibrated1'
-                elseif obj.info.multiModal == true
-                    name = 'calibrated2'
-                end
-                fullPath = [obj.raw.movInfo.Path filesep name];
-                [file2Analyze] = obj.getFileInPath(fullPath, '.mat');
-                
-                if (~isempty(file2Analyze))
-                    if obj.info.calibrate == true
-                        %need to delete existing tif files
-                        folder = file2Analyze.folder;
-                        filePattern = fullfile(folder,'*.tif');
-                        theFiles = dir(filePattern);
-                        fprintf(1,'Deleting calibration in folder: %s \n',folder);
-                        
-                        for i = 1: length(theFiles)
-                            name = theFiles(i).name;
-                            fullFName = fullfile(folder,name);
-                            fprintf(1,'Deleting %s \n',name);
-                            delete(fullFName);
-                        end
-                        
-                        disp('Calibrating the dataset');
-                        [calibrate] = obj.applyCalib;
-                        disp('Data is now calibrated');
-                    else
-                        
-                        
-                        [file] = obj.getFileInPath (fullPath,'.tif');
-                        
-                        if ~isempty(file) %only work with 8 Planes now
-                            %If data is already calibrated we load it
-                            disp('The dataset is already calibrated, Loading from existing file');
+                for q = 1:obj.info.multiModal+1
+                    name = append('calibrated', num2str(q))
+
+                    fullPath = [obj.raw.movInfo.Path filesep name];
+                    [file2Analyze] = obj.getFileInPath(fullPath, '.mat');
+                    
+                    if (~isempty(file2Analyze))
+                        if obj.info.calibrate == true
+                            %need to delete existing tif files
+                            folder = file2Analyze.folder;
+                            filePattern = fullfile(folder,'*.tif');
+                            theFiles = dir(filePattern);
+                            fprintf(1,'Deleting calibration in folder: %s \n',folder);
                             
-                            if length(file) ~= 8
-                                
-                                warning('Did not find 8 planes, if you are not using the prism it is okay, otherwise you might want to recalibrate');
-                                
+                            for i = 1: length(theFiles)
+                                name = theFiles(i).name;
+                                fullFName = fullfile(folder,name);
+                                fprintf(1,'Deleting %s \n',name);
+                                delete(fullFName);
                             end
-                        end
-                        
-                        % find the calibrated.mat file in the folder
-                        for i = 1:length(file2Analyze)
-                            k = strfind(convertCharsToStrings(file2Analyze(i).name), 'calibrated'); 
-                            if k == 1
-                                idx = i;
+                            
+                            disp('Calibrating the dataset');
+                            [calibrate] = obj.applyCalib;
+                            disp('Data is now calibrated');
+                        else
+                            
+                            
+                            [file] = obj.getFileInPath (fullPath,'.tif');
+                            
+                            if ~isempty(file) %only work with 8 Planes now
+                                %If data is already calibrated we load it
+                                disp('The dataset is already calibrated, Loading from existing file');
+                                
+                                if length(file) ~= 8
+                                    
+                                    warning('Did not find 8 planes, if you are not using the prism it is okay, otherwise you might want to recalibrate');
+                                    
+                                end
                             end
-                        end
-                        fullpath = [file2Analyze(idx).folder filesep file2Analyze(idx).name];
-                        tmp = load(fullpath);
-                        calibrate = tmp.calib;
-                        fieldN = fieldnames(calibrate.filePath);
-                        for i = 1: length(fieldN)
                             
-                            currentPath = calibrate.filePath.(fieldN{i});
-                            idx1 = strfind(fullPath,'\calibrated');
-                            idx2 = strfind(currentPath,'\calibrated');
-                            newPath = [fullPath(1:idx1-1) currentPath(idx2(1):end)];
-                            calibrate.filePath.(fieldN{i}) = newPath;
-                            
-                        end
-                        
-                        if isfield(calibrate,'transPath')
-                            fieldN = fieldnames(calibrate.transPath);
-                            
+                            % find the calibrated.mat file in the folder
+                            for i = 1:length(file2Analyze)
+                                k = strfind(convertCharsToStrings(file2Analyze(i).name), 'calibrated'); 
+                                if k == 1
+                                    idx = i;
+                                end
+                            end
+                            fullpath = [file2Analyze(idx).folder filesep file2Analyze(idx).name];
+                            tmp = load(fullpath);
+                            calibrate{q} = tmp.calib;
+                            fieldN = fieldnames(calibrate{q}.filePath);
                             for i = 1: length(fieldN)
                                 
-                                currentPath = calibrate.transPath.(fieldN{i});
+                                currentPath = calibrate{q}.filePath.(fieldN{i});
                                 idx1 = strfind(fullPath,'\calibrated');
                                 idx2 = strfind(currentPath,'\calibrated');
                                 newPath = [fullPath(1:idx1-1) currentPath(idx2(1):end)];
-                                calibrate.transPath.(fieldN{i}) = newPath;
+                                calibrate{q}.filePath.(fieldN{i}) = newPath;
                                 
                             end
+                            
+                            if isfield(calibrate{q},'transPath')
+                                fieldN = fieldnames(calibrate{q}.transPath);
+                                
+                                for i = 1: length(fieldN)
+                                    
+                                    currentPath = calibrate{q}.transPath.(fieldN{i});
+                                    idx1 = strfind(fullPath,'\calibrated');
+                                    idx2 = strfind(currentPath,'\calibrated');
+                                    newPath = [fullPath(1:idx1-1) currentPath(idx2(1):end)];
+                                    calibrate{q}.transPath.(fieldN{i}) = newPath;
+                                    
+                                end
+                            end
+                            
+                            disp('Done');
                         end
                         
-                        disp('Done');
+                    else
+                        
+                        %If no calibration was found we calibrate again
+                        disp('Calibrating the dataset');
+                        [calibrate] = obj.applyCalib;
+                        disp('Data is now calibrated');
+                        
                     end
-                    
-                else
-                    
-                    %If no calibration was found we calibrate again
-                    disp('Calibrating the dataset');
-                    [calibrate] = obj.applyCalib;
-                    disp('Data is now calibrated');
-                    
                 end
             else
                 
                 error('Something is wrong with your calibrated directory');
-                
+                    
             end
             
             obj.calibrated = calibrate;
@@ -267,7 +266,7 @@ classdef MPMovie < Core.Movie
             end
         end
         
-        function [data] = getFrame(obj,idx)
+        function [data] = getFrame(obj,idx, q)
             %Allow the user to extract data from a specific frame, behavior
             %depends on the calibration
             assert(length(idx)==1,'Only one frame at a time');
@@ -277,12 +276,12 @@ classdef MPMovie < Core.Movie
                 
                 [data] = getFrame@Core.Movie(obj,idx);
                 
-            elseif isstruct(obj.calibrated)
-                fieldsN = fieldnames(obj.calibrated.filePath);                
-                data = zeros(obj.calibrated.Height,obj.calibrated.Width,numel(fieldsN));
+            elseif isstruct(obj.calibrated{1,q})
+                fieldsN = fieldnames(obj.calibrated{1,q}.filePath);                
+                data = zeros(obj.calibrated{1,q}.Height,obj.calibrated{1,q}.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
-                    [mov] = Load.Movie.tif.getframes(obj.calibrated.filePath.(fieldsN{i}),idx);
+                    [mov] = Load.Movie.tif.getframes(obj.calibrated{1,q}.filePath.(fieldsN{i}),idx);
                     data(:,:,i) = mov;
                     
                 end
@@ -613,11 +612,10 @@ classdef MPMovie < Core.Movie
             else
             end
             calib = struct([]);
-            if obj.info.multiModal == false
-                calib = calib1;
-            else
-                calib = calib2;
-            end
+
+            calib = {calib1, calib2};
+            
+
         end
         
     end

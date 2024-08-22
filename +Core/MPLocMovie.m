@@ -93,139 +93,142 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
         
         function applySRCal(obj, rot, refPlane)
-            assert(~isempty(obj.unCorrLocPos),'You need to find candidate and SR Localized them before applying corrections');
-           
-            if isempty(obj.corrLocPos)
-                
-                    obj.corrLocPos = obj.unCorrLocPos;
+            for q = 1: obj.info.multiModal + 1
+                assert(~isempty(obj.unCorrLocPos{q,1}),'You need to find candidate and SR Localized them before applying corrections');
+               
+                if isempty(obj.corrLocPos{q,1})
                     
-            end
-            
-            if(~isempty(obj.SRCal))
-            
-                if nargin <2
-                    refPlane = 5;
+                        obj.corrLocPos = obj.unCorrLocPos{q,1};
+                        
                 end
-
-                data = obj.unCorrLocPos;
                 
-                nPlanesCal = size(obj.SRCal.trans,1)+1;
-                nPlanesFile = obj.calibrated.nPlanes;
-                assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in SR calibration and file');
-            
+                if(~isempty(obj.SRCal))
                 
-                disp(['Applying SR calibration...']);
-                for i = 1 : length(data)
-                    currData = data{i};
-                    if ~isempty(currData)
-                        currPlanes = unique(currData.plane);
-                        for j = 1 : length(currPlanes)
-                            currentPlane = currPlanes(j);
-                            data2Corr = currData(currData.plane==currentPlane,{'row','col','plane'});
-
-                            if rot
-                                corrMat = obj.SRCal.rot;
-                                [corrData] = Core.MPSRCalMovie.applyRot(data2Corr, corrMat,refPlane);
-
-                            else
-                                corrMat = obj.SRCal.trans;
-                                 [corrData] = Core.MPSRCalMovie.applyTrans(data2Corr,corrMat,refPlane);                    
-                            end
-
-                            %we store the corrected data
-                            obj.corrLocPos{i}(currData.plane==currentPlane,{'row','col','plane'}) = corrData;
-
-                        end
+                    if nargin <2
+                        refPlane = 5;
                     end
-
+    
+                    data = obj.unCorrLocPos{q,1};
+                    
+                    nPlanesCal = size(obj.SRCal.trans,1)+1;
+                    nPlanesFile = obj.calibrated{1,q}.nPlanes;
+                    assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in SR calibration and file');
+                
+                    
+                    disp(['Applying SR calibration...']);
+                    for i = 1 : length(data)
+                        currData = data{i};
+                        if ~isempty(currData)
+                            currPlanes = unique(currData.plane);
+                            for j = 1 : length(currPlanes)
+                                currentPlane = currPlanes(j);
+                                data2Corr = currData(currData.plane==currentPlane,{'row','col','plane'});
+    
+                                if rot
+                                    corrMat = obj.SRCal.rot;
+                                    [corrData] = Core.MPSRCalMovie.applyRot(data2Corr, corrMat,refPlane);
+    
+                                else
+                                    corrMat = obj.SRCal.trans;
+                                     [corrData] = Core.MPSRCalMovie.applyTrans(data2Corr,corrMat,refPlane);                    
+                                end
+    
+                                %we store the corrected data
+                                obj.corrLocPos{q,1}{i}(currData.plane==currentPlane,{'row','col','plane'}) = corrData;
+    
+                            end
+                        end
+    
+                    end
+                    obj.corrected.XY = true;
+                    disp('========> DONE ! <=========');
+                else
+                    obj.corrected.XY = false;
+                    disp('========> DONE ! <=========');
+                    warning('SR Calibration not found, no correction was applied');
                 end
-                obj.corrected.XY = true;
-                disp('========> DONE ! <=========');
-            else
-                obj.corrected.XY = false;
-                disp('========> DONE ! <=========');
-                warning('SR Calibration not found, no correction was applied');
             end
-
         end
         
         function applyZCal(obj)
-            disp('Applying Z Calibration... ');
-            assert(~isempty(obj.unCorrLocPos),'Need to fit before applying the calibration');
-            if isempty(obj.ZCal)
-                
-                warning('Z Calibration needed to correct the data, using Intensity instead');
-                if strcmp(obj.info.zMethod,'PSFE')
-                    error('zMethod is selected is PSFE while no z calibration was provided')
+            for q = 1:obj.info.multiModal+1
+                disp('Applying Z Calibration... ');
+                assert(~isempty(obj.unCorrLocPos{q,1}),'Need to fit before applying the calibration');
+                if isempty(obj.ZCal)
+                    
+                    warning('Z Calibration needed to correct the data, using Intensity instead');
+                    if strcmp(obj.info.zMethod,'PSFE')
+                        error('zMethod is selected is PSFE while no z calibration was provided')
+                    end
+                 
+                    obj.corrected.Z = false;
+                    disp('========> DONE ! <=========');
                 end
-             
-                obj.corrected.Z = false;
-                disp('========> DONE ! <=========');
-            end
-            
-            if isempty(obj.corrLocPos)
-                obj.corrLocPos = obj.unCorrLocPos;
-                warning('Z calibration is currently being applied on non-SRCorrected (X-Y) data');
-            end
-            
-            data = obj.corrLocPos; 
-            zCal = obj.ZCal;
-            zMethod = obj.info.zMethod;
-            
-            if or(strcmp(zMethod,'Intensity'),strcmp(zMethod,'3DFit'))
-                obj.corrected.Z = false;
-               
-            elseif strcmp(zMethod,'PSFE')
-            
-                %we check which method is best:
-                [method] = obj.pickZFitMethod;
                 
-                %Here we translate ellipticity into z position based on
-                %calibration
-                nPlanesCal = size(zCal.calib,1);
-                nPlanesFile = obj.calibrated.nPlanes;
-                assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in Z calibration and file');
-
-                disp('Applying Z Calibration using PSFE and ZCal');
-                for i = 1 : length(data)
-                    currData = data{i};
-                    nPos = size(currData,1);
-
-                    for j = 1 : nPos
-
-                        currentEllip = currData.ellip(j);
-                        currentPlane = currData.plane(j);
-                        [zPos] = obj.getZPosition(currentEllip,zCal,currentPlane,method);
-
-                        obj.corrLocPos{i}.z(j) = zPos;
+                if isempty(obj.corrLocPos{q,1})
+                    obj.corrLocPos{q,1} = obj.unCorrLocPos{q,1};
+                    warning('Z calibration is currently being applied on non-SRCorrected (X-Y) data');
+                end
+                
+                data = obj.corrLocPos{q,1}; 
+                zCal = obj.ZCal;
+                zMethod = obj.info.zMethod;
+                
+                if or(strcmp(zMethod,'Intensity'),strcmp(zMethod,'3DFit'))
+                    obj.corrected.Z = false;
+                   
+                elseif strcmp(zMethod,'PSFE')
+                
+                    %we check which method is best:
+                    [method] = obj.pickZFitMethod;
+                    
+                    %Here we translate ellipticity into z position based on
+                    %calibration
+                    nPlanesCal = size(zCal.calib,1);
+                    nPlanesFile = obj.calibrated{1,q}.nPlanes;
+                    assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in Z calibration and file');
+    
+                    disp('Applying Z Calibration using PSFE and ZCal');
+                    for i = 1 : length(data)
+                        currData = data{i};
+                        nPos = size(currData,1);
+    
+                        for j = 1 : nPos
+    
+                            currentEllip = currData.ellip(j);
+                            currentPlane = currData.plane(j);
+                            [zPos] = obj.getZPosition(currentEllip,zCal,currentPlane,method);
+    
+                            obj.corrLocPos{q,1}{i}.z(j) = zPos;
+                        end
+                        
+                    end
+                             %Here we translate the ellipticity range into zRange for each
+                    %plane
+    
+                    ellipRange = zCal.fitZParam.ellipRange;
+                    nPlanes = obj.calibrated{1,q}.nPlanes;
+                    zRange = cell(nPlanes,1);
+                    
+                    for i = 1 : nPlanes
+                        zRange{i} = obj.getZRange(ellipRange,zCal,i,method);
                     end
                     
-                end
-                         %Here we translate the ellipticity range into zRange for each
-                %plane
-
-                ellipRange = zCal.fitZParam.ellipRange;
-                nPlanes = obj.calibrated.nPlanes;
-                zRange = cell(nPlanes,1);
-                
-                for i = 1 : nPlanes
-                    zRange{i} = obj.getZRange(ellipRange,zCal,i,method);
+                    obj.corrected.Z = true;
+                    obj.calibrated{1,q}.zRange = zRange;
+                    
+                else
+                    error('Unknown Z method');
                 end
                 
-                obj.corrected.Z = true;
-                obj.calibrated.zRange = zRange;
-                
-            else
-                error('Unknown Z method');
+                disp('=======> DONE ! <========');
             end
-            
-            disp('=======> DONE ! <========');
         end
         
-        function [locPos] = getLocPos(obj,frames)
+        function [locPos] = getLocPos(obj,frames,q)
              %Extract the position of the candidate of a given frame
             [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-            locPos = obj.corrLocPos{idx};
+            locPos = obj.corrLocPos{q,1}{idx};
             
             if isempty(locPos)
                 
@@ -235,120 +238,118 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
                 
         function superResolve(obj)
-            disp('super resolving positions ... ');
-           
-            %Check if some particle were super resolved already:
-            [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
-           
-            if run
-                data2Resolve = obj.particles.List;
-                nPlanes = obj.calibrated.nPlanes;
-                nParticles = sum(obj.particles.nParticles);
-                pxSize = obj.info.pxSize;
-                SRList = table(zeros(nParticles,1),...
-                        zeros(nParticles,1), zeros(nParticles,1), zeros(nParticles,1),...
-                        zeros(nParticles,1), zeros(nParticles,1), zeros(nParticles,1),...
-                        zeros(nParticles,1), zeros(nParticles,1),zeros(nParticles,1),...
-                        'VariableNames',...
-                        {'row','col','z','rowM','colM','zM','adjR','intensity','SNR','t'});
-                nFrames = length(data2Resolve);
-                h = waitbar(0,'SuperResolving position...');
-
-                for i = 1:nFrames
-                  
-                    frameData = data2Resolve{i};
-                    frameData2Store = table(zeros(size(frameData)),...
-                        zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
-                        zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
-                        zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
-                        'VariableNames',...
-                        {'row','col','z','rowM','colM','zM','adjR','intensity','SNR','t'});
-                    
-                    if strcmp(obj.info.zMethod,'PSFE')
-                        for j = 1:length(frameData)
-                            partData = frameData{j};
-                            [data] = obj.resolveXYZ(partData(:,{'row','col','z','ellip','plane'}));
-                            frameData2Store(j,{'row','col','z','rowM','colM','zM'}) = data;
-                            frameData2Store.intensity(j) = partData.intensity(3);
-                            frameData2Store.SNR(j) = partData.SNR(3);
-                            frameData2Store.t(j) = i;
-                        end
+            for q = 1:obj.info.multiModal+1
+                disp('super resolving positions ... ');
+               
+                %Check if some particle were super resolved already:
+                [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
+               
+                if run
+                    data2Resolve = obj.particles{q,1}.List;
+                    nPlanes = obj.calibrated{1,q}.nPlanes;
+                    nParticles = sum(obj.particles{q,1}.nParticles);
+                    pxSize = obj.info.pxSize;
+                    SRList = table(zeros(nParticles,1),...
+                            zeros(nParticles,1), zeros(nParticles,1), zeros(nParticles,1),...
+                            zeros(nParticles,1), zeros(nParticles,1), zeros(nParticles,1),...
+                            zeros(nParticles,1), zeros(nParticles,1),zeros(nParticles,1),...
+                            'VariableNames',...
+                            {'row','col','z','rowM','colM','zM','adjR','intensity','SNR','t'});
+                    nFrames = length(data2Resolve);
+                    h = waitbar(0,'SuperResolving position...');
+    
+                    for i = 1:nFrames
+                      
+                        frameData = data2Resolve{i};
+                        frameData2Store = table(zeros(size(frameData)),...
+                            zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
+                            zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
+                            zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
+                            'VariableNames',...
+                            {'row','col','z','rowM','colM','zM','adjR','intensity','SNR','t'});
                         
-                    else
-                        
-                        fData = obj.getFrame(i);
-                        ROIRad = ceil(obj.info.FWHM_px/2+1);
-                        
-                        for j = 1:length(frameData)
-                            partData = frameData{j};
-                            
-                            switch obj.info.zMethod
-                                case 'Intensity'
-                                    if nPlanes ==1
-                                        row  = partData.row(3)*pxSize;
-                                        col  = partData.col(3)*pxSize;
-                                        z    = partData.z(3);
-                                        rowM = partData.row(3)*pxSize;
-                                        colM = partData.col(3)*pxSize;
-                                        zM   = partData.z(3);
-                                        adjR = 0; 
-                                        data = table(row,col,z,rowM,colM,zM,adjR,...
-                           'VariableNames',{'row','col','z','rowM','colM','zM','adjR'});
-
-                                    else
-                         
-                                        partVolIm = obj.getPartVolIm(partData,ROIRad,fData);
-                                        [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm);
-
-                                    end
-
-                                case '3DFit'
-                                    if nPlanes ==1
-                                        row  = partData.row(3)*pxSize;
-                                        col  = partData.col(3)*pxSize;
-                                        z    = partData.z(3);
-                                        rowM = partData.row(3)*pxSize;
-                                        colM = partData.col(3)*pxSize;
-                                        zM   = partData.z(3);
-                                        data = table(row,col,z,rowM,colM,zM,...
-                           'VariableNames',{'row','col','z','rowM','colM','zM'});
-
-                                    else
-                                        [data] = obj.resolveXYZ3DFit(partData(:,{'row','col','z','ellip','plane'}),fData);
-                                    end
+                        if strcmp(obj.info.zMethod,'PSFE')
+                            for j = 1:length(frameData)
+                                partData = frameData{j};
+                                [data] = obj.resolveXYZ(partData(:,{'row','col','z','ellip','plane'}));
+                                frameData2Store(j,{'row','col','z','rowM','colM','zM'}) = data;
+                                frameData2Store.intensity(j) = partData.intensity(3);
+                                frameData2Store.SNR(j) = partData.SNR(3);
+                                frameData2Store.t(j) = i;
                             end
-
-                            frameData2Store(j,{'row','col','z','rowM','colM','zM','adjR'}) = data;
-                            frameData2Store.intensity(j) = partData.intensity(3);
-                            frameData2Store.SNR(j) = partData.SNR(3);
-                            frameData2Store.t(j) = i;
-
+                            
+                        else
+                            
+                            fData = obj.getFrame(i,q);
+                            ROIRad = ceil(obj.info.FWHM_px/2+1);
+                            
+                            for j = 1:length(frameData)
+                                partData = frameData{j};
+                                
+                                switch obj.info.zMethod
+                                    case 'Intensity'
+                                        if nPlanes ==1
+                                            row  = partData.row(3)*pxSize;
+                                            col  = partData.col(3)*pxSize;
+                                            z    = partData.z(3);
+                                            rowM = partData.row(3)*pxSize;
+                                            colM = partData.col(3)*pxSize;
+                                            zM   = partData.z(3);
+                                            adjR = 0; 
+                                            data = table(row,col,z,rowM,colM,zM,adjR,...
+                               'VariableNames',{'row','col','z','rowM','colM','zM','adjR'});
+    
+                                        else
+                             
+                                            partVolIm = obj.getPartVolIm(partData,ROIRad,fData);
+                                            [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);
+    
+                                        end
+    
+                                    case '3DFit'
+                                        if nPlanes ==1
+                                            row  = partData.row(3)*pxSize;
+                                            col  = partData.col(3)*pxSize;
+                                            z    = partData.z(3);
+                                            rowM = partData.row(3)*pxSize;
+                                            colM = partData.col(3)*pxSize;
+                                            zM   = partData.z(3);
+                                            data = table(row,col,z,rowM,colM,zM,...
+                               'VariableNames',{'row','col','z','rowM','colM','zM'});
+    
+                                        else
+                                            [data] = obj.resolveXYZ3DFit(partData(:,{'row','col','z','ellip','plane'}),fData,q);
+                                        end
+                                end
+    
+                                frameData2Store(j,{'row','col','z','rowM','colM','zM','adjR'}) = data;
+                                frameData2Store.intensity(j) = partData.intensity(3);
+                                frameData2Store.SNR(j) = partData.SNR(3);
+                                frameData2Store.t(j) = i;
+    
+                            end
                         end
+                    startIdx = find(SRList.row==0,1);   
+                    SRList(startIdx:startIdx+height(frameData2Store)-1,:) = frameData2Store;   
+                    waitbar(i/nFrames,h,['SuperResolving positions: frame ' num2str(i) '/' num2str(nFrames) ' done']);
                     end
-                startIdx = find(SRList.row==0,1);   
-                SRList(startIdx:startIdx+height(frameData2Store)-1,:) = frameData2Store;   
-                waitbar(i/nFrames,h,['SuperResolving positions: frame ' num2str(i) '/' num2str(nFrames) ' done']);
+                    profile('viewer')
+                    close(h);
+                    %clean up the list
+                    SRList(isnan(SRList.row),:) = [];
                 end
-                profile('viewer')
-                close(h);
-                %clean up the list
-                SRList(isnan(SRList.row),:) = [];
+                
+                obj.particles{q,1}.SRList = SRList;
+                particle = obj.particles;
+              
+                %Save the data
+                folder = append('calibrated', num2str(q));
+
+                fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
+                profile('off')
+                save(fileName,'particle');
+                disp('========> DONE ! <=========');
             end
-            
-            obj.particles.SRList = SRList;
-            particle = obj.particles;
-          
-            %Save the data
-            if obj.info.multiModal == false
-                folder = 'calibrated1';
-            elseif obj.info.multiModal == true
-                folder = 'calibrated2';
-            end
-            fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
-            profile('off')
-            save(fileName,'particle');
-            disp('========> DONE ! <=========');
-            
         end
                    
         function showCorrLoc(obj,frames)
@@ -587,12 +588,12 @@ classdef MPLocMovie < Core.MPParticleMovie
             
         end
          
-        function [data] = resolveXYZInt(obj,partData,partVolIm)
+        function [data] = resolveXYZInt(obj,partData,partVolIm, q)
           
             pxSize = obj.info.pxSize;
           
             bf = partData.plane(3);
-            planePos = obj.calibrated.oRelZPos;
+            planePos = obj.calibrated{1,q}.oRelZPos;
             
             %Get ROI XZ, YZ scaled to same pixel size
             [Mag] = Core.MPLocMovie.getZPhasorMag(partVolIm);
@@ -644,11 +645,11 @@ classdef MPLocMovie < Core.MPParticleMovie
    
         end
         
-        function [data] = resolveXYZ3DFit(obj,partData,ROI)
+        function [data] = resolveXYZ3DFit(obj,partData,ROI,q)
              
             pxSize = obj.info.pxSize;
             bf = partData.plane(3);
-            planePos = obj.calibrated.oRelZPos;
+            planePos = obj.calibrated{1,q}.oRelZPos;
 
             x0 = mean([ROIs(3) ROIs(4)])*pxSize;
             y0 = mean([ROIs(1) ROIs(2)])*pxSize;

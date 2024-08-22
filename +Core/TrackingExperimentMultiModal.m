@@ -180,10 +180,8 @@ classdef TrackingExperimentMultiModal < handle
                 file2Analyze = Core.Movie.getFileInPath(folderPath,obj.ext);
                
                 if ~isempty(file2Analyze)
-
-                    % Calibrate for planes 1-8 => these will become the
-                    % uneven movies (mov1, mov3, mov5,...)
-                    obj.info.multiModal = 0;
+                    
+                    obj.info.multiModal = 1;
                     count = 0;
                     count = count+1;
                     file.path = file2Analyze.folder;
@@ -198,24 +196,6 @@ classdef TrackingExperimentMultiModal < handle
                     tmp.calibrate;
                     obj.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = tmp;
 
-                    % Repeat for the planes 9-16. These will give the equal
-                    % movies (mov2, mov4,...)
-                    obj.info.multiModal = 1;
-                    count = 0;
-                    count = count+1;
-                    file.path = file2Analyze.folder;
-                    file.ext  = obj.ext;
-                    tmp = Core.MPTrackingMovie(file , obj.cal2D, obj.info, obj.SRCal2.path, obj.ZCal.path);
-                    
-                    if count == 1
-                        tmp.giveInfo;
-                    else
-                        tmp.info = obj.trackMovies.(['mov' num2str(1)]).getInfo; 
-                    end
-                    tmp.calibrate;
-                    obj.trackMovies.(['mov' num2str((i-2)*2)]) = tmp;
-                    
-                    
                 else
                     
                     warning([folder2Mov(i).folder filesep folder2Mov(i).name ' did not contain any ' obj.ext ' file and is therefore ignored']);
@@ -247,13 +227,13 @@ classdef TrackingExperimentMultiModal < handle
                 
                 disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                 currentTrackMov = obj.trackMovies.(fieldsN{i});
-                   
+                
                 %Molecule detection
                 currentTrackMov.findCandidatePos(detectParam);
                 
                 %SR fitting
                 currentTrackMov.SRLocalizeCandidate(detectParam.delta);
-                refPlane = round(currentTrackMov.calibrated.nPlanes/2);
+                refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                 rot = true;
                 %apply SRCal
                 currentTrackMov.applySRCal(rot,refPlane);
@@ -262,7 +242,7 @@ classdef TrackingExperimentMultiModal < handle
                 currentTrackMov.applyZCal;
                 
                 %Plane consolidation
-                frames = 1:currentTrackMov.calibrated.nFrames;
+                frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
                 currentTrackMov.consolidatePlanes(frames,detectParam.consThresh)
                 
                 %superResolve
@@ -272,31 +252,33 @@ classdef TrackingExperimentMultiModal < handle
                 currentTrackMov.trackParticle(trackParam);
                 
                 [traces] = currentTrackMov.getTraces;
-                fileN = cell(length(traces),1);
-                fileN(:,1) = {i};
-           
-                [xStep,xMotor] = currentTrackMov.getXPosMotor;
-                [yStep,yMotor] = currentTrackMov.getYPosMotor;
-                [zSt,zMotor]   = currentTrackMov.getZPosMotor;
-
-                colMot = cell(length(traces),1);
-                colMot(:,1) = {xMotor};
-                colStep = cell(length(traces),1);
-                colStep(:,1) = {xStep};
-
-                rowMot = cell(length(traces),1);
-                rowMot(:,1) = {yMotor};
-                rowStep = cell(length(traces),1);
-                rowStep(:,1) = {yStep};
-
-                zMot = cell(length(traces),1);
-                zMot(:,1) = {zMotor};
-                zStep = cell(length(traces),1);
-                zStep(:,1) = {zSt};
-
-                allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
-                obj.traces3D{i,1} = allTraces;
-                obj.traces3D{i,2} = currentTrackMov.info.multiModal;  
+                for q = 1:length(traces)
+                    fileN = cell(length(traces{q,1}),1);
+                    fileN(:,1) = {i};
+               
+                    [xStep,xMotor] = currentTrackMov.getXPosMotor;
+                    [yStep,yMotor] = currentTrackMov.getYPosMotor;
+                    [zSt,zMotor]   = currentTrackMov.getZPosMotor;
+    
+                    colMot = cell(length(traces{q,1}),1);
+                    colMot(:,1) = {xMotor};
+                    colStep = cell(length(traces{q,1}),1);
+                    colStep(:,1) = {xStep};
+    
+                    rowMot = cell(length(traces{q,1}),1);
+                    rowMot(:,1) = {yMotor};
+                    rowStep = cell(length(traces{q,1}),1);
+                    rowStep(:,1) = {yStep};
+    
+                    zMot = cell(length(traces{q,1}),1);
+                    zMot(:,1) = {zMotor};
+                    zStep = cell(length(traces{q,1}),1);
+                    zStep(:,1) = {zSt};
+    
+                    allTraces = [allTraces; traces{q,1}(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
+                    obj.traces3D{q,1} = allTraces;
+                    obj.traces3D{q,2} = q; 
+                end
             end
             
             

@@ -15,167 +15,166 @@ classdef MPTrackingMovie < Core.MPLocMovie
         end
         
         function [traces] = getTraces(obj)
-            assert(~isempty(obj.traces3D),'please run the tracking before getting the traces');
-            traces = obj.traces3D;
+            for q = 1: obj.info.multiModal+1
+                assert(~isempty(obj.traces3D{q,1}),'please run the tracking before getting the traces');
+                traces{q,1} = obj.traces3D{q,1};
+            end
         end
         
         function trackParticle(obj,trackParam)
-            
-             %track the particle in the Z direction (3rd dimension here)
-            assert(~isempty(obj.calibrated),'Data should be calibrated to do ZzCalibrationration');
-            assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before zzCalibrationration');
-            assert(~isempty(obj.particles), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
-            assert(~isempty(obj.corrected),'Data needs to be corrected before tracking');
-            
-            if or(~and(obj.corrected.XY,obj.corrected.Z),isempty(obj.SRCal))
+            for q = 1:obj.info.multiModal+1
+                 %track the particle in the Z direction (3rd dimension here)
+                assert(~isempty(obj.calibrated{1,q}),'Data should be calibrated to do ZzCalibrationration');
+                assert(~isempty(obj.candidatePos{q,1}), 'No candidate found, please run findCandidatePos before zzCalibrationration');
+                assert(~isempty(obj.particles{q,1}), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
+                assert(~isempty(obj.corrected),'Data needs to be corrected before tracking');
                 
-                warning('Some corrections were not applied to the data');
-            
-            end
-            
-            switch nargin
-                case 1
-                    trackParam.radius = 300; %in nm
-                    trackParam.memory = 3;
-                case 2
+                if or(~and(obj.corrected.XY,obj.corrected.Z),isempty(obj.SRCal))
                     
-                otherwise
-                    error('too many input arguments')
-            end
-            assert(isstruct(trackParam),'Tracking parameter is expected to be a struct with two field radius and memory')
-            assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
-                'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
-           
-            DataToTrack = obj.particles.SRList;
-            ImMax = max(DataToTrack.t);
-            % get the timing of each frame
-            if ~isfield(obj.raw.movInfo,'timing')
-                timing = ((1:ImMax)-1)*obj.raw.movInfo.expT;
-            else
-                timing = obj.raw.movInfo.timing;
-            end
-            allTimes = timing(DataToTrack.t);
-            DataToTrack.rT = allTimes(:);
-            %Converts data
-            [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax);
-            count = 0; 
-            %check that there are particles in frame 1
-            if or(isempty (ToTrack{1}),isempty(ToTrack{2}))
-                ToTrack(1) = [];
-                count = 1;
-                while or(isempty(ToTrack{1}),isempty(ToTrack{2}))
-                    ToTrack(1) = [];
-                    count = count+1;
-                end   
-            end    
-            
-            Initialized = [ToTrack{1},(1:size(ToTrack{1},1))'];
-
-            ToTrack(1) = [];
-
-            %%%%% INITIALIZE FOR TRACKING DATA
-            % TrackedData = Tracked;
-            if count >0
-                TrackedData_data = cell(1,count);
-                TrackedData_data = [TrackedData_data,{Initialized}];
-            else
-                TrackedData_data = {Initialized};
-            end
-            
-            TrackedData_maxid = max(TrackedData_data{end}(:,end));
-
-            NextFrame = Core.Tracking.CoordsInFrameNextFrame;
-            NextFrame.dataNext = ToTrack{1};
-            NextFrame.timeNext = NextFrame.dataNext(1,end);
-
-            MemoryArray_data = [];
-
-            %%%%% TRACK DATA RECURSIVELY
-            radius = trackParam.radius;
-            MaximumTimeMem = trackParam.memory;
-            totlengthFinal =0;
-            h = waitbar(0,'Tracking particles...');
-            while ~isempty(ToTrack) 
-                if ~isempty(NextFrame.dataNext)
-                    waitbar(NextFrame.timeNext/ImMax,h,'TrackingParticles');
-                    %Upon every iteration, memory must be cleaned to remove any particles
-                    %that have possible moved out of the frame, and have stayed out of the
-                    %frame for longer then MaximumTimeMem
-
-                    MemoryArray_data = Core.trackingMethod.CleanMemory(MemoryArray_data,NextFrame.timeNext,MaximumTimeMem);
-
-                    %Add remaining memory to the previous frame and initialize the array
-                    %for tracking
-
-                    ImPrev = Core.Tracking.CoordsInFramePreviousFrame;
-
-                    ImPrev.time = length(TrackedData_data);
-                    ImPrev.data = ImPrev.AddMemoryToPreviouslyTrackedData( TrackedData_data{end},MemoryArray_data);
-
-                    %Search for neighbours in the immedeate vicitinity of radius = radius
-                    NextFrame.PossibleNeighbours = Core.trackingMethod.SearchNeighbours(NextFrame,ImPrev.data,radius);
-
-                    %Resolve any conflitcs by minimizing the overall distance. 
-
-                    NextFrame.PossibleNeighbours = Core.trackingMethod.ResolveConflicts(NextFrame.PossibleNeighbours);
-
-                    %Add any unassigned particles to the memory
-
-                    MemoryArray_data = Core.trackingMethod.AddToMemory(NextFrame.PossibleNeighbours, ImPrev.data);
-
-                    %Add tracked data to the array of tracked data by assigning possible
-                    %candidates to the indeces of the next frame
-
-                    [TrackedData_data{end+1},TrackedData_maxid] = Core.trackingMethod.AddDataToTracked( ImPrev.data ,NextFrame.dataNext, NextFrame.PossibleNeighbours,TrackedData_maxid);
-
-                end
-                ToTrack(1) = [];
+                    warning('Some corrections were not applied to the data');
                 
-                %Boris if the tracked data is empty we store the data f
-                if and(isempty(TrackedData_data{end}),~isempty(NextFrame.dataNext))
-                    Initialized = [NextFrame.dataNext,(TrackedData_maxid+1:TrackedData_maxid+size(NextFrame.dataNext,1))'];
-                    TrackedData_data{end} = Initialized;
-                    TrackedData_maxid = max(TrackedData_data{end}(:,end));
                 end
                 
-                %Initialize for next step
-                if ~isempty(ToTrack)
-                NextFrame.dataNext = ToTrack{1};
-                    if ~isempty(ToTrack{1})
-                        NextFrame.timeNext =NextFrame.dataNext(1,end);
-                      
-                    else
-                        NextFrame.timeNext =NextFrame.timeNext+1;
-                        %Boris Fix for data with "holes"
-                        TrackedData_data{end+1}= [];
+                switch nargin
+                    case 1
+                        trackParam.radius = 300; %in nm
+                        trackParam.memory = 3;
+                    case 2
                         
-                    end
+                    otherwise
+                        error('too many input arguments')
                 end
+                assert(isstruct(trackParam),'Tracking parameter is expected to be a struct with two field radius and memory')
+                assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
+                    'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
+               
+                DataToTrack = obj.particles{q,1}.SRList;
+                ImMax = max(DataToTrack.t);
+                % get the timing of each frame
+                if ~isfield(obj.raw.movInfo,'timing')
+                    timing = ((1:ImMax)-1)*obj.raw.movInfo.expT;
+                else
+                    timing = obj.raw.movInfo.timing;
+                end
+                allTimes = timing(DataToTrack.t);
+                DataToTrack.rT = allTimes(:);
+                %Converts data
+                [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax);
+                count = 0; 
+                %check that there are particles in frame 1
+                if or(isempty (ToTrack{1}),isempty(ToTrack{2}))
+                    ToTrack(1) = [];
+                    count = 1;
+                    while or(isempty(ToTrack{1}),isempty(ToTrack{2}))
+                        ToTrack(1) = [];
+                        count = count+1;
+                    end   
+                end    
+                
+                Initialized = [ToTrack{1},(1:size(ToTrack{1},1))'];
+    
+                ToTrack(1) = [];
+    
+                %%%%% INITIALIZE FOR TRACKING DATA
+                % TrackedData = Tracked;
+                if count >0
+                    TrackedData_data = cell(1,count);
+                    TrackedData_data = [TrackedData_data,{Initialized}];
+                else
+                    TrackedData_data = {Initialized};
+                end
+                
+                TrackedData_maxid = max(TrackedData_data{end}(:,end));
+    
+                NextFrame = Core.Tracking.CoordsInFrameNextFrame;
+                NextFrame.dataNext = ToTrack{1};
+                NextFrame.timeNext = NextFrame.dataNext(1,end);
+    
+                MemoryArray_data = [];
+    
+                %%%%% TRACK DATA RECURSIVELY
+                radius = trackParam.radius;
+                MaximumTimeMem = trackParam.memory;
+                totlengthFinal =0;
+                h = waitbar(0,'Tracking particles...');
+                while ~isempty(ToTrack) 
+                    if ~isempty(NextFrame.dataNext)
+                        waitbar(NextFrame.timeNext/ImMax,h,'TrackingParticles');
+                        %Upon every iteration, memory must be cleaned to remove any particles
+                        %that have possible moved out of the frame, and have stayed out of the
+                        %frame for longer then MaximumTimeMem
+    
+                        MemoryArray_data = Core.trackingMethod.CleanMemory(MemoryArray_data,NextFrame.timeNext,MaximumTimeMem);
+    
+                        %Add remaining memory to the previous frame and initialize the array
+                        %for tracking
+    
+                        ImPrev = Core.Tracking.CoordsInFramePreviousFrame;
+    
+                        ImPrev.time = length(TrackedData_data);
+                        ImPrev.data = ImPrev.AddMemoryToPreviouslyTrackedData( TrackedData_data{end},MemoryArray_data);
+    
+                        %Search for neighbours in the immedeate vicitinity of radius = radius
+                        NextFrame.PossibleNeighbours = Core.trackingMethod.SearchNeighbours(NextFrame,ImPrev.data,radius);
+    
+                        %Resolve any conflitcs by minimizing the overall distance. 
+    
+                        NextFrame.PossibleNeighbours = Core.trackingMethod.ResolveConflicts(NextFrame.PossibleNeighbours);
+    
+                        %Add any unassigned particles to the memory
+    
+                        MemoryArray_data = Core.trackingMethod.AddToMemory(NextFrame.PossibleNeighbours, ImPrev.data);
+    
+                        %Add tracked data to the array of tracked data by assigning possible
+                        %candidates to the indeces of the next frame
+    
+                        [TrackedData_data{end+1},TrackedData_maxid] = Core.trackingMethod.AddDataToTracked( ImPrev.data ,NextFrame.dataNext, NextFrame.PossibleNeighbours,TrackedData_maxid);
+    
+                    end
+                    ToTrack(1) = [];
+                    
+                    %Boris if the tracked data is empty we store the data f
+                    if and(isempty(TrackedData_data{end}),~isempty(NextFrame.dataNext))
+                        Initialized = [NextFrame.dataNext,(TrackedData_maxid+1:TrackedData_maxid+size(NextFrame.dataNext,1))'];
+                        TrackedData_data{end} = Initialized;
+                        TrackedData_maxid = max(TrackedData_data{end}(:,end));
+                    end
+                    
+                    %Initialize for next step
+                    if ~isempty(ToTrack)
+                    NextFrame.dataNext = ToTrack{1};
+                        if ~isempty(ToTrack{1})
+                            NextFrame.timeNext =NextFrame.dataNext(1,end);
+                          
+                        else
+                            NextFrame.timeNext =NextFrame.timeNext+1;
+                            %Boris Fix for data with "holes"
+                            TrackedData_data{end+1}= [];
+                            
+                        end
+                    end
+    
+                end
+                close(h);
+                AllParticles = cell(1,TrackedData_maxid);
+                
+                TrackedData = Core.trackingMethod.ConvertFinalOutput( TrackedData_data,AllParticles,AllField);
+                
+                obj.particles{q,1}.traces = TrackedData;
+                obj.particles{q,1}.nTraces = length(TrackedData);
+                
+                %[trace3D] = obj.get3DTraces;
+                
+                obj.traces3D{q,1} = TrackedData;
+                
+                folder = append('calibrated', num2str(q));
 
+                path = append(obj.raw.movInfo.Path, filesep, folder, filesep);
+                filename =[path 'Traces3D.mat'];
+                
+                save(filename,'TrackedData');
+                
             end
-            close(h);
-            AllParticles = cell(1,TrackedData_maxid);
-            
-            TrackedData = Core.trackingMethod.ConvertFinalOutput( TrackedData_data,AllParticles,AllField);
-            
-            obj.particles.traces = TrackedData;
-            obj.particles.nTraces = length(TrackedData);
-            
-            %[trace3D] = obj.get3DTraces;
-            
-            obj.traces3D = TrackedData;
-            
-            if obj.info.multiModal == false
-                folder = 'calibrated1';
-            elseif obj.info.multiModal == true
-                folder = 'calibrated2';
-            end
-            path = append(obj.raw.movInfo.Path, filesep, folder, filesep);
-            filename =[path 'Traces3D.mat'];
-            
-            save(filename,'TrackedData');
-            
-            
         end
         
         function showTraces(obj)

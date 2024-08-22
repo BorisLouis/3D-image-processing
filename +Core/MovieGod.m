@@ -398,10 +398,10 @@ classdef MovieGod <  handle
             
         end
         
-        function [candidate] = getCandidatePos(obj, frames)
+        function [candidate] = getCandidatePos(obj, frames, q)
             
             [idx] = obj.checkFrame(frames);
-            candidate = obj.candidatePos{idx};
+            candidate = obj.candidatePos{q,1}{idx};
             
             if isempty(candidate)
                 
