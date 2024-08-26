@@ -13,15 +13,15 @@ dimension = '3D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 40;
-detectParam.consThresh = 4;
+detectParam.chi2  = 60;
+detectParam.consThresh = 6;
 %tracking parameter
 trackParam.radius  = 1000;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
-info.runMethod = 'run'; % load or run
+info.runMethod = 'load'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
