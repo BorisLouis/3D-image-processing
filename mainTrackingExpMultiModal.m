@@ -27,7 +27,7 @@ info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if usi
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
-info.euDist = 250; %Error distance between particles in different channels
+info.euDist = 1000; %Error distance between particles in different channels
 info.multiTracking = 'MultiColor'; %MultiColor or Rotation
 
 %% create experiments

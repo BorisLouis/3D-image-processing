@@ -3,15 +3,15 @@ clear ;
 close all;
 
 %% USER INPUT
-expTime = 0.10; %in sec
+expTime = 0.010; %in sec
 T = 296.15; %temperature in Kelvin
 R = 0.100; %Radius of particle in um for channel 1 (planes 1-8);
 R2 = 0.100; %Radius of particle in um for channel 1 (planes 9-16);
 MultiModal = 'MultiColor'; %MultiColor or Rotational tracking
 fitRDiff = 4; %in number of data
-minSize = 20; %frames
+minSize = 10; %frames
 ext = '.mat';
-path = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\200nm_PS_MC_NPs_in_water_1-25_dilution\sample1_meaurement__1';
+path = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\sample1_meaurement__1';
 %% Loading
 folder = dir(path);
 idx = contains({folder.name},'trackResults1.mat');

@@ -253,6 +253,7 @@ classdef TrackingExperimentMultiModal < handle
                 
                 [traces] = currentTrackMov.getTraces;
                 for q = 1:length(traces)
+                    allTraces = [];
                     fileN = cell(length(traces{q,1}),1);
                     fileN(:,1) = {i};
                
@@ -342,9 +343,7 @@ classdef TrackingExperimentMultiModal < handle
                            colCh0 = CurrentPartCh0.col(l);
                            zCh0 = CurrentPartCh0.z(l);
 
-                           TimesCh1 = ismember(Time,CurrentPartCh1.t);
-                           idx = find(TimesCh1);
-
+                           idx = find(CurrentPartCh1.t == Time);
                            rowCh1 = CurrentPartCh1.row(idx);
                            colCh1 = CurrentPartCh1.col(idx);
                            zCh1 = CurrentPartCh1.z(idx);
@@ -353,30 +352,79 @@ classdef TrackingExperimentMultiModal < handle
                            checkRes = EuDist < Tresh;
     
                            if checkRes == true
-                               Trace0 = CurrentPartCh0;
-                               Trace1 = CurrentPartCh1; 
+                               CP0 = table2array(CurrentPartCh0);
+                               CP1 = table2array(CurrentPartCh1);
+
+                               Trace0(l,:) = CP0(l, :);
+                               Trace1(l,:) = CP1(idx,:); 
+
                                AlreadyChecked(end+1,1) = k;
                                Stop = 1;
-                               break
-                           end
-                           if isempty(Trace0) == false
-                               isTable = istable(Trace0);
-                               if isTable == false
-                                   Trace0 = array2table(Trace0, 'VariableNames',{'row','col','z', 'rowM', 'colM', 'zM', 'adjR', 'intensity', 'SNR', 't', 'rT'});
-                                   Trace1 = array2table(Trace1, 'VariableNames',{'row','col','z', 'rowM', 'colM', 'zM', 'adjR', 'intensity', 'SNR', 't', 'rT'});
-                               end
                            end
                        end 
                     end
+
+                   Trace0T = struct([]);
+                   Trace1T = struct([]); 
+                   VarNames = {'row','col','z', 'rowM', 'colM', 'zM', 'adjR', 'intensity', 'SNR', 't', 'rT', 'NumParticle'};
+
+                   % If traces are not consequtive, split them.
+                   % for Trace0
+                   if ~isempty(Trace0) 
+                       zeroRows = all(Trace0(:,:) == 0, 2);
+                       zeroIndices = find(zeroRows);
+
+                       startIdx = 1;
+
+                       for i = 1:length(zeroIndices)
+                           endIdx = zeroIndices(i) - 1; % Index before the zero row
+                           if startIdx <= endIdx
+                               TracesAdd = array2table(Trace0(startIdx:endIdx, :), 'VariableNames', VarNames);
+                               Trace0T{end+1} = TracesAdd; % Add the sub-table to cell array
+                           end
+                           startIdx = zeroIndices(i) + 1; % Start of the next sub-table
+                       end
+
+                       if startIdx <= height(Trace0)
+                           TracesAdd = array2table(Trace0(startIdx:end, :), 'VariableNames', VarNames);
+                           Trace0T{end+1} = TracesAdd;
+                       end
+                   end
+
+                   % for Trace1
+                    if ~isempty(Trace1) 
+                       zeroRows = all(Trace1(:,:) == 0, 2);
+                       zeroIndices = find(zeroRows);
+
+                       startIdx = 1;
+
+                       for i = 1:length(zeroIndices)
+                           endIdx = zeroIndices(i) - 1; % Index before the zero row
+                           if startIdx <= endIdx
+                              TracesAdd = array2table(Trace1(startIdx:endIdx, :), 'VariableNames', VarNames);
+                              Trace1T{end+1} = TracesAdd; % Add the sub-table to cell array
+                           end
+                           startIdx = zeroIndices(i) + 1; % Start of the next sub-table
+                       end
+
+                       if startIdx <= height(Trace1)
+                           TracesAdd = array2table(Trace1(startIdx:end, :), 'VariableNames', VarNames);
+                           Trace1T{end+1} = TracesAdd;
+                       end
+                   end
 
                     if Stop == 1
                         break
                     end
                 end
     
-                if isempty(Trace0) == false
-                   Trajec0{end+1,1} = Trace0;
-                   Trajec1{end+1,1} = Trace1;
+                if isempty(Trace0T) == false
+                    for i = 1:length(Trace0T)
+                        Trajec0{end+1,1} = Trace0T{1,i};
+                    end
+                    for i = 1:length(Trace1T)
+                        Trajec1{end+1,1} = Trace1T{1,i};
+                    end
                 end
 
             end
