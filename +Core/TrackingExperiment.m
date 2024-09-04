@@ -350,6 +350,7 @@ classdef TrackingExperiment < handle
             
         end
         
+        
         function saveData(obj)
             
             trackRes = struct; 
@@ -364,16 +365,30 @@ classdef TrackingExperiment < handle
                     trackRes.MSD = MSDs;
                 end
                 
-                trackRes.traces = trackData; 
+                trackRes.traces = trackData(:,1:2); 
                 trackRes.info = obj.info;
                 trackRes.path = obj.path;
+
+                fieldsN = fieldnames(obj.trackMovies);
+                for i = 1:length(fieldsN)
+                    currField = fieldsN{i};
+
+                    fileP = obj.trackMovies.(currField).raw.fullPath;
+
+                    [folder,file,ext] = fileparts(fileP);
+
+                    trackRes.filePath{i} = file;
+
+
+                end
+
+
                 filename = [obj.path filesep 'trackResults.mat'];
-                save(filename,'trackRes');
+                save(filename,'trackRes','-v7.3');
                 disp('Data were succesfully saved');
     
             else
-                
-                warning('No Data was saved because no traces or MSD could be found, please make sure you ran the analysis first');
+                  warning('No Data was saved because no traces or MSD could be found, please make sure you ran the analysis first');
             
             end   
         end
