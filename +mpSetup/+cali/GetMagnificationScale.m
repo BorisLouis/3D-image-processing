@@ -35,8 +35,8 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         title("before correction");
         hold on
         
-        config = "monomodal";
-        transf = "similarity";
+        config = "multimodal";
+        transf = "similarity"; %similarity
 
         [optimizer,metric] = imregconfig(config);
         tform = imregtform(Plane9infocus,Plane1infocus,transf, optimizer, metric);

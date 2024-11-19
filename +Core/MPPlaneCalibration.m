@@ -227,7 +227,7 @@ classdef MPPlaneCalibration < handle
             fit1 = mov2Use.cal.file.fit1(:,2:2:end);
             fitZ1 = mov2Use.cal.file.fit1(:,1:2:end);
             ZPos = mov2Use.cal.file.Zpos;
-            color = rand(8,3);
+            color = hsv(8);
             FocusZ1 = {mov2Use.cal.file.inFocus1.zpos};
 
             figure()

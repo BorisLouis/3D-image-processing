@@ -4,15 +4,20 @@ close all;
 
 %% USER INPUT
 expTime = 0.010; %in sec
-T = 296.15; %temperature in Kelvin
-R = 0.100; %Radius of particle in um for channel 1 (planes 1-8);
-R2 = 0.100; %Radius of particle in um for channel 1 (planes 9-16);
+Temp = 296.15; %temperature in Kelvin
+R1 = 0.100; %Radius of particle in um for channel 1 (planes 1-8);
+R2 = 0.050; %Radius of particle in um for channel 1 (planes 9-16);
 MultiModal = 'MultiColor'; %MultiColor or Rotational tracking
 fitRDiff = 4; %in number of data
-minSize = 10; %frames
+minSize = 20; %frames
 ext = '.mat';
-path = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\sample1_meaurement__1';
+path = 'G:\multicolor_polarization\multicolor\20241105_polymerisation_dual_color_PS_air_obj\sample1\9 min';
+
+
+
+
 %% Loading
+R = R1;
 folder = dir(path);
 idx = contains({folder.name},'trackResults1.mat');
 folder(~idx) = [];
@@ -37,6 +42,7 @@ allMSDX = zeros(length(currMov),maxLength-1);
 allMSDY = allMSDX;
 allMSDZ = allMSDY;
 allMSDR = allMSDY;
+allRg = zeros(length(currMov),1);
 for i = 1:length(currMov)
     currPart = currMov{i};
 
@@ -49,7 +55,7 @@ for i = 1:length(currMov)
     tau = (1:length(msdx))'*expTime;
     allMSDX(i,1:length(msdx)) = msdx;
     DX   = MSD.getDiffCoeff(msdx,tau,fitRDiff,'1D');
-    nX   = MSD.getViscosity(DX,R,T);
+    nX   = MSD.getViscosity(DX,R,Temp);
     aX   = MSD.getDiffTypeAlpha(msdx,expTime);
     vX   = coord(1,1) - coord(end,1)/10^3/(length(coord)*expTime); %um/s
 
@@ -57,7 +63,7 @@ for i = 1:length(currMov)
     msdy = MSD.calc(coord(:,2)/10^3);%convert to um;
     allMSDY(i,1:length(msdy)) = msdy;
     DY   = MSD.getDiffCoeff(msdy,tau,fitRDiff,'1D');
-    nY   = MSD.getViscosity(DY,R,T);
+    nY   = MSD.getViscosity(DY,R,Temp);
     aY   = MSD.getDiffTypeAlpha(msdy,expTime);
     vY   = coord(1,2) - coord(end,2)/10^3/(length(coord)*expTime); %um/s
 
@@ -65,7 +71,7 @@ for i = 1:length(currMov)
     msdz = MSD.calc(coord(:,3)/10^3);%convert to um;
     allMSDZ(i,1:length(msdz)) = msdz;
     DZ   = MSD.getDiffCoeff(msdz,tau,fitRDiff,'1D');
-    nZ   = MSD.getViscosity(DZ,R,T);
+    nZ   = MSD.getViscosity(DZ,R,Temp);
     aZ   = MSD.getDiffTypeAlpha(msdz,expTime);
     vZ   = coord(1,3) - coord(end,3)/10^3/(length(coord)*expTime); %um/s
 
@@ -74,7 +80,7 @@ for i = 1:length(currMov)
     msdr = MSD.calc(coord/10^3);%convert to um;
     allMSDR(i,1:length(msdr)) = msdr;
     DR   = MSD.getDiffCoeff(msdr,tau,fitRDiff,'3D');
-    nR   = MSD.getViscosity(DR,R,T);
+    nR   = MSD.getViscosity(DR,R,Temp);
     aR   = MSD.getDiffTypeAlpha(msdr,expTime);
     dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2 +...
         (coord(1,3)-coord(end,3))^2);
@@ -107,6 +113,36 @@ for i = 1:length(currMov)
     allRes(i).vY   = vY;
     allRes(i).vZ   = vZ;
     allRes(i).vR   = vR;
+
+    %%% Calculate Rg
+    Coord = coord./(10^3);
+    N = size(Coord, 1);
+
+    avX = sum(Coord(:,1))./N;
+    avY = sum(Coord(:,2))./N;
+    avZ = sum(Coord(:,3))./N;
+
+    %substract averages from coordinates
+    Coord(:,1) = Coord(:,1) - avX;
+    Coord(:,2) = Coord(:,2) - avY;
+    Coord(:,3) = Coord(:,3) - avZ;
+
+    %build gyration tensor for each trajectory
+    T(1,1) = (1/N)*sum((Coord(:,1)).^2);
+    T(1,2) = (1/N)*sum((Coord(:,1)).*(Coord(:,2)));
+    T(1,3) = (1/N)*sum((Coord(:,1)).*(Coord(:,3)));
+    T(2,1) = (1/N)*sum((Coord(:,2)).*(Coord(:,1)));
+    T(2,2) = (1/N)*sum((Coord(:,2)).^2);
+    T(2,3) = (1/N)*sum((Coord(:,2)).*(Coord(:,3)));
+    T(3,1) = (1/N)*sum((Coord(:,3)).*(Coord(:,1)));
+    T(3,2) = (1/N)*sum((Coord(:,3)).*(Coord(:,2)));
+    T(3,3) = (1/N)*sum((Coord(:,3)).^2);
+
+    e = eig(T);
+    Rg = sqrt((e(1).^2) + e(2).^2 + e(3).^2);
+
+    allRes(i).Rg = Rg;
+    allRg(i,1) = Rg;
     
     
     allRes(i).num  = length(msdx);
@@ -117,20 +153,21 @@ end
 meanMSDR = nanmean(allMSDR,1);
 tau = (1:length(meanMSDR))'*expTime;
 DR   = MSD.getDiffCoeff(meanMSDR,tau,fitRDiff,'3D');
-nR   = MSD.getViscosity(DR,R,T);
-
-disp(['The diffusion coefficient is ' num2str(DR) ' \mum^2/s and the viscosity is ' num2str(nR) ' cp']);
+nR   = MSD.getViscosity(DR,R,Temp);
+nRg = nanmean(allRg);
+disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
+    'the viscosity is ' num2str(nR) ' cp' '\n'...
+    'the radius of gyration is ' num2str(nRg) ' µm']);
 %%
-filename = [path filesep 'msdRes.mat'];
+filename = [path filesep 'msdRes1.mat'];
 save(filename,'allRes');
 h = msgbox('Data succesfully saved');
 
 
-
-
 %% Loading
+R = R2;
 folder = dir(path);
-idx = contains({folder.name},'trackResults2.mat');
+idx = contains({folder.name},'trackResults1.mat');
 folder(~idx) = [];
 
 f2Load = [folder(1).folder filesep folder(1).name];
@@ -153,6 +190,7 @@ allMSDX = zeros(length(currMov),maxLength-1);
 allMSDY = allMSDX;
 allMSDZ = allMSDY;
 allMSDR = allMSDY;
+allRg = zeros(length(currMov),1);
 for i = 1:length(currMov)
     currPart = currMov{i};
 
@@ -165,7 +203,7 @@ for i = 1:length(currMov)
     tau = (1:length(msdx))'*expTime;
     allMSDX(i,1:length(msdx)) = msdx;
     DX   = MSD.getDiffCoeff(msdx,tau,fitRDiff,'1D');
-    nX   = MSD.getViscosity(DX,R,T);
+    nX   = MSD.getViscosity(DX,R,Temp);
     aX   = MSD.getDiffTypeAlpha(msdx,expTime);
     vX   = coord(1,1) - coord(end,1)/10^3/(length(coord)*expTime); %um/s
 
@@ -173,7 +211,7 @@ for i = 1:length(currMov)
     msdy = MSD.calc(coord(:,2)/10^3);%convert to um;
     allMSDY(i,1:length(msdy)) = msdy;
     DY   = MSD.getDiffCoeff(msdy,tau,fitRDiff,'1D');
-    nY   = MSD.getViscosity(DY,R,T);
+    nY   = MSD.getViscosity(DY,R,Temp);
     aY   = MSD.getDiffTypeAlpha(msdy,expTime);
     vY   = coord(1,2) - coord(end,2)/10^3/(length(coord)*expTime); %um/s
 
@@ -181,7 +219,7 @@ for i = 1:length(currMov)
     msdz = MSD.calc(coord(:,3)/10^3);%convert to um;
     allMSDZ(i,1:length(msdz)) = msdz;
     DZ   = MSD.getDiffCoeff(msdz,tau,fitRDiff,'1D');
-    nZ   = MSD.getViscosity(DZ,R,T);
+    nZ   = MSD.getViscosity(DZ,R,Temp);
     aZ   = MSD.getDiffTypeAlpha(msdz,expTime);
     vZ   = coord(1,3) - coord(end,3)/10^3/(length(coord)*expTime); %um/s
 
@@ -190,7 +228,7 @@ for i = 1:length(currMov)
     msdr = MSD.calc(coord/10^3);%convert to um;
     allMSDR(i,1:length(msdr)) = msdr;
     DR   = MSD.getDiffCoeff(msdr,tau,fitRDiff,'3D');
-    nR   = MSD.getViscosity(DR,R,T);
+    nR   = MSD.getViscosity(DR,R,Temp);
     aR   = MSD.getDiffTypeAlpha(msdr,expTime);
     dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2 +...
         (coord(1,3)-coord(end,3))^2);
@@ -223,6 +261,36 @@ for i = 1:length(currMov)
     allRes(i).vY   = vY;
     allRes(i).vZ   = vZ;
     allRes(i).vR   = vR;
+
+    %%% Calculate Rg
+    Coord = coord./(10^3);
+    N = size(Coord, 1);
+
+    avX = sum(Coord(:,1))./N;
+    avY = sum(Coord(:,2))./N;
+    avZ = sum(Coord(:,3))./N;
+
+    %substract averages from coordinates
+    Coord(:,1) = Coord(:,1) - avX;
+    Coord(:,2) = Coord(:,2) - avY;
+    Coord(:,3) = Coord(:,3) - avZ;
+
+    %build gyration tensor for each trajectory
+    T(1,1) = (1/N)*sum((Coord(:,1)).^2);
+    T(1,2) = (1/N)*sum((Coord(:,1)).*(Coord(:,2)));
+    T(1,3) = (1/N)*sum((Coord(:,1)).*(Coord(:,3)));
+    T(2,1) = (1/N)*sum((Coord(:,2)).*(Coord(:,1)));
+    T(2,2) = (1/N)*sum((Coord(:,2)).^2);
+    T(2,3) = (1/N)*sum((Coord(:,2)).*(Coord(:,3)));
+    T(3,1) = (1/N)*sum((Coord(:,3)).*(Coord(:,1)));
+    T(3,2) = (1/N)*sum((Coord(:,3)).*(Coord(:,2)));
+    T(3,3) = (1/N)*sum((Coord(:,3)).^2);
+
+    e = eig(T);
+    Rg = sqrt((e(1).^2) + e(2).^2 + e(3).^2);
+
+    allRes(i).Rg = Rg;
+    allRg(i,1) = Rg;
     
     
     allRes(i).num  = length(msdx);
@@ -233,10 +301,14 @@ end
 meanMSDR = nanmean(allMSDR,1);
 tau = (1:length(meanMSDR))'*expTime;
 DR   = MSD.getDiffCoeff(meanMSDR,tau,fitRDiff,'3D');
-nR   = MSD.getViscosity(DR,R,T);
-
-disp(['The diffusion coefficient is ' num2str(DR) ' \mum^2/s and the viscosity is ' num2str(nR) ' cp']);
+nR   = MSD.getViscosity(DR,R,Temp);
+nRg = nanmean(allRg);
+disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
+    'the viscosity is ' num2str(nR) ' cp' '\n'...
+    'the radius of gyration is ' num2str(nRg) ' µm']);
 %%
-filename = [path filesep 'msdRes2.mat'];
+filename = [path filesep 'msdRes1.mat'];
 save(filename,'allRes');
 h = msgbox('Data succesfully saved');
+
+

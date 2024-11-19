@@ -278,11 +278,11 @@ classdef MPMovie < Core.Movie
                 
             elseif isstruct(obj.calibrated{1,q})
                 fieldsN = fieldnames(obj.calibrated{1,q}.filePath);                
-                data = zeros(obj.calibrated{1,q}.Height,obj.calibrated{1,q}.Width,numel(fieldsN));
+                %data = zeros(obj.calibrated{1,q}.Height,obj.calibrated{1,q}.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
                     [mov] = Load.Movie.tif.getframes(obj.calibrated{1,q}.filePath.(fieldsN{i}),idx);
-                    data(:,:,i) = mov;
+                    data(:,:,i) = double(mov);
                     
                 end
             end
@@ -418,8 +418,11 @@ classdef MPMovie < Core.Movie
                         [ movC1, movC2] = Load.Movie.ome.load( frameInfo, movInfo, cFrame );
 
                         %applying the calibration
-                        [data,isTransmission] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file );
-
+                        if exist('ROI','var') == 1
+                            [data,isTransmission,ROI] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info, ROI);
+                        else 
+                            [data,isTransmission,ROI] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
+                        end
                         %saving data per plane and info to cal
                         [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP);
                         

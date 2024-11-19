@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'F:\multicolor_polarization\20240813_oil_MC_NPs_200nm\2D_Cal';
+file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\Testdata_rotational\20241115_AuBPs_2DCal\2DCal_200nm_PS';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';

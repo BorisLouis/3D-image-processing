@@ -6,9 +6,9 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'G:\multicolor_polarization\multicolor\20241105_polymerisation_dual_color_PS_air_obj\sample1\5 min';
+file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\Testdata_rotational\20241115_AuBPs_2DCal\phaseplate_phaseimaging\sample_2';
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\multicolor\20241105_polymerisation_dual_color_PS_air_obj\2D_cal';
+path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\Testdata_rotational\20241115_AuBPs_2DCal\2DCal_200nm_PS';
 dimension = '3D';
 
 %detection parameter
@@ -16,19 +16,20 @@ detectParam.delta = 6;
 detectParam.chi2  = 40;
 detectParam.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 2500;%nm
+trackParam.radius  = 500;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
-info.runMethod = 'run'; % load or run
+info.runMethod = 'load'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
-info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
+info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
-info.euDist = 1000; %Error distance between particles in different channels
-info.multiTracking = 'MultiColor'; %MultiColor or Rotation
+info.multiModal = 1; %multiModal (1) or not (0)
+info.rotational = 1; %Rotational tracking 1 => bg substraction,...
+info.euDist = 5000;
 
 %% create experiments
 trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,path2ZCal);
@@ -37,23 +38,17 @@ trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,pa
 trackingExp.retrieveMovies;
 
 %% test detection parameters
-frame = 23;
+frame = 50;
 testMov = trackingExp.trackMovies.mov1;
 testMov.findCandidatePos(detectParam,frame);
 testMov.showCandidate(frame);
-
 
 %% get TrackingData
 val2Use = 'bestFocus';
 trackingExp.retrieveTrackData(detectParam,trackParam);
 traces = trackingExp.getTraces3D;
-trackingExp.ConsolidateChannels;
-
-%% Get Intensity
-[int,SNR] = trackingExp.getAvgIntensity;
-
-%% show traces
-trackingExp.showTraces;
-
-%% save Data
+trackingExp.ConsolidateChannels2;
 trackingExp.saveData;
+
+
+

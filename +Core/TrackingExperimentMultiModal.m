@@ -293,6 +293,53 @@ classdef TrackingExperimentMultiModal < handle
        
         % Select particles only when visible at the same time in both
         % channels:
+        function ConsolidateChannels2(obj)
+            Tresh = obj.info.euDist
+            obj.traces3Dcommon = struct([]);
+
+            %%% clean up traces
+            TracesCh1 = struct([]);
+            for i = 1:size(obj.traces3D{1,1})
+                if size(obj.traces3D{1,1}{i,1},1) > 10
+                    TracesCh1{end+1,1} = obj.traces3D{1,1}{i,1};
+                end
+            end
+            TracesCh2 = struct([]);
+            for i = 1:size(obj.traces3D{2,1})
+                if size(obj.traces3D{2,1}{i,1},1) > 10
+                    TracesCh2{end+1,1} = obj.traces3D{2,1}{i,1};
+                end
+            end
+            
+            mutualIndex = 1;
+            for i = 1:size(TracesCh1,1)
+                CurrentTrace1 = TracesCh1{i,1};
+                for j = 1:size(TracesCh2,1)
+                    CurrentTrace2 = TracesCh2{j,1};
+                    [commonTimestamps, idx1, idx2] = intersect(CurrentTrace1(:, 10), CurrentTrace2(:, 10));
+                    if ~isempty(commonTimestamps)
+                        CurrentTrace1Overlap = CurrentTrace1(idx1, :);
+                        CurrentTrace2Overlap = CurrentTrace2(idx2, :);
+                        distances = sqrt(sum((CurrentTrace1Overlap(:, 1:3) - CurrentTrace2Overlap(:, 1:3)).^2, 2));
+                        if all(distances.sum < Tresh)
+                            obj.traces3Dcommon{end+1,1} = CurrentTrace1Overlap;
+                            obj.traces3Dcommon{end,2} = CurrentTrace2Overlap;
+                            mutualIndex = mutualIndex + 1;
+                            break
+                        end
+                    end
+                end
+            end
+
+            for i = 1:size(obj.traces3Dcommon)
+                Int1 = obj.traces3Dcommon{i,1}.intensity;
+                Int2 = obj.traces3Dcommon{i,2}.intensity;
+                Ratio = Int1./Int2;
+                obj.traces3Dcommon{i,3} = Ratio;
+            end
+        end
+
+
         function ConsolidateChannels(obj)
             
             Tresh = obj.info.euDist
@@ -481,23 +528,42 @@ classdef TrackingExperimentMultiModal < handle
         end
         
         function [int,SNR] = getAvgIntensity(obj)
-            assert(~isempty(obj.traces3Dcommon),'You need to extract 3D traces before extracting average intensity');
-            for j = 1:length(obj.traces3Dcommon)
-                traces = obj.traces3Dcommon{j,1};
-                nTraces = length(traces);
-                int = zeros(nTraces,1);
-                SNR = zeros(nTraces,1);
-                for i = 1: length(traces)
-                    currentTrace = traces{i};
-                    intensity(i) = mean(currentTrace.intensity);
-                    SNRatio(i) = mean(currentTrace.SNR);
+            if ~isempty(obj.traces3Dcommon)
+                assert(~isempty(obj.traces3Dcommon),'You need to extract 3D traces before extracting average intensity');
+                for j = 1:length(obj.traces3Dcommon)
+                    traces = obj.traces3Dcommon{j,1};
+                    nTraces = length(traces);
+                    int = zeros(nTraces,1);
+                    SNR = zeros(nTraces,1);
+                    for i = 1: length(traces)
+                        currentTrace = traces{i};
+                        intensity(i) = mean(currentTrace.intensity);
+                        SNRatio(i) = mean(currentTrace.SNR);
+                        
+                    end
                     
+                    int(j,1) = mean(intensity);
+                    SNR(j,1) = mean(SNRatio);
                 end
-                
-                int(j,1) = mean(intensity);
-                SNR(j,1) = mean(SNRatio);
+            elseif ~isempty(obj.traces3D)
+                 for j = 1:length(obj.traces3D)
+                    traces = obj.traces3D{j,1};
+                    nTraces = length(traces);
+                    int = zeros(nTraces,1);
+                    SNR = zeros(nTraces,1);
+                    for i = 1: length(traces)
+                        currentTrace = traces{i};
+                        intensity(i) = mean(currentTrace.intensity);
+                        SNRatio(i) = mean(currentTrace.SNR);
+                        
+                    end
+                    
+                    int(j,1) = mean(intensity);
+                    SNR(j,1) = mean(SNRatio);
+                end
+            else
+                assert(~isempty(obj.traces3Dcommon),'You need to extract 3D traces before extracting average intensity');
             end
-           
             
         end
         
@@ -554,13 +620,29 @@ classdef TrackingExperimentMultiModal < handle
             
             if ~isempty(obj.traces3Dcommon)
                 
-                for i = 1:length(obj.traces3Dcommon)
-                    trackData = obj.traces3Dcommon{i,1};
-                    MSDs = obj.MSD;
-                        
-                    if ~isempty(MSDs)
-                        trackRes.MSD = MSDs;
-                    end
+                trackData = obj.traces3Dcommon;
+                MSDs = obj.MSD;
+                    
+                if ~isempty(MSDs)
+                    trackRes.MSD = MSDs;
+                end
+                
+                trackRes.traces = trackData; 
+                trackRes.info = obj.info;
+                trackRes.path = obj.path;
+                filename = [obj.path filesep 'trackResultsCommonCh.mat'];
+                save(filename,'trackRes');
+                disp('Common channeldata was succesfully saved');
+            end
+
+            if ~isempty(obj.traces3D)
+                for i = 1:length(obj.traces3D)
+                    trackData = obj.traces3D{i,1};
+                    % MSDs = obj.MSD;
+                    % 
+                    % if ~isempty(MSDs)
+                    %     trackRes.MSD = MSDs;
+                    % end
                     
                     trackRes.traces = trackData; 
                     trackRes.info = obj.info;
@@ -569,12 +651,10 @@ classdef TrackingExperimentMultiModal < handle
                     filename = [obj.path filesep name];
                     save(filename,'trackRes');
                     disp('Data were succesfully saved');
-                end
-    
+                end    
             else
                 
-                warning('No Data was saved because no traces or MSD could be found, please make sure you ran the analysis first');
-            
+                warning('No Data was saved because no traces or MSD could be found, please make sure you ran the analysis first');     
             end   
         end
         
