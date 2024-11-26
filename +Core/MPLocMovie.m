@@ -242,8 +242,14 @@ classdef MPLocMovie < Core.MPParticleMovie
                 disp('super resolving positions ... ');
                
                 %Check if some particle were super resolved already:
-                [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
-               
+                if q == 1
+                    [run,SRList] = obj.existZResParticles(obj.info.runMethod,append(obj.raw.movInfo.Path, filesep, 'calibrated1'),'.mat',q);
+                elseif q == 2
+                    [run,SRList] = obj.existZResParticles(obj.info.runMethod,append(obj.raw.movInfo.Path, filesep, 'calibrated2'),'.mat',q);
+                else
+                    [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
+                end
+
                 if run
                     data2Resolve = obj.particles{q,1}.List;
                     nPlanes = obj.calibrated{1,q}.nPlanes;
@@ -333,14 +339,17 @@ classdef MPLocMovie < Core.MPParticleMovie
                     SRList(startIdx:startIdx+height(frameData2Store)-1,:) = frameData2Store;   
                     waitbar(i/nFrames,h,['SuperResolving positions: frame ' num2str(i) '/' num2str(nFrames) ' done']);
                     end
-                    profile('viewer')
                     close(h);
                     %clean up the list
                     SRList(isnan(SRList.row),:) = [];
+                    obj.particles{q,1}.SRList = SRList;
+                    particle = obj.particles;
+                else
+                    obj.particles{q,1}.SRList = SRList;
+                    particle = obj.particles;
                 end
                 
-                obj.particles{q,1}.SRList = SRList;
-                particle = obj.particles;
+                
               
                 %Save the data
                 folder = append('calibrated', num2str(q));
@@ -729,7 +738,7 @@ classdef MPLocMovie < Core.MPParticleMovie
     end
     
     methods (Static)
-        function [run, SRList] = existZResParticles(runMethod,Path, ext)
+        function [run, SRList] = existZResParticles(runMethod,Path, ext,q)
             SRList = [];
             switch runMethod
                 case 'load'
@@ -742,6 +751,13 @@ classdef MPLocMovie < Core.MPParticleMovie
                             if ~isempty(particle.SRList)
                                 run = false;
                                 SRList = particle.SRList;
+                            else
+                                run = true;
+                            end
+                        elseif isfield(particle{q,1},'SRList')
+                            if ~isempty(particle{q,1}.SRList)
+                                run = false;
+                                SRList = particle{q,1}.SRList;
                             else
                                 run = true;
                             end

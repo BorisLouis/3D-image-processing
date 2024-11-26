@@ -117,8 +117,8 @@ else
         for i = 1:size(data1,4)
             waitbar(i./size(data1,4),h,'Rotational tracking: background substraction...')
             for k = 1:size(data1,3)
-                MeanInt = mean(data1(:,:,k,i), 'all');
-                data1(:,:,k,i) = data1(:,:,k,i) - MeanInt;
+                MedianInt = median(data1(:,:,k,i), 'all');
+                data1(:,:,k,i) = data1(:,:,k,i) - MedianInt;
             end
         end
         close(h)
@@ -213,8 +213,8 @@ else
             for i = 1:size(data2,4)
                 waitbar(i./size(data2,4),h,'Channel2: Rotational tracking: background substraction...')
                 for k = 1:size(data2,3)
-                    MeanInt = mean(data2(:,:,k,i), 'all');
-                    data2(:,:,k,i) = data2(:,:,k,i) - MeanInt;
+                    MedianInt = median(data2(:,:,k,i), 'all');
+                    data2(:,:,k,i) = data2(:,:,k,i) - MedianInt;
                 end
             end
             close(h)

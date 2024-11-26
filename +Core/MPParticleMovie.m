@@ -26,10 +26,20 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
         
-        function findCandidatePos(obj,detectParam, frames)
+        function findCandidatePos(obj,detectParamFull, frames)
             %Method to perform localization on each plane for each frame
             %Check if some candidate exists already in the folder (previously saved)
             for q = 1:(obj.info.multiModal+1)
+                if iscell(detectParamFull)
+                    if q == 1
+                        detectParam = detectParamFull{1};
+                    elseif q == 2
+                        detectParam = detectParamFull{2};
+                    end
+                else
+                    detectParam = detectParamFull;
+                end
+
                 switch nargin
                         case 2
                             
@@ -83,9 +93,88 @@ classdef MPParticleMovie < Core.MPMovie
                     save(fileName,'candidate');
                 else
                 end
+
                 obj.candidatePos{q,1} = candidate;
                 obj.info.detectParam = detectParam;
             end
+        end
+        
+        function [matched_particles] = getROIs(obj)
+            for q = 1:obj.info.multiModal+1
+                T = obj.candidatePos{1,1}{1,1};
+                max_distance = 10;
+                T.particle_count = zeros(height(T), 1);
+                ROIsize = 10;
+                particles = struct([]);
+                          
+                for i = 1:size(T,1)
+                    Particle = [];
+                    row_i = T.row(i);
+                    col_i = T.col(i);
+                    plane_i = T.plane(i);           
+                    count_planes = 0;
+                    Particle(1,:) = [round(row_i-round(ROIsize./2)), round(col_i-round(ROIsize./2)),...
+                                     ROIsize, ROIsize,plane_i];
+                    
+                    for j = i+1:height(T)
+                        row_j = T.row(j);
+                        col_j = T.col(j);
+                        plane_j = T.plane(j);
+                        
+                        if plane_i ~= plane_j & ~isnan(plane_i)  & ~isnan(plane_j)
+                            distance = sqrt((row_i - row_j)^2 + (col_i - col_j)^2);
+                            if distance <= max_distance
+                                count_planes = count_planes + 1;
+                                Particle(end+1, :) = [round(row_j-round(ROIsize./2)), round(col_j-round(ROIsize./2)),...
+                                                        ROIsize, ROIsize,plane_j];
+                                T.plane(j) = NaN;
+                            end
+                        end
+                    end
+                    T.plane(i) = NaN;
+                    T.particle_count(i) = count_planes;
+                    if size(Particle, 1) >= 3
+                        particles{size(particles,1)+1,1} = Particle;
+                    end
+                end  
+                ROI{q,1} = particles;
+            end
+
+            matched_particles = cell(max([size(ROI{1,1},1), size(ROI{2,1},1)]),2);
+            for i = 1:size(ROI{1,1},1)
+                particle1 = ROI{1,1}{i,1};
+                xmin1 = particle1(:,1);
+                ymin1 = particle1(:,2);
+                plane1 = particle1(:,end);
+                min_distance = inf;
+                matched_particle = [];
+                for j = 1:size(ROI{2,1},1)
+                    particle2 = ROI{2,1}{j,1};
+                    xmin2 = particle2(:,1);
+                    ymin2 = particle2(:,2);
+                    plane2 = particle2(:,end);
+                    dist = [];
+                    for k = 1:size(particle1,1)
+                        x = xmin1(k);
+                        y = ymin1(k);
+                        plane = plane1(k);
+                        Idx = find(plane2 == plane, 1, 'first');
+                        if ~isnan(Idx)
+                            x2 = xmin2(Idx);
+                            y2 = xmin2(Idx);
+                            dist(end+1) = sqrt((x - x2).^2 + (y-y2).^2);
+                        end
+                    end
+                    distav = mean(dist);
+                    if distav < min_distance
+                        min_distance = distav;
+                        matched_particle = particle2;
+                    end
+                end
+                matched_particles{i,1} = particle1;
+                matched_particles{i,2} = matched_particle;
+            end      
+            obj.ROI = matched_particles;
         end
             
             function [candidate] = getCandidatePos(obj, frames, q)
@@ -142,7 +231,11 @@ classdef MPParticleMovie < Core.MPMovie
                             idx = frames(i);
                             %#1 Extract Candidate Position for specific frame
                             [data] = obj.getFrame(idx, q);
-                            [frameCandidate] = obj.getCandidatePos(idx, q);
+                            if obj.info.rotational == 1
+                                [frameCandidate] = obj.getCandidatePos(1,q);
+                            else
+                                [frameCandidate] = obj.getCandidatePos(idx, q);
+                            end
                             
                             if isempty(frameCandidate)
                                 
@@ -293,9 +386,10 @@ classdef MPParticleMovie < Core.MPMovie
 
                         fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
                         save(fileName,'particle');
+                        obj.particles{q,1} = particle;
+                    elseif run == 0
+                        obj.particles = particle;
                     end
-                    %#4 Storing particles in the object
-                    obj.particles{q,1} = particle;
                 end
             end
             
@@ -317,39 +411,61 @@ classdef MPParticleMovie < Core.MPMovie
             function showCandidate(obj,idx)
                 %Display Candidate
                 for q = 1:(obj.info.multiModal + 1)
-                    assert(length(idx)==1, 'Only one frame can be displayed at once');
-                    [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
-                    assert(~isempty(obj.candidatePos{q,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
-                    
-                    [frame] = getFrame(obj,idx,q);
-                    
-                    nImages = size(frame,3);
-                   
-                    nsFig = ceil(nImages/4);
-                    
-                    candidate = obj.getCandidatePos(idx,q);
+                    if obj.info.rotational ~= 1
+                        assert(length(idx)==1, 'Only one frame can be displayed at once');
+                        [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
+                        assert(~isempty(obj.candidatePos{q,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+                        
+                        [frame] = getFrame(obj,idx,q);
+                        
+                        nImages = size(frame,3);
+                       
+                        nsFig = ceil(nImages/4);
+                        
+                        candidate = obj.getCandidatePos(idx,q);
+                        
+                    elseif obj.info.rotational == 1
+                        [frame] = obj.calibrated{2,q};
+                        nImages = size(frame,3);
+                        nsFig = ceil(nImages/4);
+                        candidate = obj.getCandidatePos(1,q);
+                    end
+                       
                     rowPos    = candidate.row;
                     colPos    = candidate.col;
                     planeIdx  = candidate.plane;
-                    
-                    h = figure(2+(q-1));
+                    h = figure();
                     h.Name = sprintf('Frame %d',idx);
                     for i = 1:nImages
                         
                         subplot(2,nImages/nsFig,i)
                         hold on
                         imagesc(frame(:,:,i))
+                        hold on
                         plot(colPos(planeIdx==i),rowPos(planeIdx==i),'g+','MarkerSize',10)
                         axis image;
-                        grid on;
-                        a = gca;
-                        a.XTickLabel = [];
-                        a.YTickLabel = [];
-                        a.GridColor = [1 1 1];
+                        % grid on;
+                        % a = gca;
+                        % a.XTickLabel = [];
+                        % a.YTickLabel = [];
+                        % a.GridColor = [1 1 1];
                         title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,q}.oRelZPos(i))});
                         colormap('hot')
-                        hold off
-                        
+                        if obj.info.rotational == 1
+                            hold on  
+                            for h = 1:size(obj.ROI,1)
+                                for z = 1:size(obj.ROI{h,q},1)
+                                    ROI = obj.ROI{h,q}(z,:);
+                                    plane = ROI(:,5);
+                                    if plane == i;
+                                        rectangle('Position',[ROI(idx, 2), ROI(idx,1), ROI(idx,3), ROI(idx,4)], 'EdgeColor', 'r');
+                                        hold on
+                                    end
+                                end
+                            end
+                        else
+                        end
+                        hold on
                     end
                 end
             end
@@ -842,6 +958,31 @@ classdef MPParticleMovie < Core.MPMovie
             chi2   = detectParam.chi2;
             h = waitbar(0,'detection of candidates...');
             
+            if obj.info.rotational == 1
+                for i = 1:obj.raw.maxFrame(1)
+                    waitbar(i./obj.raw.maxFrame(1), h, 'Rotational: Averaging frames')
+                    AllFrames(:,:,:,i) = obj.getFrame(i,q);
+                    if ~isempty(obj.ROI)
+                        for k = 1:size(obj.ROI(:,q),1)
+                            ROI = obj.ROI{k,q};
+                            for z = 1:size(obj.ROI{k,q}, 1)
+                                ParticleMovie(:,:,ROI(z,5),i,k) = AllFrames(ROI(z,1):ROI(z,1)+ROI(z,3),...
+                                    ROI(z,2):ROI(z,2)+ROI(z,4),ROI(z,5),i);
+                            end
+                        end
+                    end
+                end
+                MeanIm = mean(AllFrames, 4);
+                obj.calibrated{2,q} = MeanIm;
+
+                if exist('ParticleMovie','var')
+                    for i = 1:size(ParticleMovie, 5)
+                        obj.ParticlesROI{i,q} = ParticleMovie(:,:,:,:,i);
+                    end
+                end
+            end
+
+
             for i = 1 : 1:nFrames
                 
                 position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
@@ -849,9 +990,13 @@ classdef MPParticleMovie < Core.MPMovie
                 [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
                 
+
+
                 for j = 1:nPlanes
                     currentIM = volIm(:,:,j);
-
+                    if obj.info.rotational == 1
+                        currentIM = MeanIm(:,:,j);
+                    end
                     %localization occurs here
                      switch detectionMethod 
                         case 'MaxLR'
@@ -888,19 +1033,25 @@ classdef MPParticleMovie < Core.MPMovie
                                  pos(:,4) = j;
                                  position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
                              end
-
                      end
                            
                 end
                 
                 idx = find(position.row==0,1,'First');
                 if isempty(idx)
-                    
-                    candidate{frames(i)} = position;
-                    
+                    if obj.info.rotational == 1
+                        candidate{1} = position;
+                        break
+                    else
+                        candidate{frames(i)} = position;
+                    end                   
                 else
-                    
-                    candidate{frames(i)} = position(1:idx-1,:);
+                    if obj.info.rotational == 1
+                        candidate{1} = position(1:idx-1,:);
+                        break
+                    else
+                        candidate{frames(i)} = position(1:idx-1,:);
+                    end
                     
                 end
                 waitbar(i/nFrames,h,...

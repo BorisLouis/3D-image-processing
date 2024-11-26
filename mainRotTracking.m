@@ -6,18 +6,22 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\Testdata_rotational\20241115_AuBPs_2DCal\phaseplate_phaseimaging\sample_2';
+file.path  = 'G:\multicolor_polarization\polarisation\20241115_AuBPs_3DCal\phaseplate_phaseimaging\sample_1';
 file.ext   = '.ome.tif';
-path2Cal = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\Testdata_rotational\20241115_AuBPs_2DCal\2DCal_200nm_PS';
+path2Cal = 'G:\multicolor_polarization\polarisation\20241115_AuBPs_2DCal\2DCal_200nm_PS';
 dimension = '3D';
 
 %detection parameter
-detectParam.delta = 6;
-detectParam.chi2  = 40;
-detectParam.consThresh = 4;
+detectParam{1}.delta = 6;
+detectParam{1}.chi2  = 35;
+detectParam{1}.consThresh = 4;
+
+detectParam{2}.delta = 6;
+detectParam{2}.chi2  = 45;
+detectParam{2}.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 500;%nm
-trackParam.memory  = 3;
+trackParam.radius  = 1500;%nm
+trackParam.memory  = 50;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
@@ -29,19 +33,19 @@ info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 1 => bg substraction,...
-info.euDist = 5000;
+info.euDist = 1000;
 
 %% create experiments
-trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,path2ZCal);
+trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
 
 %% get Movies
 trackingExp.retrieveMovies;
 
 %% test detection parameters
-frame = 50;
 testMov = trackingExp.trackMovies.mov1;
-testMov.findCandidatePos(detectParam,frame);
-testMov.showCandidate(frame);
+testMov.findCandidatePos(detectParam);
+[ROI] = testMov.getROIs;
+testMov.showCandidate(1);
 
 %% get TrackingData
 val2Use = 'bestFocus';

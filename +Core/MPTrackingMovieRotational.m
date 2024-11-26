@@ -1,13 +1,13 @@
-classdef MPTrackingMovie < Core.MPLocMovie
-    %trackingMovie will take particles detected and try to match them along
-    %frames
+classdef MPTrackingMovieRotational < Core.MPLocMovie
        
     properties
         traces3D
+        ROI
+        ParticlesROI
     end
     
     methods
-        function obj = MPTrackingMovie(raw, MPCal, info, SRCal, zCal)
+        function obj = MPTrackingMovieRotational(raw, MPCal, info, SRCal, zCal)
             %trackingMovie Construct an instance of this class
             %Detailed explanation goes here
              obj  = obj@Core.MPLocMovie(raw,MPCal,info,SRCal,zCal);
@@ -299,7 +299,7 @@ classdef MPTrackingMovie < Core.MPLocMovie
             currentTraces = traces {idx2Trace};
             mainPos = [round(mean(currentTraces.row)) round(mean(currentTraces.col)) round(mean(currentTraces.z))];
 
-            scaleBarPx = scaleBar/(pxSize/1000);%in µm
+            scaleBarPx = scaleBar/(pxSize/1000);%in Âµm
             pos.row = currentTraces.row - mainPos(1);
             pos.col = currentTraces.col - mainPos(2);% + roiRadius + 1/2;
             pos.z   = currentTraces.z;
@@ -359,7 +359,7 @@ classdef MPTrackingMovie < Core.MPLocMovie
                     %scale bar
                     x = size(ROI,2)-scaleBarPx-(0.05*size(ROI,2)):size(ROI,2)-0.05*size(ROI,2);
                     y = ones(1,length(x))*size(ROI,1)-0.05*size(ROI,2);
-                    text(mean(x),mean(y)-3,[num2str(scaleBar) ' µm'],...
+                    text(mean(x),mean(y)-3,[num2str(scaleBar) ' Âµm'],...
                         'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',12);
                     plot(x,y,'-w','LineWidth',3);
         %                  TODO MAKE THIS WORK !!!
