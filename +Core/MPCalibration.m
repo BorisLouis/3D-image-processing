@@ -48,8 +48,12 @@ classdef MPCalibration < Core.Movie
                 [frameInfo, movInfo, ~ ] = Load.Movie.ome.getInfo(path);
                 assert(length(movInfo.Cam)==2,'Only 1 camera found in the selected file, code only works with 2 cameras, will be updated later.');
                 assert(length(unique(cellfun(@str2num,{frameInfo.Z})))>2,'Z position is not changing across the selected calibration file, this is strange.');
-
-                [calib, inform, transformations] = mpSetup.cali.calculate(path,nChan);
+                if strcmp(obj.info.method, 'Darkfield Phase')
+                    DarkfieldPhase = 1;
+                else
+                    DarkfieldPhase = 0;
+                end
+                [calib, inform, transformations] = mpSetup.cali.calculate(path,nChan,DarkfieldPhase);
 
                 calibration.info = inform;
                 calibration.file = calib;

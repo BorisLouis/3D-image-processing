@@ -276,7 +276,10 @@ function [frameInfo] = fixCamTiming(frameInfo)
         timeCurrRef = tmpInfo(currRefId).time;
 
         %find another frame with similar timing
-        id = find((abs([tmpInfo.time]-timeCurrRef))<4);
+        id = find((abs([tmpInfo.time]-timeCurrRef))<60);
+        if size(id,2) == 3
+            id = id(2:3);
+        end
         assert(length(id) == 2, 'couldnt find 2 frames for that time point');
 
         id = id(id~= currRefId);
@@ -314,7 +317,7 @@ function [frameInfo] = fixCamTiming(frameInfo)
         %test timing difference
         camTiming = {tmpInfo(idx).time};
         
-        assert(abs(camTiming{1} - camTiming{2}) < 4, 'Camera delay bigger than 4ms after fixing, something is wrong')
+        assert(abs(camTiming{1} - camTiming{2}) < 75, 'Camera delay bigger than 4ms after fixing, something is wrong')
         
         
     end

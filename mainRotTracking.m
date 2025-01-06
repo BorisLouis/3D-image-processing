@@ -6,26 +6,26 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'G:\multicolor_polarization\polarisation\20241115_AuBPs_3DCal\phaseplate_phaseimaging\sample_1';
+file.path  = 'G:\multicolor_polarization\polarisation\20241202_AuBPs\2D_Cal\150x50_1-10_spincoating\sample_4';
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\polarisation\20241115_AuBPs_2DCal\2DCal_200nm_PS';
+path2Cal = 'G:\multicolor_polarization\polarisation\20241202_AuBPs\2D_Cal\planes';
 dimension = '3D';
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 35;
+detectParam{1}.chi2  = 55;
 detectParam{1}.consThresh = 4;
 
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 45;
+detectParam{2}.chi2  = 60;
 detectParam{2}.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 1500;%nm
+trackParam.radius  = 5000;%nm
 trackParam.memory  = 50;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
-info.runMethod = 'load'; % load or run
+info.runMethod = 'run'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
@@ -44,7 +44,7 @@ trackingExp.retrieveMovies;
 %% test detection parameters
 testMov = trackingExp.trackMovies.mov1;
 testMov.findCandidatePos(detectParam);
-[ROI] = testMov.getROIs;
+testMov.getROIs;
 testMov.showCandidate(1);
 
 %% get TrackingData

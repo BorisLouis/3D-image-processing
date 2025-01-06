@@ -336,6 +336,8 @@ classdef TrackingExperimentMultiModal < handle
                 Int2 = obj.traces3Dcommon{i,2}.intensity;
                 Ratio = Int1./Int2;
                 obj.traces3Dcommon{i,3} = Ratio;
+                Difference = Int1 - Int2;
+                obj.traces3Dcommon{i,4} = Ratio;
             end
         end
 

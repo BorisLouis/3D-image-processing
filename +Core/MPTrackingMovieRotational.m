@@ -4,6 +4,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         traces3D
         ROI
         ParticlesROI
+        CandidateROI
     end
     
     methods
@@ -75,19 +76,19 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
     
                 ToTrack(1) = [];
 
-                %%% Track particles for rotational 
-                if obj.info.rotational == 1
-                    for i = 1:size(ToTrack{1,1},2)
-                    Trace(1,:) = ToTrack{1,1}(i,:);
-                    for j = 2:size(ToTrack,1)
-                    NextCoord = ToTrack{j,1};
-                    Distances = sqrt((Trace(1,1)-NextCoord(:,1)).^2 + (Trace(1,2)-NextCoord(:,2)).^2);
-                    [~, Idx] = min(Distances);
-                    Trace(j,:) = ToTrack{j,1}(Idx, :);
-                    end
-                    Traces{i} = Trace;
-                    end
-                end
+                % %%% Track particles for rotational 
+                % if obj.info.rotational == 1
+                %     for i = 1:size(ToTrack{1,1},2)
+                %     Trace(1,:) = ToTrack{1,1}(i,:);
+                %     for j = 2:size(ToTrack,1)
+                %     NextCoord = ToTrack{j,1};
+                %     Distances = sqrt((Trace(1,1)-NextCoord(:,1)).^2 + (Trace(1,2)-NextCoord(:,2)).^2);
+                %     [~, Idx] = min(Distances);
+                %     Trace(j,:) = ToTrack{j,1}(Idx, :);
+                %     end
+                %     Traces{i} = Trace;
+                %     end
+                % end
     
                 %%%%% INITIALIZE FOR TRACKING DATA
                 % TrackedData = Tracked;
@@ -127,7 +128,10 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
     
                         ImPrev.time = length(TrackedData_data);
                         ImPrev.data = ImPrev.AddMemoryToPreviouslyTrackedData( TrackedData_data{end},MemoryArray_data);
-    
+                        if obj.info.rotational == true
+                            NextFrame.dataNext(:,3) = 0;
+                            ImPrev.data(:,3) = 0;
+                        end
                         %Search for neighbours in the immedeate vicitinity of radius = radius
                         NextFrame.PossibleNeighbours = Core.trackingMethod.SearchNeighbours(NextFrame,ImPrev.data,radius);
     

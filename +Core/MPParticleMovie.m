@@ -99,82 +99,43 @@ classdef MPParticleMovie < Core.MPMovie
             end
         end
         
-        function [matched_particles] = getROIs(obj)
+        function getROIs(obj)
             for q = 1:obj.info.multiModal+1
-                T = obj.candidatePos{1,1}{1,1};
-                max_distance = 10;
-                T.particle_count = zeros(height(T), 1);
-                ROIsize = 10;
+                T = obj.candidatePos{q,1}{1,1};
+                max_distance = obj.info.detectParam.consThresh;
                 particles = struct([]);
-                          
-                for i = 1:size(T,1)
-                    Particle = [];
-                    row_i = T.row(i);
-                    col_i = T.col(i);
-                    plane_i = T.plane(i);           
-                    count_planes = 0;
-                    Particle(1,:) = [round(row_i-round(ROIsize./2)), round(col_i-round(ROIsize./2)),...
-                                     ROIsize, ROIsize,plane_i];
-                    
-                    for j = i+1:height(T)
-                        row_j = T.row(j);
-                        col_j = T.col(j);
-                        plane_j = T.plane(j);
-                        
-                        if plane_i ~= plane_j & ~isnan(plane_i)  & ~isnan(plane_j)
-                            distance = sqrt((row_i - row_j)^2 + (col_i - col_j)^2);
-                            if distance <= max_distance
-                                count_planes = count_planes + 1;
-                                Particle(end+1, :) = [round(row_j-round(ROIsize./2)), round(col_j-round(ROIsize./2)),...
-                                                        ROIsize, ROIsize,plane_j];
-                                T.plane(j) = NaN;
-                            end
-                        end
-                    end
-                    T.plane(i) = NaN;
-                    T.particle_count(i) = count_planes;
-                    if size(Particle, 1) >= 3
-                        particles{size(particles,1)+1,1} = Particle;
-                    end
-                end  
-                ROI{q,1} = particles;
-            end
+                cleanedT = table();
+                valid_rows = false(height(T), 1);
 
-            matched_particles = cell(max([size(ROI{1,1},1), size(ROI{2,1},1)]),2);
-            for i = 1:size(ROI{1,1},1)
-                particle1 = ROI{1,1}{i,1};
-                xmin1 = particle1(:,1);
-                ymin1 = particle1(:,2);
-                plane1 = particle1(:,end);
-                min_distance = inf;
-                matched_particle = [];
-                for j = 1:size(ROI{2,1},1)
-                    particle2 = ROI{2,1}{j,1};
-                    xmin2 = particle2(:,1);
-                    ymin2 = particle2(:,2);
-                    plane2 = particle2(:,end);
-                    dist = [];
-                    for k = 1:size(particle1,1)
-                        x = xmin1(k);
-                        y = ymin1(k);
-                        plane = plane1(k);
-                        Idx = find(plane2 == plane, 1, 'first');
-                        if ~isnan(Idx)
-                            x2 = xmin2(Idx);
-                            y2 = xmin2(Idx);
-                            dist(end+1) = sqrt((x - x2).^2 + (y-y2).^2);
+                for i = 1:height(T)
+                    match_count = 1; 
+                    current_row = T.row(i);
+                    current_col = T.col(i);
+                    current_plane = T.plane(i);
+                    for j = i+1:height(T)
+                        next_row = T.row(j);
+                        next_col = T.col(j);
+                        next_plane = T.plane(j);
+                        if next_plane ~= current_plane + 1
+                            break;
                         end
-                    end
-                    distav = mean(dist);
-                    if distav < min_distance
-                        min_distance = distav;
-                        matched_particle = particle2;
+                        dist = sqrt((next_row - current_row)^2 + (next_col - current_col)^2);
+                        if dist <= max_distance
+                            match_count = match_count + 1;
+                            current_row = next_row; 
+                            current_col = next_col;
+                            current_plane = next_plane;
+                        end
+                        if match_count >= 3
+                            valid_rows(i:j) = true;
+                        end
                     end
                 end
-                matched_particles{i,1} = particle1;
-                matched_particles{i,2} = matched_particle;
+                for i = 1:size(obj.candidatePos{q,1},1)
+                    %obj.candidatePos{q,1}{i,1} = T(valid_rows, :); 
+                    obj.ROI{q,1} = max_distance;
+                end 
             end      
-            obj.ROI = matched_particles;
         end
             
             function [candidate] = getCandidatePos(obj, frames, q)
@@ -189,15 +150,21 @@ classdef MPParticleMovie < Core.MPMovie
                 end
             end  
             
-            function SRLocalizeCandidate(obj,roiSize,frames)
+            function SRLocalizeCandidate(obj,detectParam,frames)
                 for q = 1:(obj.info.multiModal+1)
+                    if iscell(detectParam)
+                        roiSize = detectParam{1,q}.delta;
+                    else
+                        roiSize = detectParam.delta;
+                    end
                     assert(~isempty(obj.calibrated{1,q}),'Data should be calibrated to consolidate');
                     assert(~isempty(obj.info),'Information about the setup are missing to consolidate, please fill them in using giveInfo method');
                     assert(~isempty(obj.candidatePos{q,1}), 'No candidate found, please run findCandidatePos before consolidation');
                     folder = append('calibrated', num2str(q));
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
-                    [run,locPos] = obj.existLocPos(path,'.mat');
+                    %[run,locPos] = obj.existLocPos(path,'.mat');
+                    run = 1;
                     
                     if run
                         switch nargin
@@ -221,7 +188,7 @@ classdef MPParticleMovie < Core.MPMovie
                                 error('too many inputs');
         
                         end
-                       
+                                               
                         locPos = cell(size(obj.candidatePos{q,1}));
                         h = waitbar(0,'Fitting candidates ...');
                         nFrames = length(frames);
@@ -231,11 +198,8 @@ classdef MPParticleMovie < Core.MPMovie
                             idx = frames(i);
                             %#1 Extract Candidate Position for specific frame
                             [data] = obj.getFrame(idx, q);
-                            if obj.info.rotational == 1
-                                [frameCandidate] = obj.getCandidatePos(1,q);
-                            else
-                                [frameCandidate] = obj.getCandidatePos(idx, q);
-                            end
+
+                            [frameCandidate] = obj.getCandidatePos(idx, q);
                             
                             if isempty(frameCandidate)
                                 
@@ -249,7 +213,7 @@ classdef MPParticleMovie < Core.MPMovie
                             end
                             waitbar(i/nFrames,h,['Fitting candidates: frame ' num2str(i) '/' num2str(nFrames) ' done']);
                         end
-                        close(h)
+                        %close(h);
                     else
                     end
                         %save the data
@@ -265,11 +229,14 @@ classdef MPParticleMovie < Core.MPMovie
                 end
             end
             
-            function [locPos] = getLocPos(obj, frames, q)
+            function [locPos] = getLocPos(obj, frames, q, z)
                  %Extract the position of the candidate of a given frame
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-              
-                locPos = obj.unCorrLocPos{q,1}{idx};
+                if isnan(z)
+                    locPos = obj.unCorrLocPos{q,1}{idx};
+                else
+                    locPos = obj.unCorrLocPos{q,1}{z,1}{idx};
+                end
                
                 if isempty(locPos)
                     
@@ -278,8 +245,13 @@ classdef MPParticleMovie < Core.MPMovie
                 end
             end
             
-            function consolidatePlanes(obj,frames,consThresh)
+            function consolidatePlanes(obj,frames,detectParam)
                 for q = 1: obj.info.multiModal +1
+                    if iscell(detectParam)
+                        consThresh = detectParam{1,q}.consThresh
+                    else
+                        consThresh = detectParam.consThresh
+                    end
                     %Consolidation refers to connect molecules that were localized
                     %at similar position in different plane on a single frame.
                     assert(~isempty(obj.calibrated{1,q}),'Data should be calibrated to consolidate');
@@ -292,6 +264,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
                     [run, particle] = obj.existParticles(path, '.mat');
+
                     
                     if run
                         %Check the number of function input
@@ -313,6 +286,7 @@ classdef MPParticleMovie < Core.MPMovie
                                 
                         end
                         
+                        
                         nFrames = length(frames);
                         %allocate for storage
                         particleList = cell(1,obj.raw.maxFrame(1));
@@ -325,7 +299,8 @@ classdef MPParticleMovie < Core.MPMovie
                             disp(['Consolidating frame ' num2str(i) ' / ' num2str(nFrames)]);
                             idx = frames(i);
                             %#1 Extract localized Position for specific frame
-                            [fCandMet] = obj.getLocPos(idx, q);
+                            z = NaN;
+                            [fCandMet] = obj.getLocPos(idx, q, z);
                             
                             if isempty(fCandMet)
                                 
@@ -387,8 +362,9 @@ classdef MPParticleMovie < Core.MPMovie
                         fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
                         save(fileName,'particle');
                         obj.particles{q,1} = particle;
+                        
                     elseif run == 0
-                        obj.particles = particle;
+                        obj.particles{q,1} = particle;
                     end
                 end
             end
@@ -428,7 +404,7 @@ classdef MPParticleMovie < Core.MPMovie
                         [frame] = obj.calibrated{2,q};
                         nImages = size(frame,3);
                         nsFig = ceil(nImages/4);
-                        candidate = obj.getCandidatePos(1,q);
+                        candidate = obj.getCandidatePos(idx,q);
                     end
                        
                     rowPos    = candidate.row;
@@ -451,20 +427,6 @@ classdef MPParticleMovie < Core.MPMovie
                         % a.GridColor = [1 1 1];
                         title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,q}.oRelZPos(i))});
                         colormap('hot')
-                        if obj.info.rotational == 1
-                            hold on  
-                            for h = 1:size(obj.ROI,1)
-                                for z = 1:size(obj.ROI{h,q},1)
-                                    ROI = obj.ROI{h,q}(z,:);
-                                    plane = ROI(:,5);
-                                    if plane == i;
-                                        rectangle('Position',[ROI(idx, 2), ROI(idx,1), ROI(idx,3), ROI(idx,4)], 'EdgeColor', 'r');
-                                        hold on
-                                    end
-                                end
-                            end
-                        else
-                        end
                         hold on
                     end
                 end
@@ -591,8 +553,11 @@ classdef MPParticleMovie < Core.MPMovie
                         if(planes2Check(i) > currentPlane)
                             direction = +1;%check below (Plane 1 is the uppest plane 8 is lowest)
                         end
-                        
-                        [isPart] = Core.MPParticleMovie.isPartPlane(currentCand,cand,direction,consThresh,zMethod);
+                        rotational = obj.info.rotational;
+                        if rotational == 1
+                            consThresh = obj.ROI{q,1};
+                        end
+                        [isPart] = Core.MPParticleMovie.isPartPlane(currentCand,cand,direction,consThresh,zMethod,rotational);
                         if ~all(isPart ==0)
                             id = cand.plane(isPart);
                             particle(id,:) = cand(isPart,:);
@@ -633,7 +598,7 @@ classdef MPParticleMovie < Core.MPMovie
 
      methods (Static)
        
-        function [isPart]   = isPartPlane(current, next, direction,consThresh,zMethod)
+         function [isPart]   = isPartPlane(current, next, direction,consThresh,zMethod,rotational)
             %This function aim at determining whether a candidate from one
             %plane and the another are actually the same candidate on
             %different plane or different candidate. The decision is based
@@ -643,10 +608,10 @@ classdef MPParticleMovie < Core.MPMovie
             %This function is designed to have PSFE plate ON
             assert(abs(direction) == 1, 'direction is supposed to be either 1 (up) or -1 (down)');
             assert(size(current,2) == size(next,2), 'Dimension mismatch between the tail and partner to track');
-            
+
             thresh = consThresh;
             [checkRes1] = Core.MPParticleMovie.checkEuDist([current.row, current.col],...
-                [next.row, next.col],thresh);
+                [next.row, next.col],thresh,rotational);
             
             if strcmp(zMethod,'PSFE')
              % Test ellipticity
@@ -666,7 +631,9 @@ classdef MPParticleMovie < Core.MPMovie
             % Test focus Metric
             maxExpFM = current.fMetric+0.1*current.fMetric;
             checkRes3 = next.fMetric < maxExpFM;
-            
+            if rotational == 1
+                checkRes3 = 1;
+            end
             %isPart will only be true for particle that passes the 3 tests
             isPart = checkRes1.*checkRes2.*checkRes3;
             
@@ -684,13 +651,17 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
         
-        function [checkRes] = checkEuDist(current,next,Thresh)
+        function [checkRes] = checkEuDist(current,next,Thresh,rotational)
             %Use to check if the Euclidian distance is within reasonable
             %range
             EuDist = sqrt((current(:,1) - next(:,1)).^2 +...
                 (current(:,2) - next(:,2)).^2);
             checkRes = EuDist < Thresh;
-            
+            if rotational == 1
+                [~,Idx] = min(EuDist);
+                checkRes = zeros(size(EuDist));
+                checkRes(Idx) = 1;
+            end
             if isempty(checkRes)
                 checkRes = false;
             end
@@ -915,7 +886,11 @@ classdef MPParticleMovie < Core.MPMovie
                     %Check if some candidate were already stored
                     if any(contains({file2Analyze.name},'particle')==true)
                         particle = load([file2Analyze(1).folder filesep 'particle.mat']);
-                        particle = particle.particle;
+                        if isfield(particle, 'Particle')
+                            particle = particle.Particle;
+                        else
+                            particle = particle.particle;
+                        end
                         run = false;
                     else
                 
@@ -938,7 +913,20 @@ classdef MPParticleMovie < Core.MPMovie
             assert(~isempty(obj.calibrated),'Data should be calibrated to detect candidate');
             assert(isstruct(detectParam),'Detection parameter should be a struct with two fields');
             nFrames = length(frames);
-            currentCandidate = obj.candidatePos;
+            if q == 1
+                if size(obj.candidatePos, 1) < 2
+                    currentCandidate = obj.candidatePos;
+                else
+                    currentCandidate = obj.candidatePos{q,1};
+                end
+            elseif q == 2
+                if size(obj.candidatePos, 1) == 1
+                    currentCandidate = [];
+                else
+                    currentCandidate = obj.candidatePos{q,1};
+                end
+            end
+            
             detectionMethod = obj.info.detectionMethod;
 
             if(isempty(currentCandidate))
@@ -959,27 +947,27 @@ classdef MPParticleMovie < Core.MPMovie
             h = waitbar(0,'detection of candidates...');
             
             if obj.info.rotational == 1
-                for i = 1:obj.raw.maxFrame(1)
-                    waitbar(i./obj.raw.maxFrame(1), h, 'Rotational: Averaging frames')
-                    AllFrames(:,:,:,i) = obj.getFrame(i,q);
-                    if ~isempty(obj.ROI)
-                        for k = 1:size(obj.ROI(:,q),1)
-                            ROI = obj.ROI{k,q};
-                            for z = 1:size(obj.ROI{k,q}, 1)
-                                ParticleMovie(:,:,ROI(z,5),i,k) = AllFrames(ROI(z,1):ROI(z,1)+ROI(z,3),...
-                                    ROI(z,2):ROI(z,2)+ROI(z,4),ROI(z,5),i);
-                            end
-                        end
-                    end
+                AllFramesFile = append(obj.raw.movInfo.Path,filesep,'calibrated',num2str(q),filesep,'AllFrames.mat');
+                if ~exist(AllFramesFile)
+                    run = 1;
+                else
+                    run = 0;
                 end
+
+                if run == 1
+                    for i = 1:obj.raw.maxFrame(1)
+                        waitbar(i./obj.raw.maxFrame(1), h, 'Rotational: Averaging frames')
+                        AllFrames(:,:,:,i) = obj.getFrame(i,q);
+                    end
+                    save(AllFramesFile, 'AllFrames', '-v7.3');
+                else
+                    waitbar(0.5, h, 'Rotational: loading meanImage')
+                    AllFrames = load(AllFramesFile);
+                    AllFrames = AllFrames.AllFrames;
+                end
+
                 MeanIm = mean(AllFrames, 4);
                 obj.calibrated{2,q} = MeanIm;
-
-                if exist('ParticleMovie','var')
-                    for i = 1:size(ParticleMovie, 5)
-                        obj.ParticlesROI{i,q} = ParticleMovie(:,:,:,:,i);
-                    end
-                end
             end
 
 
@@ -990,74 +978,115 @@ classdef MPParticleMovie < Core.MPMovie
                 [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
                 
-
-
                 for j = 1:nPlanes
-                    currentIM = volIm(:,:,j);
-                    if obj.info.rotational == 1
+                    if obj.info.rotational == 1                        
                         currentIM = MeanIm(:,:,j);
-                    end
-                    %localization occurs here
-                     switch detectionMethod 
-                        case 'MaxLR'
-                            [ pos, meanFAR, ~ ] = Localization.smDetection(currentIM,...
-                                delta, FWHM_pix, chi2 );
-                            if ~isempty(pos)
-                                startIdx = find(position.row==0,1,'First');
-                                if isempty(startIdx)
-                                    startIdx = length(position.row)+1;
+                        %localization occurs here
+                        switch detectionMethod 
+                            case 'MaxLR'
+                                [ pos, meanFAR, ~ ] = Localization.smDetection(currentIM,...
+                                    delta, FWHM_pix, chi2 );
+                                if ~isempty(pos)
+                                    startIdx = find(position.row==0,1,'First');
+                                    if isempty(startIdx)
+                                        startIdx = length(position.row)+1;
+                                    end
+                                    pos(:,3) = meanFAR;
+                                    pos(:,4) = j;
+                                    position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
+                                else
                                 end
-                                pos(:,3) = meanFAR;
-                                pos(:,4) = j;
-                                position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
-                            else
-                            end
-                         case 'Intensity'
+                            case 'Intensity'
                              
-                             bwImage = imbinarize(currentIM./max(currentIM(:)));
-                             
-                             SE = strel('disk',5);
-                             bwImage = imopen(bwImage,SE);
-                             bwImage = bwareaopen(bwImage,300);
+                                 bwImage = imbinarize(currentIM./max(currentIM(:)));
+                                 
+                                 SE = strel('disk',5);
+                                 bwImage = imopen(bwImage,SE);
+                                 bwImage = bwareaopen(bwImage,300);
+        
+                                 [ctr] = regionprops(bwImage,'Area','Centroid');
     
-                             [ctr] = regionprops(bwImage,'Area','Centroid');
-
-                             pos = cat(1,ctr.Centroid);
-                             if ~isempty(pos)
-                                startIdx = find(position.row==0,1,'First');
-                                if isempty(startIdx)
-                                    startIdx = length(position.row)+1;
+                                 pos = cat(1,ctr.Centroid);
+                                 if ~isempty(pos)
+                                    startIdx = find(position.row==0,1,'First');
+                                    if isempty(startIdx)
+                                        startIdx = length(position.row)+1;
+                                    end
+                                     pos = flip(pos,2);
+                                     pos(:,3) = NaN;
+                                     pos(:,4) = j;
+                                     position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
+                                 end
+                        end
+                    else
+                        currentIM = volIm(:,:,j);
+                        %localization occurs here
+                        switch detectionMethod 
+                            case 'MaxLR'
+                                [ pos, meanFAR, ~ ] = Localization.smDetection(currentIM,...
+                                    delta, FWHM_pix, chi2 );
+                                if ~isempty(pos)
+                                    startIdx = find(position.row==0,1,'First');
+                                    if isempty(startIdx)
+                                        startIdx = length(position.row)+1;
+                                    end
+                                    pos(:,3) = meanFAR;
+                                    pos(:,4) = j;
+                                    position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
+                                else
                                 end
-                                 pos = flip(pos,2);
-                                 pos(:,3) = NaN;
-                                 pos(:,4) = j;
-                                 position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
-                             end
-                     end
-                           
+                            case 'Intensity'
+                             
+                                 bwImage = imbinarize(currentIM./max(currentIM(:)));
+                                 
+                                 SE = strel('disk',5);
+                                 bwImage = imopen(bwImage,SE);
+                                 bwImage = bwareaopen(bwImage,300);
+        
+                                 [ctr] = regionprops(bwImage,'Area','Centroid');
+    
+                                 pos = cat(1,ctr.Centroid);
+                                 if ~isempty(pos)
+                                    startIdx = find(position.row==0,1,'First');
+                                    if isempty(startIdx)
+                                        startIdx = length(position.row)+1;
+                                    end
+                                     pos = flip(pos,2);
+                                     pos(:,3) = NaN;
+                                     pos(:,4) = j;
+                                     position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
+                                 end
+                        end
+                    end           
                 end
                 
+               
+
                 idx = find(position.row==0,1,'First');
                 if isempty(idx)
                     if obj.info.rotational == 1
-                        candidate{1} = position;
+                        for z = 1:size(candidate,1)
+                            candidate{z} = position;
+                        end
                         break
                     else
                         candidate{frames(i)} = position;
                     end                   
                 else
                     if obj.info.rotational == 1
-                        candidate{1} = position(1:idx-1,:);
+                        for z = 1:size(candidate,1)
+                            candidate{z} = position(1:idx-1,:);
+                        end
                         break
                     else
                         candidate{frames(i)} = position(1:idx-1,:);
                     end
                     
                 end
+
                 waitbar(i/nFrames,h,...
                     sprintf('detection of candidates in Frame %d/%d done',i,nFrames));
-            end
-            
+            end 
             close(h);
         end
                 
@@ -1098,8 +1127,25 @@ classdef MPParticleMovie < Core.MPMovie
                         domain(:,:,2) = Y;
 
                         %Gauss (slower)
+                        
+                        x = [1:size(ROI,1)];
+                        y = [1:size(ROI,1)];
+                        meanROIhoriz = mean(ROI,1);
+                        f = fit(x.',meanROIhoriz.','gauss2');
+                        g = coeffvalues(f);
+                        [~,idx] = min(abs([g(2), g(5)] - max(x)./2));
+                        Width(1) = 2*sqrt(2*log(2))*(g(idx+2));
+                        meanROIvert = mean(ROI,2);
+                        f = fit(y.',meanROIvert,'gauss2');
+                        g = coeffvalues(f);
+                        [~,idx] = min(abs([g(2), g(5)] - max(x)./2));
+                        Width(2) = 2*sqrt(2*log(2))*(g(idx+2));
+                        Width = mean(Width);
+
+
+
                         [gPar] = Localization.Gauss.MultipleFitting(ROI,frameCandidate.col(i),...
-                            frameCandidate.row(i),domain,1);%data,x0,y0,domain,nbOfFit
+                            frameCandidate.row(i),domain,1,Width);%data,x0,y0,domain,nbOfFit
                         colPos = gPar(5); %Should be directly the position of the particle as we
                             %gave above the domain of the ROI in the space of the image
                         rowPos = gPar(6);
@@ -1109,8 +1155,8 @@ classdef MPParticleMovie < Core.MPMovie
 
                         e = gPar(3)/gPar(2);
 
-                        magX = 0;
-                        magY = 0;
+                        magX = gPar(1);
+                        magY = gPar(1);
                     else
                         %Phasor fitting to get x,y,e
                         [row,col,e,magX,magY] = Localization.phasor(ROI);

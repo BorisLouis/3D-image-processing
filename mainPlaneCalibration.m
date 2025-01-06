@@ -14,11 +14,12 @@ clear
 close all
 clc
 
-file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\Testdata_rotational\20241115_AuBPs_2DCal\2DCal_200nm_PS';
+file.path  = 'G:\multicolor_polarization\polarisation\20241202_AuBPs\2D_Cal\planes';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4;
+info.method = 'Darkfield Phase';
 %% 
 calib = Core.MPPlaneCalibration(file,info);
 

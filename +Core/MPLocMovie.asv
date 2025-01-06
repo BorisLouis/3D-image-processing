@@ -791,7 +791,7 @@ classdef MPLocMovie < Core.MPParticleMovie
             for i = 1:size(partVolIm,3)
                 Mag(i) = nanmean(partVolIm(:,:,i),'all');
             end
-            Int = nansum(Mag);
+            Int = sum(Mag);
             % domain = planePos(1:size(Mag,2));
             % idx = ~isnan(Mag) & Mag ~= 0;
             % domain = domain(idx);
@@ -1007,24 +1007,23 @@ classdef MPLocMovie < Core.MPParticleMovie
             non_empty_indices = [];
             for i = 1:size(partData,1)
                 pos{1,i} = [round(partData.row(i)), round(partData.col(i))];
-                if or(isnan(partData.row(i)), isnan(partData.col(i)))
-                    succes(i) = 0;
-                else
-                    %non_empty_indices(end+1) = i;
-                    succes(i) = 1;
-                end
+                % if or(isnan(partData.row(i)), isnan(partData.col(i)))
+                %     succes(i) = 0;
+                % else
+                %     non_empty_indices(end+1) = i;
+                %     succes(i) = 1;
+                % end
             end
-            partVolIm = [];
+
             for i = 1:size(pos,2)
                 if succes(i) == 0
-                    % distances = abs(non_empty_indices - i);
-                    % [~, closest_idx] = min(distances);
-                    % closest_non_empty_index = non_empty_indices(closest_idx);
-                    % pos{i} = pos{closest_non_empty_index};
-                else
-                    ROI = Misc.getROIs(pos{1,i},ROIRad,imSize(1:2));
-                    partVolIm(:,:,end+1) = volIm(ROI(1):ROI(2),ROI(3):ROI(4),i); 
+                    distances = abs(non_empty_indices - i);
+                    [~, closest_idx] = min(distances);
+                    closest_non_empty_index = non_empty_indices(closest_idx);
+                    pos{i} = pos{closest_non_empty_index};
                 end                    
+                ROI = Misc.getROIs(pos{1,i},ROIRad,imSize(1:2));
+                partVolIm(:,:,i) = volIm(ROI(1):ROI(2),ROI(3):ROI(4),i); 
             end               
 
             partVolIm(partVolIm == 0) = NaN;

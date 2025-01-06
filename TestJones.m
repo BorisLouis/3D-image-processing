@@ -27,9 +27,9 @@ for j = 1:size(i,2)
     end
     
     subplot(size(i,2), 1, j)
-    plot(theta_deg, Ip, 'r', 'LineWidth', 2); 
-    hold on;
-    plot(theta_deg, Is, 'b', 'LineWidth', 2);
+    plot(theta_deg, Ip-Is, 'r', 'LineWidth', 2); 
+    % hold on;
+    % plot(theta_deg, Is, 'b', 'LineWidth', 2);
     xlabel('theta (degrees)');
     ylabel('Intensity');
     legend('channel1', 'channel2');

@@ -10,10 +10,16 @@ if length(X0) < maxNFit
 end
 radius=(size(A,2)-1)/2;
 
-if width >0
-    wguess = width;
-    lw = width;
-    uw = width;
+if exist('width', 'var')
+    if width >0
+        wguess = width;
+        lw = width;
+        uw = width;
+    else
+        wguess = 3;
+        lw = 1;
+        uw = 5;
+    end
 else
     wguess = 3;
     lw = 1;

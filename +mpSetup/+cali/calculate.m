@@ -1,21 +1,21 @@
-function [cal, movInfo, MagnificationFactors] = calculate(fPath,nChan, correctInt, flipCam2)
+function [cal, movInfo, MagnificationFactors] = calculate(fPath,nChan, DarkFieldPhase, correctInt, flipCam2)
 %CALCULATE calculates calibration for the multiplane setup. NOTE that if
 %you choose to correct for intensity differences the data changes form
 %uint16 to double because we have to multiply by a correction factor
 %(double).
 
 switch nargin
-    case 1
+    case 2
         
         nChan = 4;
         flipCam2 = true;
         
-    case 2
+    case 3
         % this is the normal way, I cant see how it would be different
         correctInt = true;
         flipCam2 = true;
         
-    case 3
+    case 4
         
         flipCam2 = true;
         
@@ -60,12 +60,12 @@ end
 
 waitbar(.1,h,'Finding channels')
 % find channels
-[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan );
-[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan );
+[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan, DarkFieldPhase );
+[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan, DarkFieldPhase );
 commonwin = min([commonW1; commonW2]); 
 if multiModal == true
-    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, false, nChan );
-    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, false, nChan );
+    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, false, nChan, DarkFieldPhase );
+    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, false, nChan, DarkFieldPhase );
     commonwin = min([commonW1; commonW2; commonW3; commonW4]); 
 else 
 end
