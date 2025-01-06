@@ -114,6 +114,7 @@ classdef trackingMethod < handle
 
                             % Test Euclidian distance
                             Thresh = trackParam.euDistPx; %in px
+
                             [checkRes1] = Core.MPParticleMovie.checkEuDist([current.row(commonPlanes(:,1)) current.col(commonPlanes(:,1))],...
                                 [nextPart.row(commonPlanes(:,2)), nextPart.col(commonPlanes(:,2))],Thresh);
 

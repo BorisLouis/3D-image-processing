@@ -27,29 +27,31 @@ classdef MPSRCalMovie < Core.MPCalMovie
         end
         
         function [SRCalibData, dataPerPlane] = getSRCalData(obj,trackParam)
-            switch nargin
-                case 1
-                    error('Need tracking parameters to SR-Calibrate')
-                case 2
-                otherwise
-                    error('Unexpected number of input');
+            for q = 1:obj.info.multiModal + 1
+                switch nargin
+                    case 1
+                        error('Need tracking parameters to SR-Calibrate')
+                    case 2
+                    otherwise
+                        error('Unexpected number of input');
+                end
+                disp('Starting SR data extraction')
+                %#1 Track particle in Z (= Consolidation between frames)
+                [~,~] = obj.trackInZ(trackParam,q);
+                
+                %#2 Extract Data per particles
+                [partData] = obj.extractPartData(q);
+        
+                %#3 Find frames where a particle is approx equally defocused in
+                %2 consective planes.
+                [idx2Frame]= obj.findDefocusedFrame(partData);
+                
+                %#4 Extract the data per plane
+                [SRCalibData, dataPerPlane] = obj.getCalibData(partData,idx2Frame,q);
+                obj.SRCalData{q,1} = SRCalibData;
+                obj.calDataPerPlane{q,1} = dataPerPlane;
+                disp('==========> DONE ! <============');
             end
-            disp('Starting SR data extraction')
-            %#1 Track particle in Z (= Consolidation between frames)
-            [~,~] = obj.trackInZ(trackParam);
-            
-            %#2 Extract Data per particles
-            [partData] = obj.extractPartData;
-    
-            %#3 Find frames where a particle is approx equally defocused in
-            %2 consective planes.
-            [idx2Frame]= obj.findDefocusedFrame(partData);
-            
-            %#4 Extract the data per plane
-            [SRCalibData, dataPerPlane] = obj.getCalibData(partData,idx2Frame);
-            obj.SRCalData = SRCalibData;
-            obj.calDataPerPlane = dataPerPlane;
-            disp('==========> DONE ! <============');
         end
         
         function [transMat,corrData] = corrTranslation(obj,refPlane)
@@ -499,10 +501,10 @@ classdef MPSRCalMovie < Core.MPCalMovie
     
     methods (Access = private)
         
-        function [partData] = extractPartData(obj)
-            list = obj.particles.List;
-            traces = obj.particles.traces;
-            nTraces = obj.particles.nTraces;
+        function [partData] = extractPartData(obj,q)
+            list = obj.particles{q,1}.List;
+            traces = obj.particles{q,1}.traces;
+            nTraces = obj.particles{q,1}.nTraces;
             
             %Allocate Memory
             partData = cell(1,nTraces);
@@ -530,7 +532,7 @@ classdef MPSRCalMovie < Core.MPCalMovie
                 data2Test = partData{i};
                 test = unique(data2Test.plane);
                 
-                if length(test)<obj.calibrated.nPlanes
+                if length(test)<obj.calibrated{1,q}.nPlanes
                     %put empty cells where test fails
                     partData{i} = [];
                 end
@@ -568,7 +570,6 @@ classdef MPSRCalMovie < Core.MPCalMovie
             end
             %Deleting empty cells of the cell array
             partData(cellfun('isempty',partData)) = [];
-            
         end
         
         function [defocusFrame] = findDefocusedFrame(obj,partData)
@@ -633,8 +634,8 @@ classdef MPSRCalMovie < Core.MPCalMovie
             idx = commonFrame(id);
             
         end
-        function [SRCalibData,dataPerPlane] = getCalibData(obj,partData,idx2Frame)
-            nPlanes = obj.calibrated.nPlanes;
+        function [SRCalibData,dataPerPlane] = getCalibData(obj,partData,idx2Frame,q)
+            nPlanes = obj.calibrated{1,q}.nPlanes;
             SRCalibData = cell(nPlanes-1,1);
             dataPerPlane = cell(nPlanes,1);
             

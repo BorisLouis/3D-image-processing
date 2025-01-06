@@ -610,7 +610,7 @@ classdef MPParticleMovie < Core.MPMovie
             assert(size(current,2) == size(next,2), 'Dimension mismatch between the tail and partner to track');
 
             thresh = consThresh;
-            [checkRes1] = Core.MPParticleMovie.checkEuDist([current.row, current.col],...
+            [checkRes1] = Core.MPParticleMovie.checkEuDistRot([current.row, current.col],...
                 [next.row, next.col],thresh,rotational);
             
             if strcmp(zMethod,'PSFE')
@@ -651,7 +651,24 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
         
-        function [checkRes] = checkEuDist(current,next,Thresh,rotational)
+        function [checkRes] = checkEuDist(current,next,Thresh)
+            %Use to check if the Euclidian distance is within reasonable
+            %range
+            EuDist = sqrt((current(:,1) - next(:,1)).^2 +...
+                (current(:,2) - next(:,2)).^2);
+            checkRes = EuDist < Thresh;
+            % if rotational == 1
+            %     [~,Idx] = min(EuDist);
+            %     checkRes = zeros(size(EuDist));
+            %     checkRes(Idx) = 1;
+            % end
+            if isempty(checkRes)
+                checkRes = false;
+            end
+            
+        end
+
+        function [checkRes] = checkEuDistRot(current,next,Thresh,rotational)
             %Use to check if the Euclidian distance is within reasonable
             %range
             EuDist = sqrt((current(:,1) - next(:,1)).^2 +...

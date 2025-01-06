@@ -14,11 +14,11 @@ clear
 close all
 clc
 
-file.path  = 'G:\multicolor_polarization\polarisation\20241202_AuBPs\2D_Cal\planes';
+file.path  = 'G:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuNPs';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
-info.nChan = 4;
+info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
 info.method = 'Darkfield Phase';
 %% 
 calib = Core.MPPlaneCalibration(file,info);

@@ -12,7 +12,7 @@ classdef MPCalMovie < Core.MPParticleMovie
             obj  = obj@Core.MPParticleMovie(raw,cal,info);
         end
         
-        function [trace, counter] = trackInZ(obj,trackParam)
+        function [trace, counter] = trackInZ(obj,trackParam,q)
             %track the particle in the Z direction (3rd dimension here)
             %Here we do not expect any big movement from one frame to the
             %other so we give a warning if the tracking parameter seems to
@@ -25,16 +25,16 @@ classdef MPCalMovie < Core.MPParticleMovie
                 warning('Current euclidian distance thresholds is probably too high, we do not expect much movement from one frame to the next here')
             end
             
-            [trace,counter] = obj.zTracking(trackParam);
-            obj.particles.traces = trace;
-            obj.particles.nTraces = counter;
+            [trace,counter] = obj.zTracking(trackParam,q);
+            obj.particles{q,1}.traces = trace;
+            obj.particles{q,1}.nTraces = counter;
             
         end
        
     end
         
     methods (Access = private)
-        function [traces,counter] = zTracking(obj, trackParam)
+        function [traces,counter] = zTracking(obj, trackParam,q)
             %track the particle in the Z direction (3rd dimension here)
             assert(~isempty(obj.calibrated),'Data should be calibrated to do ZzCalibrationration');
             assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before zzCalibrationration');
@@ -44,9 +44,9 @@ classdef MPCalMovie < Core.MPParticleMovie
                 'Tracking parameter is expected to be a struct with two field "euDistPx" and "commonPlanes"')
             %We copy the List as boolean to keep track of where there are
             %still particles left
-            [listBool] = Core.trackingMethod.copyList(obj.particles.List,1);
+            [listBool] = Core.trackingMethod.copyList(obj.particles{q,1}.List,1);
             %We copy as NaN for storage of the traces;
-            [traces]   = Core.trackingMethod.copyList(obj.particles.List,NaN);
+            [traces]   = Core.trackingMethod.copyList(obj.particles{q,1}.List,NaN);
             %We pick the first particle available
             [idx] = Core.trackingMethod.pickParticle(listBool);
             counter = 1;
@@ -60,7 +60,7 @@ classdef MPCalMovie < Core.MPParticleMovie
                     
                 end
                 %Connect particles (cf consolidation but across frames
-                [listIdx] = Core.trackingMethod.connectParticles(obj.particles.List,listBool,idx, trackParam,zMethod);
+                [listIdx] = Core.trackingMethod.connectParticles(obj.particles{q,1}.List,listBool,idx, trackParam,zMethod);
                 %if the particle was connected in less than 5 frames we remove
                 % its appearance from the list bool
                 if length(listIdx) < 5

@@ -116,7 +116,11 @@ classdef SRCalibration < handle
         function retrieveSRCalData(obj,detectParam, trackParam)
             MultiModal = obj.info.multiModal + 1;
             fieldsN = fieldnames(obj.SRCalMovies);
-            nPlanes = obj.SRCalMovies.(fieldsN{MultiModal}).calibrated.nPlanes;
+            try
+                nPlanes = obj.SRCalMovies.(fieldsN{MultiModal}).calibrated.nPlanes;
+            catch
+                nPlanes = obj.SRCalMovies.(fieldsN{MultiModal}).calibrated{1,1}.nPlanes;
+            end
             %Checking user input
             assert(nargin==3, 'retrieveSRCalData expects 3 inputs, 1)detection Parameters, fit z parameter, tracking parameter');
             assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
@@ -134,11 +138,15 @@ classdef SRCalibration < handle
                 currMov.findCandidatePos(detectParam);
                 
                  %SR fitting
-                currMov.SRLocalizeCandidate;
+                currMov.SRLocalizeCandidate(detectParam);
                 
                 %plane consolidation
-                frames = 1:currMov.calibrated.nFrames;
-                currMov.consolidatePlanes(frames,detectParam.consThresh)
+                try
+                    frames = 1:currMov.calibrated.nFrames;
+                catch
+                    frames = 1:currMov.calibrated{1,1}.nFrames;
+                end
+                currMov.consolidatePlanes(frames,detectParam);
                 
                 %getting Calibration data
                 [SRCalibData,dataPerPlane] = currMov.getSRCalData(trackParam);
