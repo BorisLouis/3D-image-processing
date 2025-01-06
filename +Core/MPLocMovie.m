@@ -357,7 +357,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 if run
                     
                     data2Resolve = obj.particles{q,1}.List;
-                    nPlanes = obj.calibrated{1,q}.nPlanes;
+                    nPlanes = obj.calibrated{q,1}.nPlanes;
                     nParticles = sum(obj.particles{q,1}.nParticles);
                     pxSize = obj.info.pxSize;
                     SRList = table(zeros(nParticles,1),...

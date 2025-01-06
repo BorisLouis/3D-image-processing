@@ -276,7 +276,7 @@ function [frameInfo] = fixCamTiming(frameInfo)
         timeCurrRef = tmpInfo(currRefId).time;
 
         %find another frame with similar timing
-        id = find((abs([tmpInfo.time]-timeCurrRef))<60);
+        id = find((abs([tmpInfo.time]-timeCurrRef))<5);
         if size(id,2) == 3
             id = id(2:3);
         end
