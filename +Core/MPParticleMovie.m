@@ -364,7 +364,7 @@ classdef MPParticleMovie < Core.MPMovie
                         obj.particles{q,1} = particle;
                         
                     elseif run == 0
-                        obj.particles = particle;
+                        obj.particles{q,1} = particle;
                     end
                 end
             end
