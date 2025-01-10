@@ -207,18 +207,18 @@ else
         isTransmission2 = isTransmission2(newor2);
         close(h)
 
-        if info.rotational == true
-            %background substraction
-            h = waitbar(0,'Channel2: Rotational tracking: background substraction...');
-            for i = 1:size(data2,4)
-                waitbar(i./size(data2,4),h,'Channel2: Rotational tracking: background substraction...')
-                for k = 1:size(data2,3)
-                    MedianInt = median(data2(:,:,k,i), 'all');
-                    data2(:,:,k,i) = data2(:,:,k,i) - MedianInt;
-                end
-            end
-            close(h)
-        end
+        % if info.rotational == true
+        %     %background substraction
+        %     h = waitbar(0,'Channel2: Rotational tracking: background substraction...');
+        %     for i = 1:size(data2,4)
+        %         waitbar(i./size(data2,4),h,'Channel2: Rotational tracking: background substraction...')
+        %         for k = 1:size(data2,3)
+        %             MedianInt = median(data2(:,:,k,i), 'all');
+        %             data2(:,:,k,i) = data2(:,:,k,i) - MedianInt;
+        %         end
+        %     end
+        %     close(h)
+        % end
     else 
     end
     data = {data1; data2};

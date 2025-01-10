@@ -14,48 +14,40 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         ymean = mean(im, 2);
         x2 = medfilt1(xmean, 20);
         y2 = medfilt1(ymean, 20);
+        bgthr = mean(x2) - 0.5 * std(x2);   
 
-        bgthr = mean(x2) - 0.5 * std(x2);
-        test = x2;
-        test(test > bgthr) = bgthr;
-        [~, pks] = findpeaks(-test);
+        Prominence = 10;
+        [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
+        while size(p, 2) > 8
+            [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
+            Prominence = Prominence + 1;
+        end     
+        Deletewidth = 25;
+        colsToDelete = [1:pks(1)+Deletewidth, pks(2)-Deletewidth:pks(3)+Deletewidth, pks(4)-Deletewidth:pks(5)+Deletewidth, pks(6)-Deletewidth:pks(7)+Deletewidth, pks(8)-Deletewidth:size(im, 2)];
+        im(:, colsToDelete) = bgthr;
 
-        peakthr1 = mean(x2(1,1:pks(1))) + 1 * std(x2(1,1:pks(1)));
-        edges = find(x2(1,1:pks(1)) >= peakthr1);
-        im(:, edges) = bgthr;
-        peakthr2 = mean(x2(1,pks(1):pks(2))) + 1 * std(x2(1,pks(1):pks(2)));
-        edges = find(x2(1,pks(1):pks(2)) >= peakthr2) + pks(1);
-        im(:, edges) = bgthr;
-        peakthr3 = mean(x2(1,pks(2):pks(3))) + 1 * std(x2(1,pks(2):pks(3)));
-        edges = find(x2(1,pks(2):pks(3)) >= peakthr3) + pks(2);
-        im(:, edges) = bgthr;
-        peakthr4 = mean(x2(1,pks(3):end)) + 1 * std(x2(1,pks(3):end));
-        edges = find(x2(1,pks(3):end) >= peakthr4) + pks(3);
-        im(:, edges) = bgthr;
-
-        peakthr5 = mean(y2) + 1*std(y2);
-        edges = find(y2 >= peakthr5);
-        im(edges, :) = bgthr;
-
-        im = im > bgthr;
-        [labeledImage, numRegions] = bwlabel(im);
-        regionProps = regionprops(labeledImage, 'Area');
-        allAreas = [regionProps.Area];
-        [~, sortedIndices] = sort(allAreas, 'descend');
-        largestIndices = sortedIndices(1:min(nChan, length(sortedIndices)));
-        im = ismember(labeledImage, largestIndices);
+        Prominence = 10;
+        [f, pks, w, p] = findpeaks(y2, 'MinPeakProminence',Prominence);
+        while size(p, 2) > 2
+            [f, pks, w, p] = findpeaks(y2, 'MinPeakProminence',Prominence);
+            Prominence = Prominence + 1;
+        end     
+        RowsToDelete = [1:pks(1)+Deletewidth, pks(2)-Deletewidth:size(im, 1)];
+        im(RowsToDelete, :) = bgthr;
+        
     else
         tHold = Misc.tholdSigBg(bg,sig);
         im = im>tHold;
+        %remove small pixel
+        im = bwareaopen(im,21);
+        % Clean up boundary
+        se = strel('square',5);
+        im = imclose(im,se);
+        im = bwareaopen(im,16);
 
     end
    
-    %remove small pixel
-    im = bwareaopen(im,21);
-    % Clean up boundary
-    se = strel('square',5);
-    im = imclose(im,se);
-    im = bwareaopen(im,16);
+
     
     switch nargin
         case 1

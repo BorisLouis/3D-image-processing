@@ -6,9 +6,11 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'G:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuBPs_polarization';
+MainFolder = 'G:\multicolor_polarization\polarisation\20250110\2dCal_RotCal';
+subFolders = {'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6',...
+            'sample_7', 'sample_8', 'sample_9', 'sample_10'};
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuNPs';
+path2Cal = 'G:\multicolor_polarization\polarisation\20250110\2DCal_fluo';
 dimension = '3D';
 
 %detection parameter
@@ -39,22 +41,27 @@ info.euDist = 1500;
 info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 
-%% create experiments
-trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
+for i = 1:size(subFolders, 2)
+    file.path = append(MainFolder, filesep, subFolders{i})
 
-%% get Movies
-trackingExp.retrieveMovies;
+    %% create experiments
+    trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
+    
+    %% get Movies
+    trackingExp.retrieveMovies;
+    
+    %% test detection parameters
+    testMov = trackingExp.trackMovies.mov1;
+    testMov.findCandidatePos(detectParam);
+    testMov.getROIs;
+    testMov.showCandidate(1);
+    
+    %% get TrackingData
+    val2Use = 'bestFocus';
+    trackingExp.retrieveTrackData(detectParam,trackParam);
+    traces = trackingExp.getTraces3D;
+    trackingExp.ConsolidateChannels3;
+    trackingExp.RotationalCalibration;
+    trackingExp.saveData;
+end
 
-%% test detection parameters
-testMov = trackingExp.trackMovies.mov1;
-testMov.findCandidatePos(detectParam);
-testMov.getROIs;
-testMov.showCandidate(1);
-
-%% get TrackingData
-val2Use = 'bestFocus';
-trackingExp.retrieveTrackData(detectParam,trackParam);
-traces = trackingExp.getTraces3D;
-trackingExp.ConsolidateChannels3;
-trackingExp.RotationalCalibration;
-trackingExp.saveData;

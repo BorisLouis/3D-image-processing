@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'G:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuNPs';
+file.path  = 'G:\multicolor_polarization\polarisation\20250110\2DCal_fluo';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
