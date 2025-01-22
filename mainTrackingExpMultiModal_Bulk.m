@@ -19,9 +19,12 @@ SubsubsubsubFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min5',...
     '3 min', '5 min', '7 min', '9 min', '11 min', '13 min', '15 min', '17 min'};
 
 %detection parameter
-detectParam.delta = 6;
-detectParam.chi2  = 40;
-detectParam.consThresh = 4;
+detectParam{1}.delta = 6;
+detectParam{1}.consThresh = 4;
+detectParam{2}.delta = 6;
+detectParam{2}.consThresh = 4;
+
+
 %tracking parameter
 trackParam.radius  = 2000;%nm
 trackParam.memory  = 3;
@@ -46,6 +49,23 @@ for t = 1:numel(SubFolders)
             for c = 1:numel(SubsubsubsubFolders)
                 file.path = append(MainFolder, filesep, SubFolders{t}, filesep, SubsubFolders{r},...
                     filesep, SubsubsubFolders{a}, filesep, SubsubsubsubFolders{c});
+
+                if r == 1
+                    detectParam{1}.chi2  = 25;
+                    detectParam{2}.chi2  = 50;
+                else
+                    if c == 12
+                        detectParam{1}.chi2  = 50;
+                        detectParam{2}.chi2  = 30;
+                    elseif c == 13
+                        detectParam{1}.chi2  = 50;
+                        detectParam{2}.chi2  = 30;
+                    else
+                        detectParam{1}.chi2  = 50;
+                        detectParam{2}.chi2  = 50;
+                    end
+                end
+
                 try
                     %% create experiments
                     trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,path2ZCal);
