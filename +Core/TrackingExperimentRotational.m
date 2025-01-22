@@ -402,7 +402,7 @@ classdef TrackingExperimentRotational < handle
                 Lower = [Min, (((Max-Mean) + (Mean - Min))./2)./2, 0, 0];
                 Upper = [Max, Max-Min, AngFreq*2, 360];
 
-                [fitDiff, gofDiff] = fit(Time, Diff, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
+                [fitDiff, gofDiff] = fit(Time.', Diff, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
                 coeff = coeffvalues(fitDiff);
                 HeightDiff = coeff(1);
                 AmpDiff = coeff(2);
@@ -432,7 +432,7 @@ classdef TrackingExperimentRotational < handle
                 Lower = [Min, (((Max-Mean) + (Mean - Min))./2)./2, 0, 0];
                 Upper = [Max, Max-Min, AngFreq*2, 360];
 
-                [fitRatio, gofRatio] = fit(Time, Ratio, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
+                [fitRatio, gofRatio] = fit(Time.', Ratio, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
                 coeff = coeffvalues(fitRatio);
                 HeightRatio = coeff(1);
                 AmpRatio = coeff(2);

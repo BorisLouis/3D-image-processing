@@ -7,8 +7,7 @@ path2SRCal = [];
 
 %file info
 MainFolder = 'G:\multicolor_polarization\polarisation\20250110\2dCal_RotCal';
-subFolders = {'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6',...
-            'sample_7', 'sample_8', 'sample_9', 'sample_10'};
+subFolders = {'sample_8', 'sample_9', 'sample_10'};
 file.ext   = '.ome.tif';
 path2Cal = 'G:\multicolor_polarization\polarisation\20250110\2DCal_fluo';
 dimension = '3D';
