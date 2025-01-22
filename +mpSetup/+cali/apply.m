@@ -223,5 +223,9 @@ else
     end
     data = {data1; data2};
     isTransmission = {isTransmission1; isTransmission2};
+
+    if exist('ROInew','var') == 0
+        ROInew = NaN;
+    end
 end
 end

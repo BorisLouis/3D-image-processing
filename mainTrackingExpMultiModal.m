@@ -6,14 +6,14 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'G:\multicolor_polarization\multicolor\20241105_polymerisation_dual_color_PS_air_obj\sample1\5 min';
+file.path  = 'D:\Dual Color\20250121\PS_200_green_PS_100_red\sample2\15_min';
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\multicolor\20241105_polymerisation_dual_color_PS_air_obj\2D_cal';
+path2Cal = 'D:\Dual Color\20250121\2DCal';
 dimension = '3D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 40;
+detectParam.chi2  = 50;
 detectParam.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 2500;%nm
@@ -29,6 +29,8 @@ info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) 
 info.calibrate = false; %true to recalibrate;
 info.euDist = 1000; %Error distance between particles in different channels
 info.multiTracking = 'MultiColor'; %MultiColor or Rotation
+info.rotational = 0; %Rotational tracking 
+info.rotationalCalib = 0;
 
 %% create experiments
 trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,path2ZCal);

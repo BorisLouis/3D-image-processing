@@ -421,7 +421,7 @@ classdef MPMovie < Core.Movie
                         if exist('ROI','var') == 1
                             [data,isTransmission,ROI] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info, ROI);
                         else 
-                            [data,isTransmission,ROI] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
+                            [data,isTransmission,~] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
                         end
                         %saving data per plane and info to cal
                         [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP);

@@ -232,7 +232,7 @@ classdef TrackingExperimentMultiModal < handle
                 currentTrackMov.findCandidatePos(detectParam);
                 
                 %SR fitting
-                currentTrackMov.SRLocalizeCandidate(detectParam.delta);
+                currentTrackMov.SRLocalizeCandidate(detectParam);
                 refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                 rot = true;
                 %apply SRCal
@@ -243,7 +243,7 @@ classdef TrackingExperimentMultiModal < handle
                 
                 %Plane consolidation
                 frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
-                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh)
+                currentTrackMov.consolidatePlanes(frames,detectParam)
                 
                 %superResolve
                 currentTrackMov.superResolve;
