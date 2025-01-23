@@ -16,7 +16,7 @@ SubFolders = {'20250121', '20250122'};
 SubsubFolders = {'Multicolor_particles', 'PS_200_green_PS_100_red', 'PS_300_green_PS_100_red'};
 SubsubsubFolders = {'0_min_measurements','In_water', 'sample_1', 'sample_2', 'sample_3'};
 SubsubsubsubFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min5',...
-    '3 min', '5 min', '7 min', '9 min', '11 min', '13 min', '15 min', '17 min'};
+    '3 min', '5 min', '7 min', '9 min', '11 min', '13 min', '15 min', '17 min'}; %, 
 
 %detection parameter
 detectParam{1}.delta = 6;
@@ -51,7 +51,7 @@ for t = 1:numel(SubFolders)
                     filesep, SubsubsubFolders{a}, filesep, SubsubsubsubFolders{c});
 
                 if r == 1
-                    detectParam{1}.chi2  = 25;
+                    detectParam{1}.chi2  = 30;
                     detectParam{2}.chi2  = 50;
                 else
                     if c == 12
@@ -84,7 +84,7 @@ for t = 1:numel(SubFolders)
                     val2Use = 'bestFocus';
                     trackingExp.retrieveTrackData(detectParam,trackParam);
                     traces = trackingExp.getTraces3D;
-                    trackingExp.ConsolidateChannels;
+                    trackingExp.ConsolidateChannels3;
                     
                     %% Get Intensity
                     [int,SNR] = trackingExp.getAvgIntensity;

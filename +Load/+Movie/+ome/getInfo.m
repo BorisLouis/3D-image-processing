@@ -310,6 +310,10 @@ function [frameInfo] = fixCamTiming(frameInfo)
         assert(length(id) == 2, 'couldnt find 2 frames for that time point');
 
         id = id(id~= currRefId);
+        if size(id, 2) ~= 1
+            id = currRefId -1;
+        end
+        
         tmpInfo(id).T = currT;
         
         %previous version:
@@ -325,6 +329,14 @@ function [frameInfo] = fixCamTiming(frameInfo)
 %             
 %         end
         
+    end
+
+    for i = 1:size(tmpInfo, 2)
+        if mod(i,2) == 0
+            tmpInfo(i).C = '1';
+        else
+            tmpInfo(i).C = '0';
+        end
     end
     
     % test that the camera are indeed synchroneous
