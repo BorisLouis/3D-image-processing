@@ -29,9 +29,9 @@ val = max(bgV);
 tHold = val;
 
 %previous
-% tHold = globXq(idx);
-tHold= prctile(bg,99);
-% tHold = (tHold + tHold2)/2;
+%tHold = globXq(idx);
+%tHold= prctile(bg,99);
+%tHold = (tHold + tHold2)/2;
 %end
 
 end

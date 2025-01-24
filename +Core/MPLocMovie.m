@@ -357,7 +357,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 if run
                     
                     data2Resolve = obj.particles{q,1}.List;
-                    nPlanes = obj.calibrated{q,1}.nPlanes;
+                    nPlanes = obj.calibrated{1,q}.nPlanes;
                     nParticles = sum(obj.particles{q,1}.nParticles);
                     pxSize = obj.info.pxSize;
                     SRList = table(zeros(nParticles,1),...
@@ -455,7 +455,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                     %clean up the list
                     SRList(isnan(SRList.row),:) = [];
                     obj.particles{q,1}.SRList = SRList;
-                    particle = obj.particles;
+                    particle = obj.particles{q,1};
                     
                 else
                     if ~isfield(obj.particles{q,1}, 'SRList')
@@ -918,7 +918,7 @@ classdef MPLocMovie < Core.MPParticleMovie
 
                         if size(particle, 2) == 1
                             for z = 1:size(particle,1)
-                                Particle = particle{z,1};
+                                %Particle = particle{z,1};
                                 try
                                     if isfield(Particle,'SRList')
                                         if ~isempty(Particle.SRList)

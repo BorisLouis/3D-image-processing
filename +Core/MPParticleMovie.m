@@ -208,7 +208,12 @@ classdef MPParticleMovie < Core.MPMovie
                                 
                             else
                                 
-                                locPos{i} = obj.superResLocFit(data,frameCandidate,roiSize);
+                                
+                                if obj.info.rotationalCalib == 1 && i > 1
+                                    locPos{i} = locPos{1};
+                                else
+                                    locPos{i} = obj.superResLocFit(data,frameCandidate,roiSize);
+                                end
                                 
                             end
                             waitbar(i/nFrames,h,['Fitting candidates: frame ' num2str(i) '/' num2str(nFrames) ' done']);
@@ -364,7 +369,7 @@ classdef MPParticleMovie < Core.MPMovie
                         obj.particles{q,1} = particle;
                         
                     elseif run == 0
-                        obj.particles = particle;
+                        obj.particles{q,1} = particle;
                     end
                 end
             end
@@ -964,24 +969,24 @@ classdef MPParticleMovie < Core.MPMovie
             h = waitbar(0,'detection of candidates...');
             
             if obj.info.rotational == 1
-                AllFramesFile = append(obj.raw.movInfo.Path,filesep,'calibrated',num2str(q),filesep,'AllFrames.mat');
-                if ~exist(AllFramesFile)
-                    run = 1;
-                else
-                    run = 0;
-                end
+                % AllFramesFile = append(obj.raw.movInfo.Path,filesep,'calibrated',num2str(q),filesep,'AllFrames.mat');
+                % if ~exist(AllFramesFile)
+                %     run = 1;
+                % else
+                %     run = 0;
+                % end
 
-                if run == 1
+                % if run == 1
                     for i = 1:obj.raw.maxFrame(1)
                         waitbar(i./obj.raw.maxFrame(1), h, 'Rotational: Averaging frames')
                         AllFrames(:,:,:,i) = obj.getFrame(i,q);
                     end
-                    save(AllFramesFile, 'AllFrames', '-v7.3');
-                else
-                    waitbar(0.5, h, 'Rotational: loading meanImage')
-                    AllFrames = load(AllFramesFile);
-                    AllFrames = AllFrames.AllFrames;
-                end
+                    % save(AllFramesFile, 'AllFrames', '-v7.3');
+                % else
+                %     waitbar(0.5, h, 'Rotational: loading meanImage')
+                %     AllFrames = load(AllFramesFile);
+                %     AllFrames = AllFrames.AllFrames;
+                % end
 
                 MeanIm = mean(AllFrames, 4);
                 obj.calibrated{2,q} = MeanIm;

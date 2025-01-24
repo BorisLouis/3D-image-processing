@@ -280,9 +280,40 @@ function [frameInfo] = fixCamTiming(frameInfo)
         if size(id,2) == 3
             id = id(2:3);
         end
+        if length(id) ~= 2
+            for f = 1:size(id, 2)
+                ff = id(f);
+                Times(f) = tmpInfo(ff).time;
+            end
+            Diff = Times -timeCurrRef;
+
+            min1 = inf; 
+            min2 = inf; 
+            Rightidx1 = -1;  
+            Rightidx2 = -1;  
+            
+            for q = 1:length(Diff)
+                if Diff(q) < min1
+                    min2 = min1;
+                    Rightidx2 = Rightidx1;
+                    min1 = Diff(q);
+                    Rightidx1 = q;
+                elseif Diff(q) < min2
+                    min2 = Diff(q);
+                    Rightidx2 = q;
+                end
+            end
+            Rightid = [id(Rightidx1), id(Rightidx2)];
+            id = [];
+            id = Rightid;
+        end
         assert(length(id) == 2, 'couldnt find 2 frames for that time point');
 
         id = id(id~= currRefId);
+        if size(id, 2) ~= 1
+            id = currRefId -1;
+        end
+        
         tmpInfo(id).T = currT;
         
         %previous version:
@@ -299,27 +330,41 @@ function [frameInfo] = fixCamTiming(frameInfo)
 %         end
         
     end
+
+    for i = 1:size(tmpInfo, 2)
+        if mod(i,2) == 0
+            tmpInfo(i).C = '1';
+        else
+            tmpInfo(i).C = '0';
+        end
+    end
     
     % test that the camera are indeed synchroneous
     maxT = str2double(tmpInfo(end).T);
+
+    for i = 2:size(tmpInfo, 2)
+        tmpInfo(i).T = num2str(round(i./2 -1));
+    end
+
+    % 
     for i = 0:maxT
-        
+
         idx = strcmp({tmpInfo.T},{num2str(i)});
-        
+
         camDiff = {tmpInfo(idx).C};
-        
+
         %test cam diff
         %#1 we test that there is only 2 camera frames
         assert(length(camDiff)<=2,'More than two camera for a single frame')
         %#2 
         assert(~strcmp(camDiff{1}, camDiff{2}),'The two cameras corresponding to the same time point are not different')
-        
+
         %test timing difference
         camTiming = {tmpInfo(idx).time};
-        
+
         assert(abs(camTiming{1} - camTiming{2}) < 75, 'Camera delay bigger than 4ms after fixing, something is wrong')
-        
-        
+
+
     end
     
     

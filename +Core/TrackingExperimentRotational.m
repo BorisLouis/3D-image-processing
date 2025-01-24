@@ -298,204 +298,171 @@ classdef TrackingExperimentRotational < handle
        
         % Select particles only when visible at the same time in both
         % channels:
-        function ConsolidateChannels2(obj)
-            Tresh = obj.info.euDist;
-            obj.traces3Dcommon = struct([]);
-            
+       
 
-            %%% clean up traces
-            TracesCh1 = struct([]);
-            for i = 1:size(obj.traces3D{1,1})
-                if size(obj.traces3D{1,1}{i,1},1) > 10
-                    TracesCh1{end+1,1} = obj.traces3D{1,1}{i,1};
+        function ConsolidateChannels3(obj)
+            channel1 = obj.traces3D{1,1};
+            channel2 = obj.traces3D{2,1};
+            numTraces1 = size(channel1, 1);
+            numTraces2 = size(channel2, 1);
+        
+            distances = zeros(numTraces1, numTraces2);
+        
+            for i = 1:numTraces1
+                trace1 = channel1{i,1};
+                for j = 1:numTraces2
+                    trace2 = channel2{j,1}; 
+                    
+                    coords1 = table2array(trace1(:, 1:2)); 
+                    time1 = table2array(trace1(:, 10));   
+                    coords2 = table2array(trace2(:, 1:2));
+                    time2 = table2array(trace2(:, 10)); 
+                
+                    common_time = intersect(time1, time2);
+                    
+                    coords1_common = coords1(ismember(time1, common_time), :);
+                    coords2_common = coords2(ismember(time2, common_time), :);
+                
+                    if isempty(common_time)
+                        avg_distance = Inf;
+                        return;
+                    end
+                
+                    distance = sqrt(sum((coords1_common - coords2_common).^2, 2));
+                    distances(i, j) = mean(distance);
                 end
             end
-            TracesCh2 = struct([]);
-            for i = 1:size(obj.traces3D{2,1})
-                if size(obj.traces3D{2,1}{i,1},1) > 10
-                    TracesCh2{end+1,1} = obj.traces3D{2,1}{i,1};
+            
+            [~, TracesIdx] = max(size(distances));
+            [closest, closest_indices] = min(distances, [], TracesIdx);
+
+            unique_vals = unique(closest_indices);
+            n = 0;
+
+            while numel(unique_vals) < numel(closest_indices)
+                n = n+1;
+                duplicates = unique_vals(histc(closest_indices, unique_vals) > 1);
+    
+                for i = 1:numel(duplicates)
+                    duplicate_value = duplicates(i);
+                    duplicate_indices = find(closest_indices == duplicate_value);
+                    [MaxDup, MaxDupIdx] = max(closest(duplicate_indices));
+                    SearchPartner = duplicate_indices(MaxDupIdx);
+    
+                    PossPartners = distances(SearchPartner, :);
+                    PossPartners(1, duplicate_value) = Inf;
+    
+                    [closest(SearchPartner, 1), closest_indices(SearchPartner, 1)] = min(PossPartners);
+    
+                    
+                end
+    
+                unique_vals = unique(closest_indices);
+                if n == 3
+                    break
                 end
             end
+            
+            for i = 1:size(closest_indices, 1)
+                Int1 = obj.traces3D{1,1}{i,1}.intensity;
+                Int2 = obj.traces3D{2,1}{closest_indices(i),1}.intensity;
+
+                traces3Dcommon{i,1} = obj.traces3D{1,1}{i,1}.intensity;
+                traces3Dcommon{i,2} = obj.traces3D{2,1}{closest_indices(i),1}.intensity;
+
+                Diff = Int1-Int2;
+                Ratio = Int1./Int2;
+                Time = [0:1:size(Diff,1)-1]*obj.info.expTime;
+
+                traces3Dcommon{i,3} = Diff;
+                traces3Dcommon{i,4} = Ratio;
+                traces3Dcommon{i,5} = Time;
+            end
+
+            obj.traces3Dcommon = traces3Dcommon;
+        end
+        
+        function RotationalCalibration(obj)
+            AngFreq = 2*obj.info.RadTime*pi./180;
+            Model = 'a+b*sin(c*x+d)';
 
             figure()
-            subplot(2,1,1)
-            for i= 1:size(TracesCh1,1)
-                plot(TracesCh1{i,1}.row, TracesCh1{i,1}.col)
-                hold on
-            end
-            subplot(2,1,2)
-            for i= 1:size(TracesCh2,1)
-                plot(TracesCh2{i,1}.row, TracesCh2{i,1}.col)
-                hold on
-            end
-            
-            mutualIndex = 1;
-            for i = 1:size(TracesCh1,1)
-                CurrentTrace1 = TracesCh1{i,1};
-                CurrentTrace1.z(:) = 0;
-                for j = 1:size(TracesCh2,1)
-                    CurrentTrace2 = TracesCh2{j,1};
-                    CurrentTrace2.z(:) = 0;
-                    [commonTimestamps, idx1, idx2] = intersect(CurrentTrace1(:, 10), CurrentTrace2(:, 10));
-                    if ~isempty(commonTimestamps)
-                        CurrentTrace1Overlap = CurrentTrace1(idx1, :);
-                        CurrentTrace2Overlap = CurrentTrace2(idx2, :);
-                        distances = sqrt(sum((CurrentTrace1Overlap(:, 1:3) - CurrentTrace2Overlap(:, 1:3)).^2, 2));
-                        if all(distances.sum < Tresh)
-                            obj.traces3Dcommon{end+1,1} = CurrentTrace1Overlap;
-                            obj.traces3Dcommon{end,2} = CurrentTrace2Overlap;
-                            mutualIndex = mutualIndex + 1;
-                            break
-                        end
-                    end
-                end
-            end
+            for i = 1:size(obj.traces3Dcommon,1)
 
-            for i = 1:size(obj.traces3Dcommon)
-                Int1 = obj.traces3Dcommon{i,1}.intensity;
-                Int2 = obj.traces3Dcommon{i,2}.intensity;
-                Ratio = Int1./Int2;
-                obj.traces3Dcommon{i,3} = Ratio;
-            end
-        end
+                Diff = smooth(obj.traces3Dcommon{i,3});
+                Ratio = smooth(obj.traces3Dcommon{i,4});
+                Time = obj.traces3Dcommon{i,5};
+                %obj.traces3Dcommon{i,5} = Time;
 
+                %%%Fit on difference plot
+                Mean = mean(Diff);
+                Max = max(Diff);
+                Min = min(Diff);
+                StartPoints = [Mean, (Max-Min)./2, AngFreq, 180];
+                Lower = [Min, (((Max-Mean) + (Mean - Min))./2)./2, 0, 0];
+                Upper = [Max, Max-Min, AngFreq*2, 360];
 
-        function ConsolidateChannels(obj)
-            
-            Tresh = obj.info.euDist
-            obj.traces3Dcommon = struct([]);
-            %Extract traces per channel
-            for i = 1:(size(obj.traces3D, 1)./2)
-                Traces0 = obj.traces3D{(i*2)-1,1};
-                Traces1 = obj.traces3D{(i*2),1};
-            end
-                                    
-            Trajec0 = struct([]);
-            Trajec1 = struct([]);
-            AlreadyChecked = [];
-            %Open traces for channel one and two, check them one by one
-            h1 = waitbar(0,'Consolidating Channels - Initializing');
-            h2 = waitbar(0,'Consolidating Channels - Initializing');
-            pos_w1=get(h1,'position');
-            pos_w2=[pos_w1(1) pos_w1(2)+pos_w1(4) pos_w1(3) pos_w1(4)];
-            set(h2,'position',pos_w2,'doublebuffer','on');
-            set(h1,'doublebuffer','on');
-            
-
-            for j = 1:size(Traces0, 1)
-                CurrentPartCh0 = Traces0{j,1};
-
-                string1 = append('Consolidating Channels - Channel 0 particle ', num2str(j), '/', num2str(max(size(Traces0,1))));
-                waitbar(j/max(size(Traces0,1)),h1,string1)
-                Stop = 0;
-
-                for k = 1:size(Traces1, 1);
-                    if ismember(k, AlreadyChecked)
-                        continue
-                    end
-                    CurrentPartCh1 = Traces1{k,1};
-
-                    string2 = append('Consolidating Channels - Channel 1 particle ', num2str(k), '/', num2str(max(size(Traces1,1))));
-                    waitbar(k/max(size(Traces1,1)),h2,string2)
-
-                    % Check if particles have the same Timestamp:
-                    SameTime = ismember(CurrentPartCh0.t, CurrentPartCh1.t);
-                    Trace0 = [];
-                    Trace1 = [];
-                    
-                    for l = 1:length(SameTime)
-                        if SameTime(l) == true
-                           Time = CurrentPartCh0.t(l);
-                           rowCh0 = CurrentPartCh0.row(l);
-                           colCh0 = CurrentPartCh0.col(l);
-                           zCh0 = CurrentPartCh0.z(l);
-
-                           idx = find(CurrentPartCh1.t == Time);
-                           rowCh1 = CurrentPartCh1.row(idx);
-                           colCh1 = CurrentPartCh1.col(idx);
-                           zCh1 = CurrentPartCh1.z(idx);
-
-                           EuDist = sqrt((rowCh0 - rowCh1).^2 + (colCh0 - colCh1).^2 + (zCh0 - zCh1).^2);
-                           checkRes = EuDist < Tresh;
-    
-                           if checkRes == true
-                               CP0 = table2array(CurrentPartCh0);
-                               CP1 = table2array(CurrentPartCh1);
-
-                               Trace0(l,:) = CP0(l, :);
-                               Trace1(l,:) = CP1(idx,:); 
-
-                               AlreadyChecked(end+1,1) = k;
-                               Stop = 1;
-                           end
-                       end 
-                    end
-
-                   Trace0T = struct([]);
-                   Trace1T = struct([]); 
-                   VarNames = {'row','col','z', 'rowM', 'colM', 'zM', 'adjR', 'intensity', 'SNR', 't', 'rT', 'NumParticle'};
-
-                   % If traces are not consequtive, split them.
-                   % for Trace0
-                   if ~isempty(Trace0) 
-                       zeroRows = all(Trace0(:,:) == 0, 2);
-                       zeroIndices = find(zeroRows);
-
-                       startIdx = 1;
-
-                       for i = 1:length(zeroIndices)
-                           endIdx = zeroIndices(i) - 1; % Index before the zero row
-                           if startIdx <= endIdx
-                               TracesAdd = array2table(Trace0(startIdx:endIdx, :), 'VariableNames', VarNames);
-                               Trace0T{end+1} = TracesAdd; % Add the sub-table to cell array
-                           end
-                           startIdx = zeroIndices(i) + 1; % Start of the next sub-table
-                       end
-
-                       if startIdx <= height(Trace0)
-                           TracesAdd = array2table(Trace0(startIdx:end, :), 'VariableNames', VarNames);
-                           Trace0T{end+1} = TracesAdd;
-                       end
-                   end
-
-                   % for Trace1
-                    if ~isempty(Trace1) 
-                       zeroRows = all(Trace1(:,:) == 0, 2);
-                       zeroIndices = find(zeroRows);
-
-                       startIdx = 1;
-
-                       for i = 1:length(zeroIndices)
-                           endIdx = zeroIndices(i) - 1; % Index before the zero row
-                           if startIdx <= endIdx
-                              TracesAdd = array2table(Trace1(startIdx:endIdx, :), 'VariableNames', VarNames);
-                              Trace1T{end+1} = TracesAdd; % Add the sub-table to cell array
-                           end
-                           startIdx = zeroIndices(i) + 1; % Start of the next sub-table
-                       end
-
-                       if startIdx <= height(Trace1)
-                           TracesAdd = array2table(Trace1(startIdx:end, :), 'VariableNames', VarNames);
-                           Trace1T{end+1} = TracesAdd;
-                       end
-                   end
-
-                    if Stop == 1
-                        break
-                    end
-                end
-    
-                if isempty(Trace0T) == false
-                    for i = 1:length(Trace0T)
-                        Trajec0{end+1,1} = Trace0T{1,i};
-                    end
-                    for i = 1:length(Trace1T)
-                        Trajec1{end+1,1} = Trace1T{1,i};
-                    end
+                [fitDiff, gofDiff] = fit(Time.', Diff, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
+                coeff = coeffvalues(fitDiff);
+                HeightDiff = coeff(1);
+                AmpDiff = coeff(2);
+                AngFreqDiff = coeff(3);
+                PhaseDiff = coeff(4);
+                
+                if gofDiff.rsquare > 0.5
+                    obj.traces3Dcommon{i, 6} = HeightDiff;
+                    obj.traces3Dcommon{i, 7} = AmpDiff;
+                    obj.traces3Dcommon{i, 8} = AngFreqDiff;
+                    obj.traces3Dcommon{i, 9} = PhaseDiff;
+                else
+                    obj.traces3Dcommon{i, 6} = 'Failed fit';
+                    obj.traces3Dcommon{i, 7} = 'Failed fit';
+                    obj.traces3Dcommon{i, 8} = 'Failed fit';
+                    obj.traces3Dcommon{i, 9} = 'Failed fit';
                 end
 
+                subplot(size(obj.traces3Dcommon,1), 2, i*2-1)
+                plot(fitDiff, Time, Diff)
+
+                %%%Fit on Ratio plot
+                Mean = mean(Ratio);
+                Max = max(Ratio);
+                Min = min(Ratio);
+                StartPoints = [Mean, (Max-Min)./2, AngFreq, 180];
+                Lower = [Min, (((Max-Mean) + (Mean - Min))./2)./2, 0, 0];
+                Upper = [Max, Max-Min, AngFreq*2, 360];
+
+                [fitRatio, gofRatio] = fit(Time.', Ratio, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
+                coeff = coeffvalues(fitRatio);
+                HeightRatio = coeff(1);
+                AmpRatio = coeff(2);
+                AngFreqRatio = coeff(3);
+                PhaseRatio = coeff(4);
+                
+                if gofRatio.rsquare > 0.5
+                    obj.traces3Dcommon{i, 10} = HeightRatio;
+                    obj.traces3Dcommon{i, 11} = AmpRatio;
+                    obj.traces3Dcommon{i, 12} = AngFreqRatio;
+                    obj.traces3Dcommon{i, 13} = PhaseRatio;
+                else
+                    obj.traces3Dcommon{i, 10} = 'Failed fit';
+                    obj.traces3Dcommon{i, 11} = 'Failed fit';
+                    obj.traces3Dcommon{i, 12} = 'Failed fit';
+                    obj.traces3Dcommon{i, 13} = 'Failed fit';
+                end
+
+                subplot(size(obj.traces3Dcommon,1), 2, i*2)
+                plot(fitRatio, Time, Ratio)
+
             end
-            obj.traces3Dcommon = {Trajec0; Trajec1};
+
+            obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
+                'Diff', 'Ratio', 'Time', 'Height - Diff', 'Amp - Diff', 'Freq - Diff', 'Phase - Diff',...
+                'Height - Ratio', 'Amp - Ratio', 'Freq - Ratio', 'Phase - Ratio'});
+            CommonTraces = obj.traces3Dcommon;
+
+            Filename = append(obj.path, filesep, 'CommonTraces.mat')
+            save(Filename, 'CommonTraces')
         end
 
          %Plotting for individual movies

@@ -216,7 +216,7 @@ classdef TrackingExperimentMultiModal < handle
         function retrieveTrackData(obj,detectParam, trackParam)
             %Checking user input
             assert(nargin==3, 'retrieveZCalData expects 2 inputs, 1)detection Parameters, tracking parameter');
-            assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
+            %assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
             assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
                 'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
             fieldsN = fieldnames(obj.trackMovies);
@@ -232,7 +232,7 @@ classdef TrackingExperimentMultiModal < handle
                 currentTrackMov.findCandidatePos(detectParam);
                 
                 %SR fitting
-                currentTrackMov.SRLocalizeCandidate(detectParam.delta);
+                currentTrackMov.SRLocalizeCandidate(detectParam);
                 refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                 rot = true;
                 %apply SRCal
@@ -243,7 +243,7 @@ classdef TrackingExperimentMultiModal < handle
                 
                 %Plane consolidation
                 frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
-                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh)
+                currentTrackMov.consolidatePlanes(frames,detectParam)
                 
                 %superResolve
                 currentTrackMov.superResolve;
@@ -288,6 +288,93 @@ classdef TrackingExperimentMultiModal < handle
             
             
             disp('=================> DONE <===================');
+        end
+
+        function ConsolidateChannels3(obj)
+            channel1 = obj.traces3D{1,1};
+            channel2 = obj.traces3D{2,1};
+
+            %%% make sure channel1 has lowest number of traces
+            numTraces1 = size(channel1, 1);
+            numTraces2 = size(channel2, 1);
+            if numTraces2 > numTraces1
+                Swapchannel = channel1;
+                channel1 = channel2;
+                channel2 = Swapchannel;
+                numTraces1 = size(channel1, 1);
+                numTraces2 = size(channel2, 1);
+            else
+            end
+        
+            distances = zeros(numTraces1, numTraces2);
+        
+            f = waitbar(0,'Calculating distances between channels');
+            for i = 1:numTraces1
+                waitbar(i./numTraces1,f,'Calculating distances between channels');
+                trace1 = channel1{i,1};
+                for j = 1:numTraces2
+                    trace2 = channel2{j,1}; 
+                    
+                    coords1 = table2array(trace1(:, 1:3)); 
+                    time1 = table2array(trace1(:, 10));   
+                    coords2 = table2array(trace2(:, 1:3));
+                    time2 = table2array(trace2(:, 10)); 
+                
+                    common_time = intersect(time1, time2);
+                    
+                    if isempty(common_time)
+                        avg_distance = Inf;
+                    else
+                        coords1_common = coords1(ismember(time1, common_time), :);
+                        coords2_common = coords2(ismember(time2, common_time), :);
+                        distance = sqrt(sum((coords1_common - coords2_common).^2, 2));
+                        avg_distance = mean(distance);
+                    end
+
+                    distances(i, j) = avg_distance;
+                end
+            end
+            close(f)
+            
+            [~, TracesIdx] = max(size(distances));
+            [closest, closest_indices] = min(distances, [], TracesIdx);
+
+            unique_vals = unique(closest_indices);
+            n = 0;
+
+            % while numel(unique_vals) < numel(closest_indices)
+            %     n = n+1;
+            %     duplicates = unique_vals(histc(closest_indices, unique_vals) > 1);
+            % 
+            %     for i = 1:numel(duplicates)
+            %         duplicate_value = duplicates(i);
+            %         duplicate_indices = find(closest_indices == duplicate_value);
+            %         [MaxDup, MaxDupIdx] = max(closest(duplicate_indices));
+            %         SearchPartner = duplicate_indices(MaxDupIdx);
+            % 
+            %         PossPartners = distances(SearchPartner, :);
+            %         PossPartners(1, duplicate_value) = Inf;
+            % 
+            %         [closest(SearchPartner, 1), closest_indices(SearchPartner, 1)] = min(PossPartners);
+            % 
+            % 
+            %     end
+            % 
+            %     MaxIterations = min([size(channel1, 1), size(channel2,1)])+10;
+            % 
+            %     if n == MaxIterations
+            %         break
+            %     end
+            % 
+            %     unique_vals = unique(closest_indices);
+            % end
+
+            for i = 1:size(closest_indices, 1)
+                traces3Dcommon{i,1} = obj.traces3D{1,1}{i,1};
+                traces3Dcommon{i,2} = obj.traces3D{2,1}{closest_indices(i),1};
+            end
+
+            obj.traces3Dcommon = traces3Dcommon;
         end
         
        
