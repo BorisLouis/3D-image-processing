@@ -25,9 +25,12 @@ diffVq = abs(sigVq-bgVq);
 % else
 [~,idx] = nanmin(diffVq);
 %try to take the threshold that remove 99.9% of background
-val = max(bgV);
-tHold = val;
 
+% val = max(bgV);
+% 
+% tHold = val;
+
+tHold = mean(bg)+3*std(bg);
 %previous
 %tHold = globXq(idx);
 %end

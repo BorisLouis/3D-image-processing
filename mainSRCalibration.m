@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'F:\Aaron\20230619 2D calibration\test';
+file.path = 'D:\Documents\2024 - Data\11 - November\LAIA\2D Cal';
 file.ext  = '.ome.tif';
-path2Cal  = 'F:\Aaron\20230619 2D calibration\test';
+path2Cal  = 'D:\Documents\2024 - Data\11 - November\LAIA\2D Cal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -14,7 +14,7 @@ info.runMethod = 'load';
 info.frame2Load = 'all';
 info.fitMethod = 'Phasor';
 info.zMethod   = 'Intensity';
-
+info.detectionMethod = 'MaxLR';
 testSRCal = Core.SRCalibration(file,path2Cal,info);
 
 %% get zCalibrationMovie

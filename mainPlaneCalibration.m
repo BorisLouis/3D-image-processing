@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'F:\03-Mars\21 - Tracking on Quadrupole\2DCal\test';
+file.path  = 'D:\Documents\2024 - Data\11 - November\LAIA\2D Cal';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
