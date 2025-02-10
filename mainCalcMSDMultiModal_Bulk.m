@@ -6,14 +6,14 @@ close all;
 expTime = 0.010; %in sec
 Temp = 296.15; %temperature in Kelvin
 R1 = 0.100; %Radius of particle in um for channel 1 (planes 1-8);
-R2 = 0.050; %Radius of particle in um for channel 1 (planes 9-16);
+R2 = 0.100; %Radius of particle in um for channel 1 (planes 9-16);
 MultiModal = 'MultiColor'; %MultiColor or Rotational tracking
 fitRDiff = 4; %in number of data
 minSize = 20; %frames
 ext = '.mat';
-MainFolder = 'G:\multicolor_polarization\multicolor\20241105_polymerisation_dual_color_PS_air_obj';
-SubFolders = {'sample1', 'sample2', 'sample3'};
-SubsubFolders = {'3 min', '5 min', '7 min', '9 min', '11 min', '13 min', '15 min'};
+MainFolder = 'S:\Dual Color\20250122\Multicolor_particles';
+SubFolders = {'In_water'};
+SubsubFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min6'};
 
 gn3 = [];
 gD3 = [];

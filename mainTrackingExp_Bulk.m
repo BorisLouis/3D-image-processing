@@ -6,8 +6,8 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-MainFolder = 'E:\DDM_TestData';
-SizeFolder = {'PS_100nm', 'PS_200nm', 'PS_500nm', 'PS_1000nm'};
+MainFolder = 'S:\DDM_TestData';
+SizeFolder = {'PS_100_low_conc', 'PS_200_low_conc'};
 SampleFolder = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6'}; % 
 
 file.ext   = '.his';
@@ -32,11 +32,12 @@ info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 0; %multiModal (1) or not (0)
 info.rotational = 0;
+info.rotationalCalib = 0;
 info.PxSize = 81; %in nm
 
 for t = 1:numel(SizeFolder)
     for r = 1:numel(SampleFolder)
-        try
+        % try
             file.path = append(MainFolder, filesep, SizeFolder{t}, filesep, SampleFolder{r});
     
             %% create experiments
@@ -58,8 +59,8 @@ for t = 1:numel(SizeFolder)
             
             %% save Data
             trackingExp.saveData;
-        catch
-        end
+        % catch
+        % end
     end
 end
 
