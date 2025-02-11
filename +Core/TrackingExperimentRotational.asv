@@ -386,8 +386,7 @@ classdef TrackingExperimentRotational < handle
             AngFreq = 2*obj.info.RadTime*pi./180;
             Model = 'a+b*sin(c*x+d)';
 
-            Model = 'a+b*sin(1.72*x+c)';
-            Fig = figure();
+            figure()
             for i = 1:size(obj.traces3Dcommon,1)
 
                 Diff = obj.traces3Dcommon{i,3};
@@ -468,8 +467,6 @@ classdef TrackingExperimentRotational < handle
 
             Filename = append(obj.path, filesep, 'CommonTraces.mat');
             save(Filename, 'CommonTraces');
-            Figname = append(obj.path, filesep, 'FigSin.mat');
-            saveas(Fig, Figname)
         end
 
          %Plotting for individual movies

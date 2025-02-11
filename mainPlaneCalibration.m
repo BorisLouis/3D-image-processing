@@ -14,12 +14,12 @@ clear
 close all
 clc
 
-file.path  = 'D:\Dual Color\20250122\2DCal';
+file.path  = 'D:\Rotational Tracking\20250211\2D_cal';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
-info.method = 'Fluorescence'; %Darkfield Phase, Fluorescence,....
+info.method = 'Darkfield Phase'; %Darkfield Phase, Fluorescence,....
 %% 
 calib = Core.MPPlaneCalibration(file,info);
 

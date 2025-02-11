@@ -8,25 +8,26 @@ path2SRCal = [];
 %file info
 %file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\Multicolor Project\sample1_meaurement__2';
 file.ext   = '.ome.tif';
-path2Cal = 'D:\Dual Color\20250121\2DCal';
+path2Cal = 'D:\Rotational Tracking\20250211\2D_cal';
 dimension = '3D';
 
-MainFolder = 'D:\Dual Color';
-SubFolders = {'20250121', '20250122'};
-SubsubFolders = {'Multicolor_particles', 'PS_200_green_PS_100_red', 'PS_300_green_PS_100_red'};
-SubsubsubFolders = {'0_min_measurements','In_water', 'sample_1', 'sample_2', 'sample_3'};
-SubsubsubsubFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min5',...
-    '3 min', '5 min', '7 min', '9 min', '11 min', '13 min', '15 min', '17 min'}; %, 
+MainFolder = 'D:';
+SubFolders = {'Rotational Tracking'};
+SubsubFolders = { '20250211'};
+SubsubsubFolders = {'2DCal_AuBPs_193x90_rotation'};
+SubsubsubsubFolders = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6', 'sample7', 'sample8', 'sample9', 'sample10'}; %, 
 
 %detection parameter
+detectParam{1}.chi2  = 35; 
 detectParam{1}.delta = 6;
 detectParam{1}.consThresh = 4;
+detectParam{2}.chi2  = 30;
 detectParam{2}.delta = 6;
 detectParam{2}.consThresh = 4;
 
 
 %tracking parameter
-trackParam.radius  = 2000;%nm
+trackParam.radius  = 1500;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
@@ -35,12 +36,12 @@ info.runMethod = 'run'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
-info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
+info.detectionMethod = 'MaxLR'; %'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.euDist = 1000; %Error distance between particles in different channels
-info.multiTracking = 'MultiColor'; %MultiColor or Rotation
-info.rotational = 0; %Rotational tracking 
-info.rotationalCalib = 0;
+info.multiTracking = 'Rotation'; %MultiColor or Rotation
+info.rotational = 1; %Rotational tracking 
+info.rotationalCalib = 1;
 
 
 for t = 1:numel(SubFolders)
@@ -49,22 +50,6 @@ for t = 1:numel(SubFolders)
             for c = 1:numel(SubsubsubsubFolders)
                 file.path = append(MainFolder, filesep, SubFolders{t}, filesep, SubsubFolders{r},...
                     filesep, SubsubsubFolders{a}, filesep, SubsubsubsubFolders{c});
-
-                if r == 1
-                    detectParam{1}.chi2  = 30;
-                    detectParam{2}.chi2  = 50;
-                else
-                    if c == 12
-                        detectParam{1}.chi2  = 50;
-                        detectParam{2}.chi2  = 30;
-                    elseif c == 13
-                        detectParam{1}.chi2  = 50;
-                        detectParam{2}.chi2  = 30;
-                    else
-                        detectParam{1}.chi2  = 50;
-                        detectParam{2}.chi2  = 50;
-                    end
-                end
 
                 try
                     %% create experiments
@@ -84,7 +69,9 @@ for t = 1:numel(SubFolders)
                     val2Use = 'bestFocus';
                     trackingExp.retrieveTrackData(detectParam,trackParam);
                     traces = trackingExp.getTraces3D;
-                    trackingExp.ConsolidateChannels3;
+                    % if r == 1
+                    %     trackingExp.ConsolidateChannels3;
+                    % end
                     
                     %% Get Intensity
                     [int,SNR] = trackingExp.getAvgIntensity;

@@ -6,19 +6,19 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-MainFolder = 'G:\multicolor_polarization\polarisation\20250110\2dCal_RotCal';
-subFolders = {'sample_8', 'sample_9', 'sample_10'};
+MainFolder = 'D:\Rotational Tracking\20250211\2DCal_AuBPs_193x90_rotation';
+subFolders = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6', 'sample7', 'sample8', 'sample9', 'sample10'};
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\polarisation\20250110\2DCal_fluo';
+path2Cal = 'D:\Rotational Tracking\20250211\2D_cal';
 dimension = '3D';
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 55;
+detectParam{1}.chi2  = 40;
 detectParam{1}.consThresh = 4;
 
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 50;
+detectParam{2}.chi2  = 45;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -41,7 +41,7 @@ info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 
 for i = 1:size(subFolders, 2)
-    file.path = append(MainFolder, filesep, subFolders{i})
+    file.path = append(MainFolder, filesep, subFolders{i});
 
     %% create experiments
     trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
