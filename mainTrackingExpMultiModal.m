@@ -6,10 +6,17 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
+<<<<<<< HEAD
+file.path  = 'E:\DDM_TestData\PS_100nm\sample1';
+file.ext   = '.his';
+path2Cal = [];
+dimension = '2D';
+=======
 file.path  = 'D:\Dual Color\20250121\PS_200_green_PS_100_red\sample2\15_min';
 file.ext   = '.ome.tif';
 path2Cal = 'D:\Dual Color\20250121\2DCal';
 dimension = '3D';
+>>>>>>> 26cb929d6524975666fa866e33b73b324ffeb515
 
 %detection parameter
 detectParam.delta = 6;
@@ -28,9 +35,14 @@ info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
 info.detectionMethod = 'MaxLR'%'Intensity'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.euDist = 1000; %Error distance between particles in different channels
+<<<<<<< HEAD
+info.multiModal = 0;
+info.multiTracking = 0; %MultiColor or Rotation
+=======
 info.multiTracking = 'MultiColor'; %MultiColor or Rotation
 info.rotational = 0; %Rotational tracking 
 info.rotationalCalib = 0;
+>>>>>>> 26cb929d6524975666fa866e33b73b324ffeb515
 
 %% create experiments
 trackingExp = Core.TrackingExperimentMultiModal(file,path2Cal,info,path2SRCal,path2ZCal);

@@ -197,8 +197,8 @@ classdef TrackingExperiment < handle
                 currentTrackMov.findCandidatePos(detectParam);
                 
                 %SR fitting
-                currentTrackMov.SRLocalizeCandidate(detectParam.delta);
-                refPlane = round(currentTrackMov.calibrated.nPlanes/2);
+                currentTrackMov.SRLocalizeCandidate(detectParam);
+                refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                 rot = true;
                 %apply SRCal
                 currentTrackMov.applySRCal(rot,refPlane);
@@ -207,8 +207,8 @@ classdef TrackingExperiment < handle
                 currentTrackMov.applyZCal;
                 
                 %Plane consolidation
-                frames = 1:currentTrackMov.calibrated.nFrames;
-                currentTrackMov.consolidatePlanes(frames,detectParam.consThresh)
+                frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
+                currentTrackMov.consolidatePlanes(frames,detectParam)
                 
                 %superResolve
                 currentTrackMov.superResolve;

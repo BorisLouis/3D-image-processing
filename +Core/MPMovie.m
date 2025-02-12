@@ -58,6 +58,11 @@ classdef MPMovie < Core.Movie
         
         function set.calibrated(obj,calibrated)
             
+            if isstruct(calibrated)
+                test = calibrated;
+                calibrated = [];
+                calibrated{1,1} = test;
+            end
             assert(iscell(calibrated),'Calibrated is expected to be a struct');
             obj.calibrated = calibrated;
             
@@ -460,9 +465,24 @@ classdef MPMovie < Core.Movie
             fid = fopen([calDir1 filesep 'CalibratedInfo.txt'],'w');
             fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
             calib1.mainPath = calDir1;
+            if islogical(isTransmission)
+                Test = isTransmission;
+                isTransmission = [];
+                isTransmission{1,1} = Test;
+            end
+
             calib1.nPlanes = sum(~isTransmission{1,1});
 
             idx2Plane = 1;
+
+            if isstruct(data)
+            elseif iscell(data)
+            else
+                test = data;
+                data = [];
+                data{1,1} = test;
+            end
+
             
             for i = 1:size(data{1,1},3)
                 data2Store1 = squeeze(data{1,1}(:,:,i,:));
@@ -527,100 +547,100 @@ classdef MPMovie < Core.Movie
             fclose(fid);
             fName = [calDir1 filesep 'calibrated1.mat'];
             save(fName,'calib');
-
-            if cal.multiModal == true
-               calDir2 = [obj.raw.movInfo.Path filesep 'calibrated2'];
-               calTransDir2 = [calDir2 filesep 'Transmission'];
-               mkdir(calDir2);
-               mkdir(calTransDir2);
-               fid2 = fopen([calDir2 filesep 'CalibratedInfo.txt'],'w');
-               fprintf(fid2,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
-               calib2.mainPath = calDir2;
-               calib2.nPlanes = sum(~isTransmission{2,1});
-               idx2Plane = 1;
-
-               for i = 1:size(data{2,1},3)
-                    data2Store = squeeze(data{2,1}(:,:,i,:));
-                    for j = 1:size(data2Store, 3)
-                        Min = min(data2Store(:,:,j), [], 'all');
-                        Min2 = mean(data2Store(:,:,j), 'all');
-                        tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
-                        data2 = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
-                        data2(data2 < Min) = Min2;
-                        data2Store2(:,:,j) = uint16(data2);
-
-                    end
-                    isTrans2 = isTransmission{2,1}(i);
-                    if strcmpi(obj.info.type,'transmission')
-                        data2Store2 = imcomplement(data2Store2);
-                    end
-                    fieldN = sprintf('plane%d',i);
-                    fName = sprintf('calibratedPlane%d.tif',i);
-                    if isTrans2
-                        fPathTiff = [calTransDir2 filesep fName];
-                        calib2.transPath.(fieldN) = fPathTiff;
-                    else
-                        fPathTiff = [calDir2 filesep fName];
-                        calib2.filePath.(fieldN) = fPathTiff;
-                    end
-                    
-                    calib2.nFrames = maxFrame;
-                    t2 = Tiff(fPathTiff, 'a');
-                    
-                    if isa(data2Store2,'uint32')
-                        t2 = dataStorage.writeTiff(t2,data2Store2,32);
-                    else
-                        t2 = dataStorage.writeTiff(t2,data2Store2,16);
-                    end
-                    
-                    t2.close;
-                    
-                    %We also write a few info about the calibrated data in a
-                    %text file
-                    if MP
-                        fprintf(fid,...
-                            'Image plane %d: Cam %d, Channel %d Col1: %d Col2: %d, Rel. Zpos: %0.3f \n ',...
-                            i+8,cal.inFocus2(cal.neworder2(i)).cam,...
-                            cal.inFocus2(cal.neworder2(i)).ch,...
-                            cal.ROI2(cal.neworder2(i),1),...
-                            cal.ROI2(cal.neworder2(i),1)+...
-                            cal.ROI2(cal.neworder2(i),3),...
-                            cal.inFocus2(cal.neworder2(i)).relZPos);
-                        calib2.camConfig = obj.cal2D.camConfig{1,2};
-                    else
-                        fprintf(fid,...
-                            'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
-                        calib2.camConfig{2,1} = 'None';
-                    end
-                    if isTrans2
-                    else
-                        if MP
-                            calib2.oRelZPos(idx2Plane) =  cal.inFocus2(cal.neworder2(i)).relZPos;
-                        else
-                            calib2.oRelZPos(idx2Plane) = 0;
+            
+            if MP == 1
+                if cal.multiModal == true
+                   calDir2 = [obj.raw.movInfo.Path filesep 'calibrated2'];
+                   calTransDir2 = [calDir2 filesep 'Transmission'];
+                   mkdir(calDir2);
+                   mkdir(calTransDir2);
+                   fid2 = fopen([calDir2 filesep 'CalibratedInfo.txt'],'w');
+                   fprintf(fid2,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
+                   calib2.mainPath = calDir2;
+                   calib2.nPlanes = sum(~isTransmission{2,1});
+                   idx2Plane = 1;
+    
+                   for i = 1:size(data{2,1},3)
+                        data2Store = squeeze(data{2,1}(:,:,i,:));
+                        for j = 1:size(data2Store, 3)
+                            Min = min(data2Store(:,:,j), [], 'all');
+                            Min2 = mean(data2Store(:,:,j), 'all');
+                            tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
+                            data2 = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
+                            data2(data2 < Min) = Min2;
+                            data2Store2(:,:,j) = uint16(data2);
+    
                         end
-                        idx2Plane = idx2Plane+1;
+                        isTrans2 = isTransmission{2,1}(i);
+                        if strcmpi(obj.info.type,'transmission')
+                            data2Store2 = imcomplement(data2Store2);
+                        end
+                        fieldN = sprintf('plane%d',i);
+                        fName = sprintf('calibratedPlane%d.tif',i);
+                        if isTrans2
+                            fPathTiff = [calTransDir2 filesep fName];
+                            calib2.transPath.(fieldN) = fPathTiff;
+                        else
+                            fPathTiff = [calDir2 filesep fName];
+                            calib2.filePath.(fieldN) = fPathTiff;
+                        end
+                        
+                        calib2.nFrames = maxFrame;
+                        t2 = Tiff(fPathTiff, 'a');
+                        
+                        if isa(data2Store2,'uint32')
+                            t2 = dataStorage.writeTiff(t2,data2Store2,32);
+                        else
+                            t2 = dataStorage.writeTiff(t2,data2Store2,16);
+                        end
+                        
+                        t2.close;
+                        
+                        %We also write a few info about the calibrated data in a
+                        %text file
+                        if MP
+                            fprintf(fid,...
+                                'Image plane %d: Cam %d, Channel %d Col1: %d Col2: %d, Rel. Zpos: %0.3f \n ',...
+                                i+8,cal.inFocus2(cal.neworder2(i)).cam,...
+                                cal.inFocus2(cal.neworder2(i)).ch,...
+                                cal.ROI2(cal.neworder2(i),1),...
+                                cal.ROI2(cal.neworder2(i),1)+...
+                                cal.ROI2(cal.neworder2(i),3),...
+                                cal.inFocus2(cal.neworder2(i)).relZPos);
+                            calib2.camConfig = obj.cal2D.camConfig{1,2};
+                        else
+                            fprintf(fid,...
+                                'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
+                            calib2.camConfig{2,1} = 'None';
+                        end
+                        if isTrans2
+                        else
+                            if MP
+                                calib2.oRelZPos(idx2Plane) =  cal.inFocus2(cal.neworder2(i)).relZPos;
+                            else
+                                calib2.oRelZPos(idx2Plane) = 0;
+                            end
+                            idx2Plane = idx2Plane+1;
+                        end
+                        
+                        
                     end
-                    
-                    
+                    calib2.Width  = size(data2,2);
+                    calib2.Height = size(data2,1);
+                    fclose(fid2);
+                    calib = struct([]);
+                    calib = calib2;
+                    fName = [calDir2 filesep 'calibrated2.mat'];
+                    save(fName,'calib');
+    
+                else
                 end
-                calib2.Width  = size(data2,2);
-                calib2.Height = size(data2,1);
-                fclose(fid2);
-                calib = struct([]);
-                calib = calib2;
-                fName = [calDir2 filesep 'calibrated2.mat'];
-                save(fName,'calib');
-
-            else
-            end
+            
             calib = struct([]);
 
             calib = {calib1, calib2};
-            
-
-        end
-        
+            end
+        end    
     end
 end
 
