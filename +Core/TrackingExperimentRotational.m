@@ -339,8 +339,8 @@ classdef TrackingExperimentRotational < handle
             unique_vals = unique(closest_indices);
             n = 0;
 
-            while numel(unique_vals) < numel(closest_indices)
-                n = n+1;
+            % while numel(unique_vals) < numel(closest_indices)
+            %     n = n+1;
                 duplicates = unique_vals(histc(closest_indices, unique_vals) > 1);
     
                 for i = 1:numel(duplicates)
@@ -358,36 +358,45 @@ classdef TrackingExperimentRotational < handle
                 end
     
                 unique_vals = unique(closest_indices);
-                if n == 3
-                    break
-                end
-            end
+            %     if n == 3
+            %         break
+            %     end
+            % end
+
+            closest_indices(:,2) = closest_indices(:,1);
+            closest_indices(:,1) = [1:1:size(closest_indices, 1)].';
+            closest_indices(:,3) = closest;
             
+            traces3Dcommon = struct([]);
             for i = 1:size(closest_indices, 1)
-                Int1 = obj.traces3D{1,1}{i,1}.intensity;
-                Int2 = obj.traces3D{2,1}{closest_indices(i),1}.intensity;
-
-                traces3Dcommon{i,1} = obj.traces3D{1,1}{i,1}.intensity;
-                traces3Dcommon{i,2} = obj.traces3D{2,1}{closest_indices(i),1}.intensity;
-
-                Diff = Int1-Int2;
-                Ratio = Int1./Int2;
-                Time = [0:1:size(Diff,1)-1]*obj.info.expTime;
-
-                traces3Dcommon{i,3} = Diff;
-                traces3Dcommon{i,4} = Ratio;
-                traces3Dcommon{i,5} = Time;
+                if closest_indices(i,3) < 350
+                    Int1 = obj.traces3D{1,1}{closest_indices(i,1),1}.intensity;
+                    Int2 = obj.traces3D{2,1}{closest_indices(i,2),1}.intensity;
+    
+                    traces3Dcommon{end+1,1} = Int1;
+                    traces3Dcommon{end,2} = Int2;
+    
+                    Diff = Int1-Int2;
+                    Ratio = Int1./Int2;
+                    Time = [0:1:size(Diff,1)-1]*obj.info.expTime;
+    
+                    traces3Dcommon{end,3} = Diff;
+                    traces3Dcommon{end,4} = Ratio;
+                    traces3Dcommon{end,5} = Time.';
+                end
             end
 
             obj.traces3Dcommon = traces3Dcommon;
         end
         
         function RotationalCalibration(obj)
-            AngFreq = 2*obj.info.RadTime*pi./180;
-            Model = 'a+b*sin(c*x+d)';
-
+            % AngFreq = 2*obj.info.RadTime*pi./180;
+            % Model = 'a+b*sin(c*x+d)';
+            % 
+            
             Model = 'a+b*sin(1.72*x+c)';
             Fig = figure();
+            AngFreq = 1.72;
             for i = 1:size(obj.traces3Dcommon,1)
 
                 Diff = obj.traces3Dcommon{i,3};
@@ -406,24 +415,24 @@ classdef TrackingExperimentRotational < handle
                 Upper = [Max, Max-Min, AngFreq*2, 360];
     
                 %[fitDiff, gofDiff] = fit(Time.', Diff, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
-                [fitDiff, gofDiff] = fit(Time.', Diff, Model);
+                [fitDiff, gofDiff] = fit(Time, Diff, Model);
                 coeff = coeffvalues(fitDiff);
                 HeightDiff = coeff(1);
                 AmpDiff = coeff(2);
                 AngFreqDiff = 1.72;
                 PhaseDiff = coeff(3);
                 
-                if gofDiff.rsquare > 0.5
-                    obj.traces3Dcommon{i, 6} = HeightDiff;
-                    obj.traces3Dcommon{i, 7} = AmpDiff;
-                    obj.traces3Dcommon{i, 8} = AngFreqDiff;
-                    obj.traces3Dcommon{i, 9} = PhaseDiff;
-                else
-                    obj.traces3Dcommon{i, 6} = 'Failed fit';
-                    obj.traces3Dcommon{i, 7} = 'Failed fit';
-                    obj.traces3Dcommon{i, 8} = 'Failed fit';
-                    obj.traces3Dcommon{i, 9} = 'Failed fit';
-                end
+                % if gofDiff.rsquare > 0.5
+                obj.traces3Dcommon{i, 6} = HeightDiff;
+                obj.traces3Dcommon{i, 7} = AmpDiff;
+                obj.traces3Dcommon{i, 8} = AngFreqDiff;
+                obj.traces3Dcommon{i, 9} = PhaseDiff;
+                % else
+                %     obj.traces3Dcommon{i, 6} = 'Failed fit';
+                %     obj.traces3Dcommon{i, 7} = 'Failed fit';
+                %     obj.traces3Dcommon{i, 8} = 'Failed fit';
+                %     obj.traces3Dcommon{i, 9} = 'Failed fit';
+                % end
 
                 subplot(size(obj.traces3Dcommon,1), 2, i*2-1)
                 plot(fitDiff, Time, Diff)
@@ -437,39 +446,72 @@ classdef TrackingExperimentRotational < handle
                 Upper = [Max, Max-Min, AngFreq*2, 360];
 
                 % [fitRatio, gofRatio] = fit(Time.', Ratio, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
-                [fitRatio, gofRatio] = fit(Time.', Ratio, Model);
+                [fitRatio, gofRatio] = fit(Time, Ratio, Model);
                 coeff = coeffvalues(fitRatio);
                 HeightRatio = coeff(1);
                 AmpRatio = coeff(2);
                 AngFreqRatio = 1.72;
                 PhaseRatio = coeff(3);
                 
-                if gofRatio.rsquare > 0.5
+                % if gofRatio.rsquare > 0.5
                     obj.traces3Dcommon{i, 10} = HeightRatio;
                     obj.traces3Dcommon{i, 11} = AmpRatio;
                     obj.traces3Dcommon{i, 12} = AngFreqRatio;
                     obj.traces3Dcommon{i, 13} = PhaseRatio;
-                else
-                    obj.traces3Dcommon{i, 10} = 'Failed fit';
-                    obj.traces3Dcommon{i, 11} = 'Failed fit';
-                    obj.traces3Dcommon{i, 12} = 'Failed fit';
-                    obj.traces3Dcommon{i, 13} = 'Failed fit';
-                end
+                % else
+                %     obj.traces3Dcommon{i, 10} = 'Failed fit';
+                %     obj.traces3Dcommon{i, 11} = 'Failed fit';
+                %     obj.traces3Dcommon{i, 12} = 'Failed fit';
+                %     obj.traces3Dcommon{i, 13} = 'Failed fit';
+                % end
 
                 subplot(size(obj.traces3Dcommon,1), 2, i*2)
                 plot(fitRatio, Time, Ratio)
 
             end
 
+            Model = 'a*(1+b*(cos(2*(x-c))))';
+            Fig2 = figure();
+            for i = 1:size(obj.traces3Dcommon,1)
+                Time = obj.traces3Dcommon{i,5};
+                Angle = Time*0.87266;
+
+                traceCh1 = obj.traces3Dcommon{i,1};  
+                f = fit(Angle, traceCh1, Model);
+                coeff = coeffvalues(f);
+                Nch(i,1) = coeff(1);
+                Mch(i,1) = coeff(2);
+                Phich(i,1) = coeff(3);
+                subplot(size(obj.traces3Dcommon,1), 2, i*2-1)
+                plot(f, Angle, traceCh1)
+                obj.traces3Dcommon{i, 14} = Nch;
+                obj.traces3Dcommon{i, 15} = Mch;
+
+                traceCh2 = obj.traces3Dcommon{i,2};
+                f = fit(Angle, traceCh2, Model);
+                coeff = coeffvalues(f);
+                Nch(i,2) = coeff(1);
+                Mch(i,2) = coeff(2);
+                Phich(i,2) = coeff(3);
+                subplot(size(obj.traces3Dcommon,1), 2, i*2)
+                plot(f, Angle, traceCh2)
+                obj.traces3Dcommon{i, 16} = Nch;
+                obj.traces3Dcommon{i, 17} = Mch;
+            end
+
             obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
                 'Diff', 'Ratio', 'Time', 'Height - Diff', 'Amp - Diff', 'Freq - Diff', 'Phase - Diff',...
-                'Height - Ratio', 'Amp - Ratio', 'Freq - Ratio', 'Phase - Ratio'});
+                'Height - Ratio', 'Amp - Ratio', 'Freq - Ratio', 'Phase - Ratio', 'N - ch1', 'M - ch1', 'N - ch2', 'M - ch2'});
             CommonTraces = obj.traces3Dcommon;
 
             Filename = append(obj.path, filesep, 'CommonTraces.mat');
             save(Filename, 'CommonTraces');
-            Figname = append(obj.path, filesep, 'FigSin.mat');
+            set(Fig, 'Units', 'Normalized', 'OuterPosition', [0 0 1 1]);
+            Figname = append(obj.path, filesep, 'DiffRatioFig.png');
             saveas(Fig, Figname)
+            set(Fig2, 'Units', 'Normalized', 'OuterPosition', [0 0 1 1]);
+            Figname2 = append(obj.path, filesep, 'ChannelFig.png');
+            saveas(Fig2, Figname2)
         end
 
          %Plotting for individual movies

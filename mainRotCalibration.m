@@ -18,7 +18,7 @@ detectParam{1}.chi2  = 40;
 detectParam{1}.consThresh = 4;
 
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 45;
+detectParam{2}.chi2  = 40;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -41,26 +41,29 @@ info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 
 for i = 1:size(subFolders, 2)
-    file.path = append(MainFolder, filesep, subFolders{i});
-
-    %% create experiments
-    trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
+    try
+        file.path = append(MainFolder, filesep, subFolders{i});
     
-    %% get Movies
-    trackingExp.retrieveMovies;
-    
-    %% test detection parameters
-    testMov = trackingExp.trackMovies.mov1;
-    testMov.findCandidatePos(detectParam);
-    testMov.getROIs;
-    testMov.showCandidate(1);
-    
-    %% get TrackingData
-    val2Use = 'bestFocus';
-    trackingExp.retrieveTrackData(detectParam,trackParam);
-    traces = trackingExp.getTraces3D;
-    trackingExp.ConsolidateChannels3;
-    trackingExp.RotationalCalibration;
-    trackingExp.saveData;
+        %% create experiments
+        trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
+        
+        %% get Movies
+        trackingExp.retrieveMovies;
+        
+        %% test detection parameters
+        testMov = trackingExp.trackMovies.mov1;
+        testMov.findCandidatePos(detectParam);
+        testMov.getROIs;
+        testMov.showCandidate(1);
+        
+        %% get TrackingData
+        val2Use = 'bestFocus';
+        trackingExp.retrieveTrackData(detectParam,trackParam);
+        traces = trackingExp.getTraces3D;
+        trackingExp.ConsolidateChannels3;
+        trackingExp.RotationalCalibration;
+        trackingExp.saveData;
+    catch
+    end
 end
 
