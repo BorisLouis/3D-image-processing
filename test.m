@@ -1,81 +1,51 @@
-MainFolder = 'S:\Dual Color';
-DateFolders = {'20250121', '20250122'};
-ParticleFolders = {'Multicolor_particles'};
-ExperimentFolders = {'In_water'};
-SampleFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min4'};
+Table = readmatrix('S:\Dual Color\NewPartSizesResultsPAA_no_negatives.xlsx', 'Sheet', 'Viscosity');
+Table = Table(3:end, :);
 
+PS200 = Table(:, 1:9);
+PS100 = Table(:, 11:19);
+PS300 = Table(:, 22:30);
 
+timepoints = [0 3 5 7 9 11 13 15 17];
+numTimepoints = length(timepoints);
 
-for a = 1:numel(DateFolders)
-    ExcelName = append(MainFolder, filesep, 'Results_MC_InWater_', DateFolders{a}, '.xlsx');
-    for z = 1:numel(ParticleFolders)
-        for e = 1:numel(ExperimentFolders)
-            for r = 1:numel(SampleFolders)
-                filename = append(MainFolder, filesep, DateFolders{a}, filesep, ParticleFolders{z},...
-                    filesep, ExperimentFolders{e}, filesep, SampleFolders{r});
+groupedData = [];
+groupLabels = [];
+timeLabels = [];
 
-                %%% Channel 1
-                MSDRes = load(append(filename, filesep, 'msdRes1.mat'));
-                MSDRes = MSDRes.allRes;
-                Diff = [];
-                Visc = [];
-                AnExp = [];
-                Rg = [];
-                for t = 1:size(MSDRes, 2)
-                    Diff(t,1) = MSDRes(t).DR;
-                    Visc(t,1) = MSDRes(t).nR;
-                    AnExp(t,1) = MSDRes(t).aR;
-                    Rg(t,1) = MSDRes(t).Rg;
-                end
-                
-                if r == 1
-                    Range = "A5:A5000";
-                elseif r == 2
-                    Range = "B5:B5000";
-                elseif r == 3
-                    Range = "C5:C5000";
-                elseif r == 4
-                    Range = "D5:D5000";
-                elseif r == 5
-                    Range = "E5:E5000";
-                end
-                writematrix(Diff, ExcelName, 'Sheet', 'Diff', 'Range', Range);
-                writematrix(AnExp, ExcelName, 'Sheet', 'AnExp', 'Range', Range);
-                writematrix(Visc, ExcelName, 'Sheet', 'Visc', 'Range', Range);
-                writematrix(Rg, ExcelName, 'Sheet', 'Rg', 'Range', Range);
-
-
-                %%% Channel 2
-                MSDRes = load(append(filename, filesep, 'msdRes2.mat'));
-                MSDRes = MSDRes.allRes;
-                Diff = [];
-                Visc = [];
-                AnExp = [];
-                Rg = [];
-                for t = 1:size(MSDRes, 2)
-                    Diff(t,1) = MSDRes(t).DR;
-                    Visc(t,1) = MSDRes(t).nR;
-                    AnExp(t,1) = MSDRes(t).aR;
-                    Rg(t,1) = MSDRes(t).Rg;
-                end
-                
-                if r == 1
-                    Range = "F5:F5000";
-                elseif r == 2
-                    Range = "G5:G5000";
-                elseif r == 3
-                    Range = "H5:H5000";
-                elseif r == 4
-                    Range = "I5:I5000";
-                elseif r == 5
-                    Range = "J5:J5000";
-                end
-                writematrix(Diff, ExcelName, 'Sheet', 'Diff', 'Range', Range);
-                writematrix(AnExp, ExcelName, 'Sheet', 'AnExp', 'Range', Range);
-                writematrix(Visc, ExcelName, 'Sheet', 'Visc', 'Range', Range);
-                writematrix(Rg, ExcelName, 'Sheet', 'Rg', 'Range', Range);
-
-            end
-        end
-    end
+for i = 1:numTimepoints
+    groupedData = [groupedData; PS100(:, i); PS200(:, i); PS300(:, i)];
+    groupLabels = [groupLabels; repmat({'100'}, size(PS100,1), 1); ...
+                              repmat({'200'}, size(PS200,1), 1); ...
+                              repmat({'300'}, size(PS300,1), 1)];
+    timeLabels = [timeLabels; repmat(timepoints(i), size(PS100,1) + size(PS200,1) + size(PS300,1), 1)];
 end
+
+figure;
+boxplot(groupedData, {timeLabels, groupLabels}, 'FactorGap', [5 1], 'LabelVerbosity', 'minor', 'Symbol', '');
+
+xlabel('Tijdstip');
+ylabel('Viscosity (cP)');
+ylim([0 10])
+title('Gegroepeerde Boxplot van PS100, PS200 en PS300');
+xtickangle(-45)
+
+
+hold on;
+positions = unique(get(gca, 'XTick')); % Posities van de boxplots op de x-as
+means = []; % Opslaan van gemiddelde waarden
+
+for i = 1:length(positions)
+    idx = find(timeLabels == timepoints(floor((i-1)/3) + 1)); 
+    if mod(i,3) == 1
+        group_idx = strcmp(groupLabels(idx), '100');
+    elseif mod(i,3) == 2
+        group_idx = strcmp(groupLabels(idx), '200');
+    else
+        group_idx = strcmp(groupLabels(idx), '300');
+    end
+    mean_val = mean(groupedData(idx(group_idx)));
+    means = [means; mean_val];
+    plot(positions(i), mean_val, 'ro', 'MarkerSize', 8, 'MarkerFaceColor', 'r');
+end
+
+hold off;
