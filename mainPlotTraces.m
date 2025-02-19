@@ -6,13 +6,13 @@ close all
 
 %% User input
 
-path2Save = 'E:\Results\SPT speed\FINAL VERSION\pH 11';
+path2Save = 'D:\Dual Color\20250121\Multicolor_particles\In_water\0_min1';
 ext = '.gif';
 filename=sprintf('%s%sdata%s', path2Save,filesep,ext);
 
-minSize = 20;%number of frame the traces needs to last to be plotted.
-expTime = 0.11; %sec
-sizeParticles = 2000; % diameter in nm
+minSize = 30;%number of frame the traces needs to last to be plotted.
+expTime = 0.010; %sec
+sizeParticles = 200; % diameter in nm
 frameRate = 10;
 trailing = 20; %frame the traces stays in the movie
 

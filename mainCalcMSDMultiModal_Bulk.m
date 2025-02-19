@@ -5,29 +5,19 @@ close all;
 %% USER INPUT
 expTime = 0.010; %in sec
 Temp = 296.15; %temperature in Kelvin
-<<<<<<< HEAD
-R1 = 0.11345; %Radius of particle in um for channel 1 (planes 1-8);
+R1 = 0.14270; %Radius of particle in um for channel 1 (planes 1-8);
 R2 = 0.11415; %Radius of particle in um for channel 1 (planes 9-16);
-=======
-R1 = 0.100; %Radius of particle in um for channel 1 (planes 1-8);
-R2 = 0.100; %Radius of particle in um for channel 1 (planes 9-16);
->>>>>>> ce14b8dba61579ab08ba8ab6e1098281c0fbcf9a
 MultiModal = 'MultiColor'; %MultiColor or Rotational tracking
 fitRDiff = 4; %in number of data
 minSize = 30; %frames
 ext = '.mat';
-<<<<<<< HEAD
+
 MainFolder = 'D:\Dual Color';
 SubFolders = {'20250121', '20250122'};
-SubsubFolders = {'PS_200_green_PS_100_red'}; %'Multicolor_particles','PS_200_green_PS_100_red' 
+SubsubFolders = {'PS_300_green_PS_100_red'}; %'Multicolor_particles','PS_200_green_PS_100_red' 
 SubsubsubFolders = {'0_min_measurements', 'sample1', 'sample2', 'sample3'};
 SubsubsubsubFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min5', ...
 '3_min', '5_min', '7_min', '9_min', '11_min', '13_min', '15_min', '17_min'};
-=======
-MainFolder = 'S:\Dual Color\20250122\Multicolor_particles';
-SubFolders = {'In_water'};
-SubsubFolders = {'0_min1', '0_min2', '0_min3', '0_min4', '0_min6'};
->>>>>>> ce14b8dba61579ab08ba8ab6e1098281c0fbcf9a
 
 
 gn0 = [];
