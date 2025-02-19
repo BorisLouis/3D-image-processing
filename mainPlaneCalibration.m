@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'D:\Documents\2024 - Data\11 - November\LAIA\2D Cal';
+file.path  = 'D:\Documents\2025 - Data\02 Feb\Jui-Kai\2DCal';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';

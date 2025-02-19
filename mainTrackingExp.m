@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'D:\Documents\2024 - Data\11 - November\LAIA\2D Cal';
+path2SRCal = '';
 
 %file info
-file.path  = 'D:\Documents\2024 - Data\11 - November\LAIA\mov1';
+file.path  = 'D:\Documents\2025 - Data\02 Feb\Jui-Kai\Data5';
 file.ext   = '.ome.tif';
-path2Cal = 'D:\Documents\2024 - Data\11 - November\LAIA\2D Cal';
+path2Cal = 'D:\Documents\2025 - Data\02 Feb\Jui-Kai\2DCal';
 dimension = '3D';
 
 %detection parameter
