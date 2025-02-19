@@ -162,21 +162,24 @@ function [k1, k2, k3, k4, nFrames] = indexFrameHeader(frameHeader)
             %find which frame is duplicated
             val = unique(T); % which will give you the unique elements of A in array B
             Ncount = histc(T, val);
-            
+           
             duplicate = val(Ncount>2);
             nWrong = length(duplicate);
             disp([num2str(nWrong) ' wrong lines found']);
-            if nWrong > ceil(0.02*nFrames)
-                error('More than 1% of the data has mistakes, cannot pursue')
-            end
+            % if nWrong > ceil(0.02*nFrames)
+            %     error('More than 1% of the data has mistakes, cannot pursue')
+            % end
             
-            idx2Delete = zeros(1,nWrong);
+            idx2Delete = [];
             %correct the errors
             for i = 1:nWrong
+                %extract IFD and camera for duplicated time to identify
+                %mistake
                 currErr = duplicate(i);
                 cIFDs = IFD(T==currErr);
                 cCs   = C(T==currErr);
-                
+                %we test which camera has mistakes (if duplicate sum above
+                %1 then camera 2 has the issue otherwise it is camera 1
                 testCam = sum(cCs);
                 %determine which camera is wrong
                 if testCam > 1
@@ -186,18 +189,35 @@ function [k1, k2, k3, k4, nFrames] = indexFrameHeader(frameHeader)
                     cIFDs = cIFDs(cCs==0);
                     cCam = 0;
                 end
-                
+
+                val2Delete = cIFDs(1);
+                idx2Delete = [idx2Delete find(and(C==cCam,and(IFD==val2Delete,T==duplicate(i))))];
+
+
                 %determine which of these IFD value is duplicated
-                counter = zeros(size(cIFDs));
-                for j = 1:length(cIFDs)
-                    counter(j) = sum(IFD==cIFDs(j));
-                     
-                end
+                %in close vicinity
+                % sL= length(idx2Delete);
+                % for j = 1:length(cIFDs)
+                %     ifd =cIFDs(j);
+                %     id = find(and(IFD==ifd,T==currErr));
+                %     idRange = id-10:id+10;
+                %     idRange(idRange<0) = [];
+                %     idRange(idRange>numel(IFD))=[];
+                %     if (sum(IFD(idRange) == cIFDs(j))>1)
+                % 
+                %         val2Delete = cIFDs(j);
+                %         idx2Delete = [idx2Delete find(and(C==cCam,and(IFD==val2Delete,T==duplicate(i))))];
+                % 
+                %     end
+                % end
+                %  eL= length(idx2Delete);
+                % 
+                % if(( eL-sL)>1)
+                %     disp('stop')
+                % end
+                % %[~,idx] = max(counter);
                 
-                [~,idx] = max(counter);
                 
-                val2Delete = cIFDs(idx);
-                idx2Delete(i) = find(and(C==cCam,and(IFD==val2Delete,T==duplicate(i))));
 
                 
             end
@@ -282,7 +302,7 @@ function [frameInfo] = fixCamTiming(frameInfo)
         timeCurrRef = tmpInfo(currRefId).time;
 
         %find another frame with similar timing
-        id = find((abs([tmpInfo.time]-timeCurrRef))<4);
+        id = find((abs([tmpInfo.time]-timeCurrRef))<2);
         assert(length(id) == 2, 'couldnt find 2 frames for that time point');
 
         id = id(id~= currRefId);
@@ -320,7 +340,7 @@ function [frameInfo] = fixCamTiming(frameInfo)
         %test timing difference
         camTiming = {tmpInfo(idx).time};
         
-        assert(abs(camTiming{1} - camTiming{2}) < 4, 'Camera delay bigger than 4ms after fixing, something is wrong')
+        assert(abs(camTiming{1} - camTiming{2}) < tmpInfo(i+1).expT, 'Camera delay bigger than exposure time after fixing, something is wrong')
         
         
     end
