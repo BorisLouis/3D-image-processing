@@ -57,18 +57,13 @@ end
 switch checkRes
     case 'Yes'
     case 'Fix'
-        %try
-        [frameInfo] = fixCamTiming(frameInfo); 
         warning('on')
-        warning('Found some synchronization issue and fixed them');
+        warning('Found some synchronization issue');
+        disp('Trying fixing...')
+        [frameInfo] = fixCamTiming(frameInfo); 
+        disp('Fixing seems succesful ! ')
         warning('off')
-%         catch
-%             warning('on')
-%             warning('Something went wrong when trying to fix camera sync, no fix was apply');
-%             warning('off');
-%         end
-      %  error('Fixing synchronization is not ready yet, sorry for the inconvenience');
-    case 'No'
+ case 'No'
         disp('If you are running folder analysis, please remove the file from the folder');
         disp(['The unsynced file is: ',movieInfo.Path]);
         error('Camera are not synchronized, user aborted the analysis')
