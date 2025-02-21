@@ -111,18 +111,22 @@ else
     isTransmission1 = isTransmission1(newor);
     close(h)
 
-    % if info.rotational == true
-    %     %background substraction
-    %     h = waitbar(0,'Rotational tracking: background substraction...');
-    %     for i = 1:size(data1,4)
-    %         waitbar(i./size(data1,4),h,'Rotational tracking: background substraction...')
-    %         for k = 1:size(data1,3)
-    %             MedianInt = median(data1(:,:,k,i), 'all');
-    %             data1(:,:,k,i) = data1(:,:,k,i) - MedianInt;
-    %         end
-    %     end
-    %     close(h)
-    % end
+    if info.rotational == true
+        %background substraction
+        se = strel('disk', 12);
+        h = waitbar(0,'Rotational tracking: background substraction...');
+        for i = 1:size(data1,4)
+            waitbar(i./size(data1,4),h,'Rotational tracking: background substraction...')
+            for k = 1:size(data1,3)
+                frame = data1(:,:,k,i);
+                bg1(:,:,k,i) = imopen(frame, se);
+                data1(:,:,k,i) = frame - bg1(:,:,k,i);
+                % MedianInt = median(data1(:,:,k,i), 'all');
+                % data1(:,:,k,i) = data1(:,:,k,i) - MedianInt;
+            end
+        end
+        close(h)
+    end
 
     data2 = [];
 
@@ -207,18 +211,23 @@ else
         isTransmission2 = isTransmission2(newor2);
         close(h)
 
-        % if info.rotational == true
-        %     %background substraction
-        %     h = waitbar(0,'Channel2: Rotational tracking: background substraction...');
-        %     for i = 1:size(data2,4)
-        %         waitbar(i./size(data2,4),h,'Channel2: Rotational tracking: background substraction...')
-        %         for k = 1:size(data2,3)
-        %             MedianInt = median(data2(:,:,k,i), 'all');
-        %             data2(:,:,k,i) = data2(:,:,k,i) - MedianInt;
-        %         end
-        %     end
-        %     close(h)
-        % end
+        if info.rotational == true
+            %background substraction
+            h = waitbar(0,'Channel2: Rotational tracking: background substraction...');
+            se = strel('disk', 12);
+            for i = 1:size(data2,4)
+                waitbar(i./size(data2,4),h,'Channel2: Rotational tracking: background substraction...')
+                for k = 1:size(data2,3)
+                    frame = data2(:,:,k,i);
+                    bg2(:,:,k,i) = imopen(frame, se);
+                    data2(:,:,k,i) = frame - bg2(:,:,k,i);
+                    data2(:,:,k,i) = data2(:,:,k,i)*(mean(bg1(:,:,k,i), 'all')./mean(bg2(:,:,k,i), 'all'));
+                    % MedianInt = median(data2(:,:,k,i), 'all');
+                    % data2(:,:,k,i) = data2(:,:,k,i) - MedianInt;
+                end
+            end
+            close(h)
+        end
     else 
     end
     data = {data1; data2};

@@ -394,114 +394,98 @@ classdef TrackingExperimentRotational < handle
             % Model = 'a+b*sin(c*x+d)';
             % 
             
-            Model = 'a+b*sin(1.72*x+c)';
+            Model = 'a+b*sin(1.90*x+c)';
             Fig = figure();
-            AngFreq = 1.72;
-            for i = 1:size(obj.traces3Dcommon,1)
-
-                Diff = obj.traces3Dcommon{i,3};
-                % Diff = Diff{1,1};
-                Ratio = obj.traces3Dcommon{i,4};
-                % Ratio = Ratio{1,1};
-                Time = obj.traces3Dcommon{i,5};
-                %obj.traces3Dcommon{i,5} = Time;
-
-                %%%Fit on difference plot
-                Mean = mean(Diff);
-                Max = max(Diff);
-                Min = min(Diff);
-                StartPoints = [Mean, (Max-Min)./2, AngFreq, 180];
-                Lower = [Min, (((Max-Mean) + (Mean - Min))./2)./2, 0, 0];
-                Upper = [Max, Max-Min, AngFreq*2, 360];
-    
-                %[fitDiff, gofDiff] = fit(Time.', Diff, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
-                [fitDiff, gofDiff] = fit(Time, Diff, Model);
-                coeff = coeffvalues(fitDiff);
-                HeightDiff = coeff(1);
-                AmpDiff = coeff(2);
-                AngFreqDiff = 1.72;
-                PhaseDiff = coeff(3);
-                
-                % if gofDiff.rsquare > 0.5
-                obj.traces3Dcommon{i, 6} = HeightDiff;
-                obj.traces3Dcommon{i, 7} = AmpDiff;
-                obj.traces3Dcommon{i, 8} = AngFreqDiff;
-                obj.traces3Dcommon{i, 9} = PhaseDiff;
-                % else
-                %     obj.traces3Dcommon{i, 6} = 'Failed fit';
-                %     obj.traces3Dcommon{i, 7} = 'Failed fit';
-                %     obj.traces3Dcommon{i, 8} = 'Failed fit';
-                %     obj.traces3Dcommon{i, 9} = 'Failed fit';
-                % end
-
-                subplot(size(obj.traces3Dcommon,1), 2, i*2-1)
-                plot(fitDiff, Time, Diff)
-
-                %%%Fit on Ratio plot
-                Mean = mean(Ratio);
-                Max = max(Ratio);
-                Min = min(Ratio);
-                StartPoints = [Mean, (Max-Min)./2, AngFreq, 180];
-                Lower = [Min, (((Max-Mean) + (Mean - Min))./2)./2, 0, 0];
-                Upper = [Max, Max-Min, AngFreq*2, 360];
-
-                % [fitRatio, gofRatio] = fit(Time.', Ratio, Model,'Lower', Lower, 'Upper', Upper, 'StartPoint', StartPoints);
-                [fitRatio, gofRatio] = fit(Time, Ratio, Model);
-                coeff = coeffvalues(fitRatio);
-                HeightRatio = coeff(1);
-                AmpRatio = coeff(2);
-                AngFreqRatio = 1.72;
-                PhaseRatio = coeff(3);
-                
-                % if gofRatio.rsquare > 0.5
-                    obj.traces3Dcommon{i, 10} = HeightRatio;
-                    obj.traces3Dcommon{i, 11} = AmpRatio;
-                    obj.traces3Dcommon{i, 12} = AngFreqRatio;
-                    obj.traces3Dcommon{i, 13} = PhaseRatio;
-                % else
-                %     obj.traces3Dcommon{i, 10} = 'Failed fit';
-                %     obj.traces3Dcommon{i, 11} = 'Failed fit';
-                %     obj.traces3Dcommon{i, 12} = 'Failed fit';
-                %     obj.traces3Dcommon{i, 13} = 'Failed fit';
-                % end
-
-                subplot(size(obj.traces3Dcommon,1), 2, i*2)
-                plot(fitRatio, Time, Ratio)
-
-            end
-
-            Model = 'a*(1+b*(cos(2*(x-c))))';
-            Fig2 = figure();
+            AngFreq = 1.90;
             for i = 1:size(obj.traces3Dcommon,1)
                 Time = obj.traces3Dcommon{i,5};
                 Angle = Time*0.87266;
 
-                traceCh1 = obj.traces3Dcommon{i,1};  
-                f = fit(Angle, traceCh1, Model);
-                coeff = coeffvalues(f);
-                Nch(i,1) = coeff(1);
-                Mch(i,1) = coeff(2);
-                Phich(i,1) = coeff(3);
-                subplot(size(obj.traces3Dcommon,1), 2, i*2-1)
-                plot(f, Angle, traceCh1)
-                obj.traces3Dcommon{i, 14} = Nch;
-                obj.traces3Dcommon{i, 15} = Mch;
-
+                %%% plot traces with fit
+                traceCh1 = obj.traces3Dcommon{i,1};
                 traceCh2 = obj.traces3Dcommon{i,2};
-                f = fit(Angle, traceCh2, Model);
+                totInt = traceCh1 + traceCh2;
+            
+                traceCh1Norm = traceCh1./totInt;
+                obj.traces3Dcommon{i,3} = traceCh1Norm;
+                traceCh2Norm = traceCh2./totInt;
+                obj.traces3Dcommon{i,8} = traceCh2Norm;
+            
+                f = fit(Angle, traceCh1Norm, Model);
                 coeff = coeffvalues(f);
-                Nch(i,2) = coeff(1);
-                Mch(i,2) = coeff(2);
-                Phich(i,2) = coeff(3);
-                subplot(size(obj.traces3Dcommon,1), 2, i*2)
-                plot(f, Angle, traceCh2)
-                obj.traces3Dcommon{i, 16} = Nch;
-                obj.traces3Dcommon{i, 17} = Mch;
+                Height(i,1) = coeff(1);
+                Amp(i,1) = coeff(2);
+                Phase(i,1) = coeff(3);
+                subplot(size(obj.traces3Dcommon,1), 4, i*4-3)
+                plot(f, Angle, traceCh1Norm)
+                ylabel('Intensity (a.u)')
+                ylim([0.25 0.75])
+                xlabel('angle waveplate (rad)')
+                title('Channel1')
+                obj.traces3Dcommon{i,4} = Height(i,1);
+                obj.traces3Dcommon{i,5} = Amp(i,1);
+                obj.traces3Dcommon{i,6} = AngFreq;
+                obj.traces3Dcommon{i,7} = Phase(i,1);
+                
+                f = fit(Angle, traceCh2Norm, Model);
+                coeff = coeffvalues(f);
+                Height(i,2) = coeff(1);
+                Amp(i,2) = coeff(2);
+                Phase(i,2) = coeff(3);
+                subplot(size(obj.traces3Dcommon,1), 4, i*4-2)
+                plot(f, Angle, traceCh2Norm)
+                ylabel('Intensity (a.u)')
+                ylim([0.25 0.75])
+                xlabel('angle waveplate (rad)')
+                title('Channel2')
+                obj.traces3Dcommon{i,9} = Height(i,1);
+                obj.traces3Dcommon{i,10} = Amp(i,1);
+                obj.traces3Dcommon{i,11} = AngFreq;
+                obj.traces3Dcommon{i,12} = Phase(i,1);
+            
+                %%% calculate differences
+                Difference = traceCh1Norm - traceCh2Norm;
+                obj.traces3Dcommon{i,13} = Difference;
+                f = fit(Angle, Difference, Model);
+                coeff = coeffvalues(f);
+                HeightDiff(i,1) = coeff(1);
+                AmpDiff(i,1) = coeff(2);
+                PhaseDiff(i,1) = coeff(3);
+                subplot(size(obj.traces3Dcommon,1), 4, i*4-1)
+                plot(f, Angle, Difference)
+                ylabel('Difference Ch1 - Ch2')
+                ylim([-0.75 0.75])
+                xlabel('angle waveplate (rad)')
+                title('Difference Ch1-Ch2')
+                obj.traces3Dcommon{i,14} = HeightDiff(i,1);
+                obj.traces3Dcommon{i,15} = AmpDiff(i,1);
+                obj.traces3Dcommon{i,16} = AngFreq;
+                obj.traces3Dcommon{i,17} = PhaseDiff(i,1);
+            
+                %%% calculate ratio
+                Ratio = traceCh1Norm./traceCh2Norm;
+                obj.traces3Dcommon{i,18} = Ratio;
+                f = fit(Angle, Ratio, Model);
+                coeff = coeffvalues(f);
+                HeightRatio(i,1) = coeff(1);
+                AmpRatio(i,1) = coeff(2);
+                PhaseRatio(i,1) = coeff(3);
+                subplot(size(obj.traces3Dcommon,1), 4, i*4)
+                plot(f, Angle, Ratio)
+                ylabel('Ratio Ch1/Ch2')
+                ylim([0 2.5])
+                xlabel('angle waveplate (rad)')
+                title('Ratio Ch1/Ch2')
+                obj.traces3Dcommon{i,19} = HeightRatio(i,1);
+                obj.traces3Dcommon{i,20} = AmpRatio(i,1);
+                obj.traces3Dcommon{i,21} = AngFreq;
+                obj.traces3Dcommon{i,22} = PhaseRatio(i,1);
             end
 
             obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
-                'Diff', 'Ratio', 'Time', 'Height - Diff', 'Amp - Diff', 'Freq - Diff', 'Phase - Diff',...
-                'Height - Ratio', 'Amp - Ratio', 'Freq - Ratio', 'Phase - Ratio', 'N - ch1', 'M - ch1', 'N - ch2', 'M - ch2'});
+                'Int1Norm', 'Height1', 'Amp1', 'Freq1', 'Phase1', 'Int2Norm', 'Height2', 'Amp2', 'Freq2', 'Phase2',...
+                'Difference', 'Height - Diff', 'Amp - Diff', 'Freq - Diff', 'Phase - Diff',...
+                'Ratio', 'Height - Ratio', 'Amp - Ratio', 'Freq - Ratio', 'Phase - Ratio'});
             CommonTraces = obj.traces3Dcommon;
 
             Filename = append(obj.path, filesep, 'CommonTraces.mat');
@@ -509,9 +493,6 @@ classdef TrackingExperimentRotational < handle
             set(Fig, 'Units', 'Normalized', 'OuterPosition', [0 0 1 1]);
             Figname = append(obj.path, filesep, 'DiffRatioFig.png');
             saveas(Fig, Figname)
-            set(Fig2, 'Units', 'Normalized', 'OuterPosition', [0 0 1 1]);
-            Figname2 = append(obj.path, filesep, 'ChannelFig.png');
-            saveas(Fig2, Figname2)
         end
 
          %Plotting for individual movies
