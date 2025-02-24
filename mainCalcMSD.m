@@ -118,7 +118,7 @@ end
 
 meanMSDR = nanmean(allMSDR,1);
 tau = (1:length(meanMSDR))'*expTime;
-DR   = MSD.getDiffCoeff(meanMSDR,tau,fitRDiff,'3D');
+DR   = MSD.getDiffCoeff(meanMSDR,tau,fitRDiff,'2D');
 nR   = MSD.getViscosity(DR,R,T);
 
 disp(['Planes ' num2str(MultiModalChannels*8+1) '-' num2str(MultiModalChannels*8+8) ': ' 'The diffusion coefficient is ' num2str(DR) ' \mum^2/s and the viscosity is ' num2str(nR) ' cp']);

@@ -32,6 +32,7 @@ info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 0; %multiModal (1) or not (0)
 info.rotational = 0;
+info.rotationalCalib = 0;
 info.PxSize = 81; %in nm
 
 for t = 1:numel(SizeFolder)
