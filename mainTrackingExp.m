@@ -6,14 +6,14 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'E:\DDM_TestData\PS_100nm\sample1';
+file.path  = 'S:\Dual Color\20250220\Test_stickyness_2D\PS500 green\sample1\6_min';
 file.ext   = '.his';
 path2Cal = [];
 dimension = '2D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 40;
+detectParam.chi2  = 60;
 detectParam.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 3500;%nm
@@ -29,6 +29,7 @@ info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 0; %multiModal (1) or not (0)
 info.rotational = 0;
+info.rotationalCalib = 0;
 info.PxSize = 81; %in nm
 
 %% create experiments

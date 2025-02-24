@@ -6,9 +6,10 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-MainFolder = 'E:\DDM_TestData';
-SizeFolder = {'PS_100nm', 'PS_200nm', 'PS_500nm', 'PS_1000nm'};
-SampleFolder = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6'}; % 
+MainFolder = 'S:\Dual Color\20250220\Test_stickyness_2D\PS100 green';
+SizeFolder = {'sample1', 'sample2', 'sample3'};
+SampleFolder = {'3_min', '5_min', '4_min', '6_min', '7_min', '8_min', '9_min', '10_min',....
+                '11_min',  '12_min', '13_min', '14_min', '15_min', '16_min','17_min', '18_min'}; % 
 
 file.ext   = '.his';
 path2Cal = [];
@@ -16,10 +17,10 @@ dimension = '2D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 40;
+detectParam.chi2  = 20;
 detectParam.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 2500;%nm
+trackParam.radius  = 3500;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
