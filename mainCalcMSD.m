@@ -5,15 +5,15 @@ close all;
 %% USER INPUT
 expTime = 0.030; %in sec
 T = 296.15; %temperature in Kelvin
-R = 0.3145; %Radius of particle in um;
+R = 0.050; %Radius of particle in um;
 fitRDiff = 4; %in number of data
 minSize = 20; %frames
 ext = '.mat';
 MultiModalChannels = 0; %0 if Channels 1-8, 1 if Channels 9-16
 
-MainFolder = 'S:\Dual Color\20250220\Test_stickyness_2D\PS500 green';
+MainFolder = 'S:\Dual Color\20250220\Test_stickyness_2D\PS100 green';
 SizeFolder = {'sample1', 'sample2', 'sample3'};% 
-SampleFolder = {'3_min', '5_min', '4_min', '6_min', '7_min', '8_min', '9_min', '10_min',....
+SampleFolder = {'3_min', '4_min', '5_min', '6_min', '7_min', '8_min', '9_min', '10_min',....
                 '11_min',  '12_min', '13_min', '14_min', '15_min', '16_min','17_min', '18_min'}; % '5_min', '6_min', '8_min', '10_min', '12_min', '14_min', '16_min', 
 
 for t = 1:numel(SizeFolder)

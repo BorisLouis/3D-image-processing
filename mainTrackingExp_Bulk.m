@@ -17,7 +17,7 @@ dimension = '2D';
 
 %detection parameter
 detectParam.delta = 6;
-detectParam.chi2  = 40;
+detectParam.chi2  = 20;
 detectParam.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 3500;%nm
