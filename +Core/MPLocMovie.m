@@ -415,6 +415,33 @@ classdef MPLocMovie < Core.MPParticleMovie
                                             [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);
                                             if obj.info.rotational == 1
                                                 partVolIm = obj.getPartVolImRot(partData,ROIRad,fData);
+                                                % for p = 1:size(partVolIm, 3)
+                                                %     roi = partVolIm(:,:,p);
+                                                %     [rows, cols] = size(roi);
+                                                %     centerSize = 2 + mod(min(rows, cols), 2);
+                                                %     midRow = floor(rows/2) + (1:centerSize) - floor(centerSize/2);
+                                                %     midCol = floor(cols/2) + (1:centerSize) - floor(centerSize/2);
+                                                %     mask = true(rows, cols);
+                                                %     mask(midRow, midCol) = false;
+                                                %     roi(1:2, 1:2) = 0;  % Top-left
+                                                %     roi(1:2, end-1:end) = 0;  % Top-right
+                                                %     roi(end-1:end, 1:2) = 0;  % Bottom-left
+                                                %     roi(end-1:end, end-1:end) = 0;  % Bottom-right
+                                                %     if mod(rows,2) == 1 && mod(cols,2) == 1
+                                                %         extra = (centerSize - 1) / 2;
+                                                %         roi(1:extra, :) = 0;
+                                                %         roi(end-extra+1:end, :) = 0;
+                                                %         roi(:, 1:extra) = 0;
+                                                %         roi(:, end-extra+1:end) = 0;
+                                                %     end
+                                                %     partVolIm(:,:,p) = roi;
+                                                % end
+                                                PartWithBg = obj.getPartVolImRot(partData, 7, fData);
+                                                PartPadded = padarray(partVolIm, [7-ROIRad 7-ROIRad], 0, 'both');
+                                                PartWithBg(PartPadded ~= 0) = NaN;
+                                                for p = 1:size(PartWithBg, 3)
+                                                    partVolIm(:,:,p) = partVolIm(:,:,p) - nanmedian(PartWithBg(:,:,p), 'all');
+                                                end
                                                 [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);
                                             end
                                         end
@@ -1027,7 +1054,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 end                    
             end               
 
-            partVolIm(partVolIm == 0) = NaN;
+            partVolIm(partVolIm == 0) = NaN; 
         end
     end
 end

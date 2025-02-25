@@ -253,9 +253,9 @@ classdef MPParticleMovie < Core.MPMovie
             function consolidatePlanes(obj,frames,detectParam)
                 for q = 1: obj.info.multiModal +1
                     if iscell(detectParam)
-                        consThresh = detectParam{1,q}.consThresh
+                        consThresh = detectParam{1,q}.consThresh;
                     else
-                        consThresh = detectParam.consThresh
+                        consThresh = detectParam.consThresh;
                     end
                     %Consolidation refers to connect molecules that were localized
                     %at similar position in different plane on a single frame.

@@ -419,7 +419,7 @@ classdef TrackingExperimentRotational < handle
                 subplot(size(obj.traces3Dcommon,1), 4, i*4-3)
                 plot(f, Angle, traceCh1Norm)
                 ylabel('Intensity (a.u)')
-                ylim([0.25 0.75])
+                ylim([0 2])
                 xlabel('angle waveplate (rad)')
                 title('Channel1')
                 obj.traces3Dcommon{i,4} = Height(i,1);
@@ -435,7 +435,7 @@ classdef TrackingExperimentRotational < handle
                 subplot(size(obj.traces3Dcommon,1), 4, i*4-2)
                 plot(f, Angle, traceCh2Norm)
                 ylabel('Intensity (a.u)')
-                ylim([0.25 0.75])
+                ylim([0 2])
                 xlabel('angle waveplate (rad)')
                 title('Channel2')
                 obj.traces3Dcommon{i,9} = Height(i,1);
@@ -454,7 +454,7 @@ classdef TrackingExperimentRotational < handle
                 subplot(size(obj.traces3Dcommon,1), 4, i*4-1)
                 plot(f, Angle, Difference)
                 ylabel('Difference Ch1 - Ch2')
-                ylim([-0.75 0.75])
+                ylim([-1.5 1.5])
                 xlabel('angle waveplate (rad)')
                 title('Difference Ch1-Ch2')
                 obj.traces3Dcommon{i,14} = HeightDiff(i,1);
@@ -473,7 +473,7 @@ classdef TrackingExperimentRotational < handle
                 subplot(size(obj.traces3Dcommon,1), 4, i*4)
                 plot(f, Angle, Ratio)
                 ylabel('Ratio Ch1/Ch2')
-                ylim([0 2.5])
+                ylim([0 10])
                 xlabel('angle waveplate (rad)')
                 title('Ratio Ch1/Ch2')
                 obj.traces3Dcommon{i,19} = HeightRatio(i,1);
