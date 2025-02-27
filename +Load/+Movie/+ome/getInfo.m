@@ -280,16 +280,18 @@ function [frameInfo] = fixCamTiming(frameInfo)
     
     newTiming = [tmpInfo.time];
     %let us renumber the T after the deletion
-   if str2double(tmpInfo(1).T) ==0
-        refCam= camera(1);
-        modifier = 0;
-
-    elseif str2double(tmpInfo(2).T) ==0
-        refCam= camera(2);
-        modifier = 1;
-   end
-
+    refCam = camera(1);
+%    if str2double(tmpInfo(1).T) ==0
+%         refCam= camera(1);
+%         modifier = 0;
+% 
+%     elseif str2double(tmpInfo(2).T) ==0
+%         refCam= camera(2);
+%         modifier = 1;
+%    end
+    treatedIdx = false(size([tmpInfo.time]));
     idxRefCam = find(strcmp({tmpInfo.C},num2str(refCam))==1);
+    inds = 1:length(treatedIdx);
     for i = 1: length(idxRefCam)
         currRefId = idxRefCam(i);
         currT = tmpInfo(currRefId).T;
@@ -297,9 +299,20 @@ function [frameInfo] = fixCamTiming(frameInfo)
         timeCurrRef = tmpInfo(currRefId).time;
 
         %find another frame with similar timing
-        id = find((abs([tmpInfo.time]-timeCurrRef))<2);
-        assert(length(id) == 2, 'couldnt find 2 frames for that time point');
+        id = find((abs([tmpInfo.time]-timeCurrRef))<1.2);
+        
+        id(ismember(id,inds(treatedIdx))) = [];
+        
+        
+        newId = id(id~=currRefId);
 
+        %find the closest time point
+        [~,diffTest] = min(abs([tmpInfo(newId).time]-timeCurrRef));
+    
+        
+        %assign the closest time point
+        id = sort([currRefId,newId(diffTest)]);
+        treatedIdx(id) = 1;
         id = id(id~= currRefId);
         tmpInfo(id).T = currT;
         
@@ -320,7 +333,7 @@ function [frameInfo] = fixCamTiming(frameInfo)
     
     % test that the camera are indeed synchroneous
     maxT = str2double(tmpInfo(end).T);
-    for i = 0:maxT
+    for i = 1:maxT
         
         idx = strcmp({tmpInfo.T},{num2str(i)});
         
@@ -340,7 +353,18 @@ function [frameInfo] = fixCamTiming(frameInfo)
         
     end
     
-    
+    if strcmp(tmpInfo(1).T,'0')
+    else
+        timeFrame = str2double({tmpInfo.T});
+        
+        timeFrame = timeFrame -timeFrame(1);
+
+        for i =1:length(timeFrame)
+            tmpInfo(i).T = num2str(timeFrame(i));
+
+        end
+
+    end
     
     
     frameInfo = tmpInfo;

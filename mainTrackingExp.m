@@ -6,7 +6,7 @@ path2ZCal = [];
 path2SRCal = '';
 
 %file info
-file.path  = 'D:\Documents\2025 - Data\02 Feb\Jui-Kai\Data5';
+file.path  = 'D:\Documents\2025 - Data\02 Feb\Jui-Kai\Data';
 file.ext   = '.ome.tif';
 path2Cal = 'D:\Documents\2025 - Data\02 Feb\Jui-Kai\2DCal';
 dimension = '3D';

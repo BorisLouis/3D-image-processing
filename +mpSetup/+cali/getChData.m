@@ -29,15 +29,16 @@ function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI )
         if (r_win>=im_size1(1))
             warning('y-size of calibration ROI is different from the data to calibrate');
             disp('re-adapting the ROI size')
+
             %extract the shift in y
-            yShift = ROI(chanIdx,2);
+            yShift = ROI(:,2);
             %shift it back related to 0 (minimum shift should be 0)
             yShift = yShift -min(yShift)+1;
             %largest usable ROI is the size of the image - the largest y
             %shift, then we can use the same ROI for everyone.
             maxROI = im_size1(1) - max(yShift);
             
-            ROI(chanIdx,2) = yShift;
+            ROI(chanIdx,2) = yShift(chanIdx);
             ROI(chanIdx,4) = maxROI;
             
             
@@ -75,14 +76,14 @@ function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI )
             warning('y-size of calibration ROI is different from the data to calibrate');
             disp('re-adapting the ROI size')
             %extract the shift in y
-            yShift = ROI(chanIdx,2);
-            %shift it back related to 0 (minimum shift should be 0)
-            yShift = yShift -min(yShift)+1;
-            %largest usable ROI is the size of the image - the largest y
-            %shift, then we can use the same ROI for everyone.
-            maxROI = im_size1(1) - max(yShift);
+%             yShift = ROI(chanIdx,2);
+%             %shift it back related to 0 (minimum shift should be 0)
+%             yShift = yShift -min(yShift)+1;
+%             %largest usable ROI is the size of the image - the largest y
+%             %shift, then we can use the same ROI for everyone.
+%             maxROI = im_size1(1) - max(yShift);
             
-            ROI(chanIdx,2) = yShift;
+            ROI(chanIdx,2) = yShift(chanIdx);
             ROI(chanIdx,4) = maxROI;
             
             
