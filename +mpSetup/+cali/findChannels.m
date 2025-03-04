@@ -14,9 +14,9 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         ymean = mean(im, 2);
         x2 = medfilt1(xmean, 20);
         y2 = medfilt1(ymean, 20);
-        bgthr = mean(x2) - 0.5 * std(x2);   
+        bgthr = 100;   
 
-        Prominence = 10;
+        Prominence = 20;
         [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
         while size(p, 2) > 8
             [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
@@ -26,7 +26,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         colsToDelete = [1:pks(1)+Deletewidth, pks(2)-Deletewidth:pks(3)+Deletewidth, pks(4)-Deletewidth:pks(5)+Deletewidth, pks(6)-Deletewidth:pks(7)+Deletewidth, pks(8)-Deletewidth:size(im, 2)];
         im(:, colsToDelete) = bgthr;
 
-        Prominence = 10;
+        Prominence = 50;
         [f, pks, w, p] = findpeaks(y2, 'MinPeakProminence',Prominence);
         while size(p, 2) > 2
             [f, pks, w, p] = findpeaks(y2, 'MinPeakProminence',Prominence);
