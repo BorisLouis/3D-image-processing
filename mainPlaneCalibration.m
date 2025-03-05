@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'D:\Rotational Tracking\20250211\2D_cal';
+file.path  = 'E:\Rotational Tracking\20250228\2DCal';
 
 file.ext   = '.ome.tif';
 info.runMethod = 'run';

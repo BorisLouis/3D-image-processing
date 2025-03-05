@@ -390,9 +390,6 @@ classdef TrackingExperimentRotational < handle
         end
         
         function RotationalCalibration(obj)
-            % AngFreq = 2*obj.info.RadTime*pi./180;
-            % Model = 'a+b*sin(c*x+d)';
-            % 
             
             Model = 'a+b*sin(1.90*x+c)';
             Fig = figure();
