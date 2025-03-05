@@ -16,7 +16,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         y2 = medfilt1(ymean, 20);
         bgthr = 100;   
 
-        Prominence = 10;
+        Prominence = 20;
         [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
         while size(p, 2) > 8
             [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);

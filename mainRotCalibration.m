@@ -6,10 +6,10 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250211\2DCal_AuBPs_193x90_rotation';
-subFolders = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6', 'sample7', 'sample8', 'sample9', 'sample10'};
+MainFolder = 'S:\Rotational Tracking\20250228\2DCal_184x91_rotational\10ms_exp';
+subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8', 'sample_9', 'sample_10'};
 file.ext   = '.ome.tif';
-path2Cal = 'S:\Rotational Tracking\20250211\2D_cal';
+path2Cal = 'S:\Rotational Tracking\20250228\2DCal';
 dimension = '3D';
 
 %detection parameter
@@ -42,7 +42,7 @@ info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
 
 for i = 1:size(subFolders, 2)
-    try
+    % try
         file.path = append(MainFolder, filesep, subFolders{i});
     
         %% create experiments
@@ -64,7 +64,7 @@ for i = 1:size(subFolders, 2)
         trackingExp.ConsolidateChannels3;
         trackingExp.RotationalCalibration;
         trackingExp.saveData;
-    catch
-    end
+    % catch
+    % end
 end
 
