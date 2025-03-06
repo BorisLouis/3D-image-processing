@@ -152,7 +152,7 @@ classdef MPPlaneCalibration < handle
                    allRelZpos2(:,i) = tmp2-mean(tmp2);
                    allZpos2(:,i) = tmp2;
                    for j = 1:length(allTransformations)
-                       if allData(i).file.transformations{j,2} > 0.20
+                       if allData(i).file.transformations{j,2} > 0.02
                            allTransformations{j,1}.Dimensionality(:,:,i) = allData(i).file.transformations{j,1}.Dimensionality;
                            allTransformations{j,1}.Scale(:,:,i) = allData(i).file.transformations{j,1}.Scale;
                            allTransformations{j,1}.RotationAngle(:,:,i) = allData(i).file.transformations{j,1}.RotationAngle;
