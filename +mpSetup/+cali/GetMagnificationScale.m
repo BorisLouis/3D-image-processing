@@ -42,10 +42,11 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         transf = "similarity"; %similarity
 
         %% new approach
-        scaleLimits = [0.9, 1.1];
+        scaleLimits = [0, 1.5];
         rotationLimits = [-1.2, 1.2]; % Rotation in degrees
-        translationLimits = [-50, 50; -50, 50]; % Translation limits [X; Y]
+        translationLimits = [-140, 140; 140, 140]; % Translation limits [X; Y]
         [optimizer, metric] = imregconfig("multimodal");
+        optimizer.MaximumIterations  = 1000;
         tform_initial = imregtform(Plane9infocus, Plane1infocus, "similarity", optimizer, metric);
         T = tform_initial.T;
         scale_init = sqrt(T(1,1)^2 + T(2,1)^2); % Scale
