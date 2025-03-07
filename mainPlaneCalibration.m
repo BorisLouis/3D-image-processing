@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'E:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+file.path  = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)

@@ -6,17 +6,16 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250228\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8', 'sample_9', 'sample_10'};
 file.ext   = '.ome.tif';
-path2Cal = 'S:\Rotational Tracking\20250228\2DCal';
+path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
 detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 40;
 detectParam{1}.consThresh = 4;
-
 detectParam{2}.delta = 6;
 detectParam{2}.chi2  = 40;
 detectParam{2}.consThresh = 4;
