@@ -56,16 +56,16 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         % transformations{chIdx, 2} = best_similarity;
         % movingRegistered = imwarp(Plane9infocus, best_tform, "OutputView", imref2d(size(Plane1infocus)));
 
-        %% old approach
-        [optimizer,metric] = imregconfig(config);
+        %% 
+        % [optimizer,metric] = imregconfig(config);
         % optimizer.MaximumIterations = 10000;
-        tform = imregtform(Plane9infocus,Plane1infocus,transf, optimizer, metric);
-        transformations{chIdx, 1} = tform;
-        movingRegistered = imwarp(Plane9infocus,tform,"OutputView",imref2d(size(Plane1infocus)));
-        SimilarityScore(chIdx, 1) = multissim(movingRegistered,Plane1infocus);
-        transformations{chIdx, 2} = SimilarityScore(chIdx, 1);
-        transformations{chIdx, 3} = config;
-        transformations{chIdx, 4} = transf;
+        % tform = imregtform(Plane9infocus,Plane1infocus,transf, optimizer, metric);
+        % transformations{chIdx, 1} = tform;
+        % movingRegistered = imwarp(Plane9infocus,tform,"OutputView",imref2d(size(Plane1infocus)));
+        % SimilarityScore(chIdx, 1) = multissim(movingRegistered,Plane1infocus);
+        % transformations{chIdx, 2} = SimilarityScore(chIdx, 1);
+        % transformations{chIdx, 3} = config;
+        % transformations{chIdx, 4} = transf;
 
         subplot(1,2,2)
         imshowpair(Plane1infocus,movingRegistered);
