@@ -57,18 +57,13 @@ end
 switch checkRes
     case 'Yes'
     case 'Fix'
-        %try
-        [frameInfo] = fixCamTiming(frameInfo); 
         warning('on')
-        warning('Found some synchronization issue and fixed them');
+        warning('Found some synchronization issue');
+        disp('Trying fixing...')
+        [frameInfo] = fixCamTiming(frameInfo); 
+        disp('Fixing seems succesful ! ')
         warning('off')
-%         catch
-%             warning('on')
-%             warning('Something went wrong when trying to fix camera sync, no fix was apply');
-%             warning('off');
-%         end
-      %  error('Fixing synchronization is not ready yet, sorry for the inconvenience');
-    case 'No'
+ case 'No'
         disp('If you are running folder analysis, please remove the file from the folder');
         disp(['The unsynced file is: ',movieInfo.Path]);
         error('Camera are not synchronized, user aborted the analysis')
@@ -83,6 +78,12 @@ movieInfo.expT = frameInfo(1).expT;
 time = [frameInfo.time];
 t1   = time(1:2:end);
 t2 =   time(2:2:end);
+if (length(t1)~=length(t2))
+    [frameInfo] = fixCamTiming(frameInfo); 
+    time = [frameInfo.time];
+    t1   = time(1:2:end);
+    t2 =   time(2:2:end);
+end
 assert(length(t1) == length(t2),'timing of each camera have different sizes');
 timing = mean([t1;t2],1);
 timing = timing-timing(1);
@@ -156,21 +157,24 @@ function [k1, k2, k3, k4, nFrames] = indexFrameHeader(frameHeader)
             %find which frame is duplicated
             val = unique(T); % which will give you the unique elements of A in array B
             Ncount = histc(T, val);
-            
+           
             duplicate = val(Ncount>2);
             nWrong = length(duplicate);
             disp([num2str(nWrong) ' wrong lines found']);
-            if nWrong > ceil(0.02*nFrames)
-                error('More than 1% of the data has mistakes, cannot pursue')
-            end
+            % if nWrong > ceil(0.02*nFrames)
+            %     error('More than 1% of the data has mistakes, cannot pursue')
+            % end
             
-            idx2Delete = zeros(1,nWrong);
+            idx2Delete = [];
             %correct the errors
             for i = 1:nWrong
+                %extract IFD and camera for duplicated time to identify
+                %mistake
                 currErr = duplicate(i);
                 cIFDs = IFD(T==currErr);
                 cCs   = C(T==currErr);
-                
+                %we test which camera has mistakes (if duplicate sum above
+                %1 then camera 2 has the issue otherwise it is camera 1
                 testCam = sum(cCs);
                 %determine which camera is wrong
                 if testCam > 1
@@ -180,18 +184,35 @@ function [k1, k2, k3, k4, nFrames] = indexFrameHeader(frameHeader)
                     cIFDs = cIFDs(cCs==0);
                     cCam = 0;
                 end
-                
+
+                val2Delete = cIFDs(1);
+                idx2Delete = [idx2Delete find(and(C==cCam,and(IFD==val2Delete,T==duplicate(i))))];
+
+
                 %determine which of these IFD value is duplicated
-                counter = zeros(size(cIFDs));
-                for j = 1:length(cIFDs)
-                    counter(j) = sum(IFD==cIFDs(j));
-                     
-                end
+                %in close vicinity
+                % sL= length(idx2Delete);
+                % for j = 1:length(cIFDs)
+                %     ifd =cIFDs(j);
+                %     id = find(and(IFD==ifd,T==currErr));
+                %     idRange = id-10:id+10;
+                %     idRange(idRange<0) = [];
+                %     idRange(idRange>numel(IFD))=[];
+                %     if (sum(IFD(idRange) == cIFDs(j))>1)
+                % 
+                %         val2Delete = cIFDs(j);
+                %         idx2Delete = [idx2Delete find(and(C==cCam,and(IFD==val2Delete,T==duplicate(i))))];
+                % 
+                %     end
+                % end
+                %  eL= length(idx2Delete);
+                % 
+                % if(( eL-sL)>1)
+                %     disp('stop')
+                % end
+                % %[~,idx] = max(counter);
                 
-                [~,idx] = max(counter);
                 
-                val2Delete = cIFDs(idx);
-                idx2Delete(i) = find(and(C==cCam,and(IFD==val2Delete,T==duplicate(i))));
 
                 
             end
@@ -259,16 +280,18 @@ function [frameInfo] = fixCamTiming(frameInfo)
     
     newTiming = [tmpInfo.time];
     %let us renumber the T after the deletion
-   if str2double(tmpInfo(1).T) ==0
-        refCam= camera(1);
-        modifier = 0;
-
-    elseif str2double(tmpInfo(2).T) ==0
-        refCam= camera(2);
-        modifier = 1;
-   end
-
+    refCam = camera(1);
+%    if str2double(tmpInfo(1).T) ==0
+%         refCam= camera(1);
+%         modifier = 0;
+% 
+%     elseif str2double(tmpInfo(2).T) ==0
+%         refCam= camera(2);
+%         modifier = 1;
+%    end
+    treatedIdx = false(size([tmpInfo.time]));
     idxRefCam = find(strcmp({tmpInfo.C},num2str(refCam))==1);
+    inds = 1:length(treatedIdx);
     for i = 1: length(idxRefCam)
         currRefId = idxRefCam(i);
         currT = tmpInfo(currRefId).T;
@@ -276,44 +299,21 @@ function [frameInfo] = fixCamTiming(frameInfo)
         timeCurrRef = tmpInfo(currRefId).time;
 
         %find another frame with similar timing
-        id = find((abs([tmpInfo.time]-timeCurrRef))<5);
-        if size(id,2) == 3
-            id = id(2:3);
-        end
-        if length(id) ~= 2
-            for f = 1:size(id, 2)
-                ff = id(f);
-                Times(f) = tmpInfo(ff).time;
-            end
-            Diff = Times -timeCurrRef;
-
-            min1 = inf; 
-            min2 = inf; 
-            Rightidx1 = -1;  
-            Rightidx2 = -1;  
-            
-            for q = 1:length(Diff)
-                if Diff(q) < min1
-                    min2 = min1;
-                    Rightidx2 = Rightidx1;
-                    min1 = Diff(q);
-                    Rightidx1 = q;
-                elseif Diff(q) < min2
-                    min2 = Diff(q);
-                    Rightidx2 = q;
-                end
-            end
-            Rightid = [id(Rightidx1), id(Rightidx2)];
-            id = [];
-            id = Rightid;
-        end
-        assert(length(id) == 2, 'couldnt find 2 frames for that time point');
-
-        id = id(id~= currRefId);
-        if size(id, 2) ~= 1
-            id = currRefId -1;
-        end
+        id = find((abs([tmpInfo.time]-timeCurrRef))<1.2);
         
+        id(ismember(id,inds(treatedIdx))) = [];
+        
+        
+        newId = id(id~=currRefId);
+
+        %find the closest time point
+        [~,diffTest] = min(abs([tmpInfo(newId).time]-timeCurrRef));
+    
+        
+        %assign the closest time point
+        id = sort([currRefId,newId(diffTest)]);
+        treatedIdx(id) = 1;
+        id = id(id~= currRefId);
         tmpInfo(id).T = currT;
         
         %previous version:
@@ -330,44 +330,41 @@ function [frameInfo] = fixCamTiming(frameInfo)
 %         end
         
     end
-
-    for i = 1:size(tmpInfo, 2)
-        if mod(i,2) == 0
-            tmpInfo(i).C = '1';
-        else
-            tmpInfo(i).C = '0';
-        end
-    end
     
     % test that the camera are indeed synchroneous
     maxT = str2double(tmpInfo(end).T);
-
-    for i = 2:size(tmpInfo, 2)
-        tmpInfo(i).T = num2str(round(i./2 -1));
-    end
-
-    % 
-    for i = 0:maxT
-
+    for i = 1:maxT
+        
         idx = strcmp({tmpInfo.T},{num2str(i)});
-
+        
         camDiff = {tmpInfo(idx).C};
-
+        
         %test cam diff
         %#1 we test that there is only 2 camera frames
         assert(length(camDiff)<=2,'More than two camera for a single frame')
         %#2 
         assert(~strcmp(camDiff{1}, camDiff{2}),'The two cameras corresponding to the same time point are not different')
-
+        
         %test timing difference
         camTiming = {tmpInfo(idx).time};
-
-        assert(abs(camTiming{1} - camTiming{2}) < 75, 'Camera delay bigger than 4ms after fixing, something is wrong')
-
-
+        
+        assert(abs(camTiming{1} - camTiming{2}) < tmpInfo(i+1).expT, 'Camera delay bigger than exposure time after fixing, something is wrong')
+        
+        
     end
     
-    
+    if strcmp(tmpInfo(1).T,'0')
+    else
+        timeFrame = str2double({tmpInfo.T});
+        
+        timeFrame = timeFrame -timeFrame(1);
+
+        for i =1:length(timeFrame)
+            tmpInfo(i).T = num2str(timeFrame(i));
+
+        end
+
+    end
     
     
     frameInfo = tmpInfo;

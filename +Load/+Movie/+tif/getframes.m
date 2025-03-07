@@ -12,6 +12,7 @@ w    = tObj.getTag(257);
 tObj.setDirectory(frames(1));
 
 im1  = tObj.read;
+im1 = im1(1:w, 1:l);
 nClass = class(im1);
 mov = zeros(w,l,f_n,nClass);
 convert = false;
@@ -24,11 +25,14 @@ end
 for i = 1:f_n
     f_i = frames(i);
     tObj.setDirectory(f_i)
-    movTmp = tObj.read;  
+    movTmp = tObj.read; 
+    movTmp = movTmp(1:w, 1:l);
     if convert
         movTmp = rgb2gray(movTmp);
     end
-    mov(:,:,i) = movTmp;    
+
+    mov(:,:,i) = movTmp;
+
 end
 tObj.close
 

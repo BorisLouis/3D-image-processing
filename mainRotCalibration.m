@@ -14,10 +14,10 @@ dimension = '3D';
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 40;
+detectParam{1}.chi2  = 60;
 detectParam{1}.consThresh = 4;
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 40;
+detectParam{2}.chi2  = 60;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -26,7 +26,7 @@ trackParam.memory  = 50;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
-info.runMethod = 'run'; % load or run
+info.runMethod = 'load'; % load or run
 info.frame2Load = 'all'; % 'all' or a range of number e.g. 1:100
 info.fitMethod  = 'Phasor'; %Phasor or Gauss (need to be the same as ZCal if using PSFE
 info.zMethod = 'Intensity'; %Intensity, 3DFit or PSFE
@@ -35,10 +35,12 @@ info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 
 info.rotationalCalib = 1;
+info.Bipyramid = [184, 92];
 info.euDist = 1500;
 info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
+
 
 for i = 1:size(subFolders, 2)
     % try

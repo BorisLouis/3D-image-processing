@@ -207,7 +207,15 @@ else
 
         waitbar(.7,h,'Channel2: Applying transformation...')
         for i = 1:size(data2,3)
-            tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
+            tformStruct = cal.Transformation{i, 1};  
+            scale = tformStruct.Scale;
+            theta = tformStruct.RotationAngle; 
+            translation = tformStruct.Translation;
+            thetaRad = deg2rad(theta);
+            T = [ scale * cos(thetaRad), -scale * sin(thetaRad), translation(1);
+                  scale * sin(thetaRad),  scale * cos(thetaRad), translation(2);
+                  0,                     0,                     1 ];
+            tform = similarity2d(T);
             for f = 1:size(data2,4)
                 data2(:,:,i,f) = imwarp(data2(:,:,i,f),tform,"OutputView",imref2d(size(data2(:,:,i,f))));
             end

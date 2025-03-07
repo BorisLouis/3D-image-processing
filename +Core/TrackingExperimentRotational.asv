@@ -303,8 +303,7 @@ classdef TrackingExperimentRotational < handle
         function ConsolidateChannels3(obj)
             channel1 = obj.traces3D{1,1};
             channel2 = obj.traces3D{2,1};
-            channel1{1,1}.z = ones(size(channel1{1,1}.z))*channel1{1,1}.z(1);
-            channel2{1,1}.z = ones(size(channel2{1,1}.z))*channel2{1,1}.z(1);
+            channel1{1,1}.z = 
             numTraces1 = size(channel1, 1);
             numTraces2 = size(channel2, 1);
         
@@ -315,9 +314,9 @@ classdef TrackingExperimentRotational < handle
                 for j = 1:numTraces2
                     trace2 = channel2{j,1}; 
                     
-                    coords1 = table2array(trace1(:, 1:3)); 
+                    coords1 = table2array(trace1(:, 1:2)); 
                     time1 = table2array(trace1(:, 10));   
-                    coords2 = table2array(trace2(:, 1:3));
+                    coords2 = table2array(trace2(:, 1:2));
                     time2 = table2array(trace2(:, 10)); 
                 
                     common_time = intersect(time1, time2);
@@ -361,9 +360,9 @@ classdef TrackingExperimentRotational < handle
                 end
     
                 unique_vals = unique(closest_indices);
-                % if n == 10
-                %     break
-                % end
+                if n == 10
+                    break
+                end
             % end
 
             closest_indices(:,2) = closest_indices(:,1);
