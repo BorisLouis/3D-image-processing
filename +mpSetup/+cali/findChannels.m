@@ -12,8 +12,8 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
     if DarkFieldPhase == 1
         xmean = mean(im, 1);
         ymean = mean(im, 2);
-        x2 = medfilt1(xmean, 20);
-        y2 = medfilt1(ymean, 20);
+        x2 = medfilt1(xmean, 30);
+        y2 = medfilt1(ymean, 30);
         bgthr = 100;   
 
         Prominence = 20;
