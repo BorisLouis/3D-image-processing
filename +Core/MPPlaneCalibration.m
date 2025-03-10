@@ -112,6 +112,7 @@ classdef MPPlaneCalibration < handle
             if allData(1).file.multiModal == true
                 nPlanes2 = length(allData(1).file.neworder2);
                 allROI2 = zeros([size(allData(1).file.ROI2) nFiles]);
+                allROI2FullCam = zeros([size(allData(1).file.ROI2FullCam) nFiles]);
                 allFocusMet2 =  zeros([size(allData(1).file.focusMet2) nFiles]);
                 allFit2 = zeros([size(allData(1).file.fit2) nFiles]);
                 allNewOrder2 =  zeros([size(allData(1).file.neworder2) nFiles]);
@@ -144,6 +145,7 @@ classdef MPPlaneCalibration < handle
 
                 if allData(1).file.multiModal == true
                    allROI2(:,:,i) = allData(i).file.ROI2;
+                   allROI2FullCam(:,:,i) = allData(i).file.ROI2FullCam;
                    %allFocusMet(:,:,i) = allData(i).file.focusMet;
                    %allFit(:,:,i) = allData(i).file.fit;
                    %allNewOrder(:,:,i) = allData(i).file.neworder; 
@@ -189,6 +191,7 @@ classdef MPPlaneCalibration < handle
 
             if allData(1).file.multiModal == true
                 ROI2 = floor(mean(allROI2,3));
+                ROI2FullCam = floor(mean(allROI2FullCam,3));
                 RelZPos2 = mean(allRelZpos2,2);
                 tmp2 = num2cell(RelZPos2');
                 [inFocus2(1,:).relZPos] = tmp2{:};
@@ -199,6 +202,7 @@ classdef MPPlaneCalibration < handle
                 %obj.cal.file = obj.allCal(1).file;
                 %obj.cal.file = rmfield(obj.cal.file,{'focusMet2','fit2','Zpos'});
                 obj.cal.file.ROI2 = ROI2;
+                obj.cal.file.ROI2FullCam = ROI2FullCam;
                 obj.cal.file.Icorrf2 = squeeze(mean(allICorrF1,3));
                 obj.cal.file.inFocus2 = inFocus2; 
 
@@ -213,6 +217,9 @@ classdef MPPlaneCalibration < handle
                 end
             else
             end
+
+            [Transformations] = mpSetup.cali.getTransformationMultiModal(obj); 
+
             [~] = obj.determineCAMConfig;
             disp('================>DONE<====================');
             
