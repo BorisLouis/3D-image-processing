@@ -38,44 +38,44 @@ else
     end
     waitbar(.2,h,'Gettingg channel data')
     [ chC1, chC2 ] = mpSetup.cali.getChData( cam1, cam2, cal.ROI1 );
-    if info.rotational == true
-        if exist('ROI','var') == 1
-             StartHoriz = ROI(1);
-             EndHoriz = ROI(2);
-             StartVert = ROI(3);
-             EndVert = ROI(4);
-        else
-            MeanIm = mean(chC1,4);
-            MeanIm = mean(MeanIm, 3);
-            MeanHoriz = mean(MeanIm, 2);
-            MeanHorizDiff = abs(diff(MeanHoriz));
-            StartHoriz1 = find(MeanHorizDiff < 5, 1, 'first');
-            EndHoriz1 = find(MeanHorizDiff < 5, 1, 'last');
-            MeanVert = mean(MeanIm, 1);
-            MeanVertDiff = abs(diff(MeanVert));
-            StartVert1 = find(MeanVertDiff < 5, 1, 'first');
-            EndVert1 = find(MeanVertDiff < 5, 1, 'last');
-            
-            MeanIm = mean(chC2,4);
-            MeanIm = mean(MeanIm, 3);
-            MeanHoriz = mean(MeanIm, 2);
-            MeanHorizDiff = abs(diff(MeanHoriz));
-            StartHoriz2 = find(MeanHorizDiff < 5, 1, 'first');
-            EndHoriz2 = find(MeanHorizDiff < 5, 1, 'last');
-            MeanVert = mean(MeanIm, 1);
-            MeanVertDiff = abs(diff(MeanVert));
-            StartVert2 = find(MeanVertDiff < 5, 1, 'first');
-            EndVert2 = find(MeanVertDiff < 5, 1, 'last');
-            
-            StartHoriz = max([StartHoriz1; StartHoriz2]);
-            EndHoriz = min([EndHoriz1; EndHoriz2]);
-            StartVert = max([StartVert1; StartVert2]);
-            EndVert = min([EndVert1; EndVert2]);
-            ROInew = [StartHoriz, EndHoriz, StartVert, EndVert];
-        end
-        chC1 = chC1(StartHoriz:EndHoriz, StartVert:EndVert, :,:);
-        chC2 = chC2(StartHoriz:EndHoriz, StartVert:EndVert, :,:);
-    end
+    % if info.rotational == true
+    %     if exist('ROI','var') == 1
+    %          StartHoriz = ROI(1);
+    %          EndHoriz = ROI(2);
+    %          StartVert = ROI(3);
+    %          EndVert = ROI(4);
+    %     else
+    %         MeanIm = mean(chC1,4);
+    %         MeanIm = mean(MeanIm, 3);
+    %         MeanHoriz = mean(MeanIm, 2);
+    %         MeanHorizDiff = abs(diff(MeanHoriz));
+    %         StartHoriz1 = find(MeanHorizDiff < 5, 1, 'first');
+    %         EndHoriz1 = find(MeanHorizDiff < 5, 1, 'last');
+    %         MeanVert = mean(MeanIm, 1);
+    %         MeanVertDiff = abs(diff(MeanVert));
+    %         StartVert1 = find(MeanVertDiff < 5, 1, 'first');
+    %         EndVert1 = find(MeanVertDiff < 5, 1, 'last');
+    % 
+    %         MeanIm = mean(chC2,4);
+    %         MeanIm = mean(MeanIm, 3);
+    %         MeanHoriz = mean(MeanIm, 2);
+    %         MeanHorizDiff = abs(diff(MeanHoriz));
+    %         StartHoriz2 = find(MeanHorizDiff < 5, 1, 'first');
+    %         EndHoriz2 = find(MeanHorizDiff < 5, 1, 'last');
+    %         MeanVert = mean(MeanIm, 1);
+    %         MeanVertDiff = abs(diff(MeanVert));
+    %         StartVert2 = find(MeanVertDiff < 5, 1, 'first');
+    %         EndVert2 = find(MeanVertDiff < 5, 1, 'last');
+    % 
+    %         StartHoriz = max([StartHoriz1; StartHoriz2]);
+    %         EndHoriz = min([EndHoriz1; EndHoriz2]);
+    %         StartVert = max([StartVert1; StartVert2]);
+    %         EndVert = min([EndVert1; EndVert2]);
+    %         ROInew = [StartHoriz, EndHoriz, StartVert, EndVert];
+    %     end
+    %     chC1 = chC1(StartHoriz:EndHoriz, StartVert:EndVert, :,:);
+    %     chC2 = chC2(StartHoriz:EndHoriz, StartVert:EndVert, :,:);
+    % end
     sTmp = size(chC1);
     sTmp(3) = sTmp(3)*2;
     data1 = ones(sTmp,'uint16');
@@ -134,48 +134,48 @@ else
         h = waitbar(0,'Channel2: Please wait applying calibration');
         waitbar(.2,h,'Channel2: Getting channel data')
         [ chC3, chC4 ] = mpSetup.cali.getChData( cam1, cam2, cal.ROI2FullCam );
-        if info.rotational == true
-            if exist('ROI','var') == 1
-                 StartHorizM = ROI(1);
-                 EndHorizM = ROI(2);
-                 StartVertM = ROI(3);
-                 EndVertM = ROI(4);
-                 ROInew = ROI;
-            else
-                MeanIm = mean(chC3,4);
-                MeanIm = mean(MeanIm, 3);
-                MeanHoriz = mean(MeanIm, 2);
-                MeanHorizDiff = abs(diff(MeanHoriz));
-                StartHoriz3 = find(MeanHorizDiff < 5, 1, 'first');
-                EndHoriz3 = find(MeanHorizDiff < 5, 1, 'last');
-                MeanVert = mean(MeanIm, 1);
-                MeanVertDiff = abs(diff(MeanVert));
-                StartVert3 = find(MeanVertDiff < 5, 1, 'first');
-                EndVert3 = find(MeanVertDiff < 5, 1, 'last');
-                
-                MeanIm = mean(chC4,4);
-                MeanIm = mean(MeanIm, 3);
-                MeanHoriz = mean(MeanIm, 2);
-                MeanHorizDiff = abs(diff(MeanHoriz));
-                StartHoriz4 = find(MeanHorizDiff < 5, 1, 'first');
-                EndHoriz4 = find(MeanHorizDiff < 5, 1, 'last');
-                MeanVert = mean(MeanIm, 1);
-                MeanVertDiff = abs(diff(MeanVert));
-                StartVert4 = find(MeanVertDiff < 5, 1, 'first');
-                EndVert4 = find(MeanVertDiff < 5, 1, 'last');
-                
-                StartHorizM = max([StartHoriz3; StartHoriz4; StartHoriz]);
-                EndHorizM = min([EndHoriz3; EndHoriz4; EndHoriz]);
-                StartVertM = max([StartVert3; StartVert4; StartVert]);
-                EndVertM = min([EndVert3; EndVert4; EndVert]);
-
-                ROInew = [StartHorizM, EndHorizM, StartVertM, EndVertM];
-                data1 = data1((StartHorizM-StartHoriz)+1:end-(EndHoriz-EndHorizM), (StartVertM-StartVert)+1:end-(EndVert-EndVertM),:,:);
-            end
-            chC3 = chC3(StartHorizM:EndHorizM, StartVertM:EndVertM, :,:);
-            chC4 = chC4(StartHorizM:EndHorizM, StartVertM:EndVertM, :,:);
-            
-        end
+        % if info.rotational == true
+        %     if exist('ROI','var') == 1
+        %          StartHorizM = ROI(1);
+        %          EndHorizM = ROI(2);
+        %          StartVertM = ROI(3);
+        %          EndVertM = ROI(4);
+        %          ROInew = ROI;
+        %     else
+        %         MeanIm = mean(chC3,4);
+        %         MeanIm = mean(MeanIm, 3);
+        %         MeanHoriz = mean(MeanIm, 2);
+        %         MeanHorizDiff = abs(diff(MeanHoriz));
+        %         StartHoriz3 = find(MeanHorizDiff < 5, 1, 'first');
+        %         EndHoriz3 = find(MeanHorizDiff < 5, 1, 'last');
+        %         MeanVert = mean(MeanIm, 1);
+        %         MeanVertDiff = abs(diff(MeanVert));
+        %         StartVert3 = find(MeanVertDiff < 5, 1, 'first');
+        %         EndVert3 = find(MeanVertDiff < 5, 1, 'last');
+        % 
+        %         MeanIm = mean(chC4,4);
+        %         MeanIm = mean(MeanIm, 3);
+        %         MeanHoriz = mean(MeanIm, 2);
+        %         MeanHorizDiff = abs(diff(MeanHoriz));
+        %         StartHoriz4 = find(MeanHorizDiff < 5, 1, 'first');
+        %         EndHoriz4 = find(MeanHorizDiff < 5, 1, 'last');
+        %         MeanVert = mean(MeanIm, 1);
+        %         MeanVertDiff = abs(diff(MeanVert));
+        %         StartVert4 = find(MeanVertDiff < 5, 1, 'first');
+        %         EndVert4 = find(MeanVertDiff < 5, 1, 'last');
+        % 
+        %         StartHorizM = max([StartHoriz3; StartHoriz4; StartHoriz]);
+        %         EndHorizM = min([EndHoriz3; EndHoriz4; EndHoriz]);
+        %         StartVertM = max([StartVert3; StartVert4; StartVert]);
+        %         EndVertM = min([EndVert3; EndVert4; EndVert]);
+        % 
+        %         ROInew = [StartHorizM, EndHorizM, StartVertM, EndVertM];
+        %         data1 = data1((StartHorizM-StartHoriz)+1:end-(EndHoriz-EndHorizM), (StartVertM-StartVert)+1:end-(EndVert-EndVertM),:,:);
+        %     end
+        %     chC3 = chC3(StartHorizM:EndHorizM, StartVertM:EndVertM, :,:);
+        %     chC4 = chC4(StartHorizM:EndHorizM, StartVertM:EndVertM, :,:);
+        % 
+        % end
         sTmp2 = size(chC3);
         sTmp2(3) = sTmp2(3)*2;
         data2 = ones(sTmp2,'uint16');
@@ -207,7 +207,7 @@ else
 
         waitbar(.7,h,'Channel2: Applying transformation...')
         for i = 1:size(data2,3)
-            tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
+            tform = cal.Transformation{i,1};
             for f = 1:size(data2,4)
                 data2(:,:,i,f) = imwarp(data2(:,:,i,f),tform,"OutputView",imref2d(size(data2(:,:,i,f))));
             end

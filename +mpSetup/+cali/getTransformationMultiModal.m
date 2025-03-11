@@ -1,8 +1,11 @@
-function [transformation] = getTransformationMultiModal(obj)
+function [transformation, ZDiff] = getTransformationMultiModal(obj)
     for i = 1:obj.cal.nFiles %% loop through files
-        fpath = append('obj.MPCalibrations.MPCal', num2str(i), '.raw');
-        [frameInfo, movInfo, ~ ]= Load.Movie.ome.getInfo( obj.MPCalibrations.MPCal1.raw.fullPath   );
+        fmov = append('MPCal', num2str(i));
+        [frameInfo, movInfo, ~ ]= Load.Movie.ome.getInfo(obj.MPCalibrations.(fmov).raw.fullPath);
         [ movC1, movC2, idx ] = Load.Movie.ome.load( frameInfo, movInfo  , 1:movInfo.maxFrame );
+        if obj.MPCalibrations.(fmov).cal.file.flipCam2
+            movC2 = flip(movC2,2);
+        end
 
         [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, obj.cal.file.ROI1 );
         [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, obj.cal.file.ROI2FullCam);
@@ -33,7 +36,7 @@ function [transformation] = getTransformationMultiModal(obj)
             similarity = 0;
             n = 0;
 
-            while similarity < 0.99985
+            % while similarity < 0.99985
                 Channel2 = Channel2(1+n:end-1, 1+n:end-n);
                 figure()
                 subplot(1,2,1)
@@ -73,13 +76,17 @@ function [transformation] = getTransformationMultiModal(obj)
                 title("after correction");
                 sgtitle(append("Plane ", num2str(j), " x Plane ", num2str(j+8)));
                 n = n+1;
-                if n > 30
-                    break
-                end
-            end
+            %     if n > 3
+            %         break
+            %     end
+            % end
         end
         close all
+        close(f)
     end
-    close(f)
+    for i = 1:size(obj.cal.file.inFocus1 ,2)
+        tform = simtform2d(nanmedian(Scale(:,i)), nanmedian(RotationAngle(:,i)), [nanmedian(Translation1(:,i)), nanmedian(Translation2(:,i))]);
+        transformation{i,1} = tform;
+    end
 end
 

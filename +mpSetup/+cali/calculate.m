@@ -173,9 +173,10 @@ if cal.correctInt
         [cal.Icorrf2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
         maxInt2 = max(cal.fit2(:, 2:2:end), [],1);
         cal.Icorrf2 = maxInt2./max(maxInt2);
-        [ MagnificationFactors ] = mpSetup.cali.GetMagnificationScale(chData1c, chData2c, chData3c, chData4c, cal.inFocus1, cal.inFocus2);
+        % [ MagnificationFactors ] = mpSetup.cali.GetMagnificationScale(chData1c, chData2c, chData3c, chData4c, cal.inFocus1, cal.inFocus2);
         %mpSetup.cali.plotCalMultiModal(meanIm1, meanIm2, cal.ROI1, cal.ROI2FullCam, MagnificationFactors);
-        mpSetup.cali.plotCalMultiModal(chData1c, chData2c, chData3c, chData4c, MagnificationFactors)
+        [ MagnificationFactors ] = [];
+        mpSetup.cali.plotCalMultiModal(chData1c, chData2c, chData3c, chData4c)
         sgtitle('All planes corrected')
     else
         [ MagnificationFactors ] = [];

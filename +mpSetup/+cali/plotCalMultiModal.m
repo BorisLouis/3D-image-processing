@@ -1,4 +1,4 @@
-function plotCalMultiModal(ch1,ch2, ch3, ch4, transformations)
+function plotCalMultiModal(ch1,ch2, ch3, ch4)
     
     figure()
     for i = 1:4
@@ -6,8 +6,8 @@ function plotCalMultiModal(ch1,ch2, ch3, ch4, transformations)
         channel9 = mean(ch3(:,:,i,:), 4);
         Max = max(channel1(:));
 
-        tform = transformations{i,1};
-        channel9 = imwarp(channel9, tform, "OutputView", imref2d(size(channel1)));
+        % tform = transformations{i,1};
+        % channel9 = imwarp(channel9, tform, "OutputView", imref2d(size(channel1)));
         channel9 = channel9./((max(channel9(:)))*Max);
         subplot(2,8,i)
         imagesc(channel1)
@@ -22,8 +22,8 @@ function plotCalMultiModal(ch1,ch2, ch3, ch4, transformations)
         channel9 = mean(ch4(:,:,i,:), 4);
         Max = max(channel1(:));
 
-        tform = transformations{i+4,1};
-        channel9 = imwarp(channel9, tform, "OutputView", imref2d(size(channel1)));
+        % tform = transformations{i+4,1};
+        % channel9 = imwarp(channel9, tform, "OutputView", imref2d(size(channel1)));
         channel9 = channel9./((max(channel9(:)))*Max);
         subplot(2,8,i+4)
         imagesc(channel1)

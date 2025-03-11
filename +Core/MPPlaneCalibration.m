@@ -121,14 +121,14 @@ classdef MPPlaneCalibration < handle
                 inFocus2 = rmfield(inFocus2,{'frame', 'zpos'});
                 allRelZpos2 = zeros(nPlanes2,nFiles);
                 allZpos2 = zeros(nPlanes2,nFiles);
-                for i = 1:length(allData(1).file.transformations);
-                    allTransformations{i,1}.Dimensionality = zeros([size(allData(1).file.transformations{i,1}.Dimensionality) nFiles]);
-                    allTransformations{i,1}.Scale = zeros([size(allData(1).file.transformations{i,1}.Scale) nFiles]);
-                    allTransformations{i,1}.RotationAngle = zeros([size(allData(1).file.transformations{i,1}.RotationAngle) nFiles]);
-                    allTransformations{i,1}.Translation = zeros([size(allData(1).file.transformations{i,1}.Translation) nFiles]);
-                    allTransformations{i,1}.R = zeros([size(allData(1).file.transformations{i,1}.R) nFiles]);
-                    allTransformations{i,1}.A = zeros([size(allData(1).file.transformations{i,1}.A) nFiles]);
-                end
+                % for i = 1:length(allData(1).file.transformations);
+                %     allTransformations{i,1}.Dimensionality = zeros([size(allData(1).file.transformations{i,1}.Dimensionality) nFiles]);
+                %     allTransformations{i,1}.Scale = zeros([size(allData(1).file.transformations{i,1}.Scale) nFiles]);
+                %     allTransformations{i,1}.RotationAngle = zeros([size(allData(1).file.transformations{i,1}.RotationAngle) nFiles]);
+                %     allTransformations{i,1}.Translation = zeros([size(allData(1).file.transformations{i,1}.Translation) nFiles]);
+                %     allTransformations{i,1}.R = zeros([size(allData(1).file.transformations{i,1}.R) nFiles]);
+                %     allTransformations{i,1}.A = zeros([size(allData(1).file.transformations{i,1}.A) nFiles]);
+                % end
             else 
             end
 
@@ -153,23 +153,23 @@ classdef MPPlaneCalibration < handle
                    tmp2 = cell2mat({allData(i).file.inFocus2.zpos});
                    allRelZpos2(:,i) = tmp2-mean(tmp2);
                    allZpos2(:,i) = tmp2;
-                   for j = 1:length(allTransformations)
-                       if allData(i).file.transformations{j,2} > 0.02
-                           allTransformations{j,1}.Dimensionality(:,:,i) = allData(i).file.transformations{j,1}.Dimensionality;
-                           allTransformations{j,1}.Scale(:,:,i) = allData(i).file.transformations{j,1}.Scale;
-                           allTransformations{j,1}.RotationAngle(:,:,i) = allData(i).file.transformations{j,1}.RotationAngle;
-                           allTransformations{j,1}.Translation(:,:,i) = allData(i).file.transformations{j,1}.Translation;
-                           allTransformations{j,1}.R(:,:,i) = allData(i).file.transformations{j,1}.R;
-                           allTransformations{j,1}.A(:,:,i) = allData(i).file.transformations{j,1}.A;
-                       else
-                           allTransformations{j,1}.Dimensionality(:,:,i) = NaN(1,1);
-                           allTransformations{j,1}.Scale(:,:,i) = NaN(1,1);
-                           allTransformations{j,1}.RotationAngle(:,:,i) = NaN(1,1);
-                           allTransformations{j,1}.Translation(:,:,i) = NaN(1,2);
-                           allTransformations{j,1}.R(:,:,i) = NaN(2,2);
-                           allTransformations{j,1}.A(:,:,i) = NaN(3,3);
-                       end
-                   end
+                   % for j = 1:length(allTransformations)
+                   %     if allData(i).file.transformations{j,2} > 0.02
+                   %         allTransformations{j,1}.Dimensionality(:,:,i) = allData(i).file.transformations{j,1}.Dimensionality;
+                   %         allTransformations{j,1}.Scale(:,:,i) = allData(i).file.transformations{j,1}.Scale;
+                   %         allTransformations{j,1}.RotationAngle(:,:,i) = allData(i).file.transformations{j,1}.RotationAngle;
+                   %         allTransformations{j,1}.Translation(:,:,i) = allData(i).file.transformations{j,1}.Translation;
+                   %         allTransformations{j,1}.R(:,:,i) = allData(i).file.transformations{j,1}.R;
+                   %         allTransformations{j,1}.A(:,:,i) = allData(i).file.transformations{j,1}.A;
+                   %     else
+                   %         allTransformations{j,1}.Dimensionality(:,:,i) = NaN(1,1);
+                   %         allTransformations{j,1}.Scale(:,:,i) = NaN(1,1);
+                   %         allTransformations{j,1}.RotationAngle(:,:,i) = NaN(1,1);
+                   %         allTransformations{j,1}.Translation(:,:,i) = NaN(1,2);
+                   %         allTransformations{j,1}.R(:,:,i) = NaN(2,2);
+                   %         allTransformations{j,1}.A(:,:,i) = NaN(3,3);
+                   %     end
+                   % end
                 else 
                 end
  
@@ -206,19 +206,29 @@ classdef MPPlaneCalibration < handle
                 obj.cal.file.Icorrf2 = squeeze(mean(allICorrF1,3));
                 obj.cal.file.inFocus2 = inFocus2; 
 
-                for j = 1:length(allTransformations)
-                   obj.cal.file.Transformation{j,1}.Dimensionality = nanmean(allTransformations{j,1}.Dimensionality, 3);
-                   obj.cal.file.Transformation{j,1}.Scale = nanmean(allTransformations{j,1}.Scale, 3);
-                   obj.cal.file.Transformation{j,1}.RotationAngle = nanmean(allTransformations{j,1}.RotationAngle, 3);
-                   obj.cal.file.Transformation{j,1}.Translation = nanmean(allTransformations{j,1}.Translation, 3);
-                   obj.cal.file.Transformation{j,1}.R = nanmean(allTransformations{j,1}.R, 3);
-                   obj.cal.file.Transformation{j,1}.A = nanmean(allTransformations{j,1}.A, 3);
-                   %obj.cal.file.Transformation{j,1} = simtform2d(mean(allTransformations{j,1}.Scale, 3), mean(allTransformations{j,1}.RotationAngle, 3), mean(allTransformations{j,1}.Translation, 3))
-                end
+                % for j = 1:length(allTransformations)
+                %    obj.cal.file.Transformation{j,1}.Dimensionality = nanmean(allTransformations{j,1}.Dimensionality, 3);
+                %    obj.cal.file.Transformation{j,1}.Scale = nanmean(allTransformations{j,1}.Scale, 3);
+                %    obj.cal.file.Transformation{j,1}.RotationAngle = nanmean(allTransformations{j,1}.RotationAngle, 3);
+                %    obj.cal.file.Transformation{j,1}.Translation = nanmean(allTransformations{j,1}.Translation, 3);
+                %    obj.cal.file.Transformation{j,1}.R = nanmean(allTransformations{j,1}.R, 3);
+                %    obj.cal.file.Transformation{j,1}.A = nanmean(allTransformations{j,1}.A, 3);
+                %    %obj.cal.file.Transformation{j,1} = simtform2d(mean(allTransformations{j,1}.Scale, 3), mean(allTransformations{j,1}.RotationAngle, 3), mean(allTransformations{j,1}.Translation, 3))
+                % end
             else
             end
-
-            [Transformations] = mpSetup.cali.getTransformationMultiModal(obj); 
+            
+            if allData(1).file.multiModal == true
+                [Transformations, ZDiff] = mpSetup.cali.getTransformationMultiModal(obj);
+                obj.cal.file.Transformation = Transformations;
+                avZDiff = nanmean(ZDiff,1);
+                tmp2 = cell2mat({obj.cal.file.inFocus2.zPos}) - avZDiff;
+                RelPos = tmp2 - mean(tmp2);
+                for m = 1:size(obj.cal.file.inFocus2, 2)
+                    obj.cal.file.inFocus2(m).relZPos = RelPos(m);
+                    obj.cal.file.inFocus2(m).zPos = tmp2(m);
+                end
+            end
 
             [~] = obj.determineCAMConfig;
             disp('================>DONE<====================');
