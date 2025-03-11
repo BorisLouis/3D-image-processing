@@ -22,10 +22,10 @@ function [transformation, ZDiff] = getTransformationMultiModal(obj)
 
             if j < 5
                 Channel1 = chData1c(:,:,j, Ch1Frame);
-                Channel2 = chData3c(:,:,j, Ch2Frame);
+                Channel2 = chData3c(:,:,j, Ch1Frame);
             else
                 Channel1 = chData2c(:,:,j-4, Ch1Frame);
-                Channel2 = chData4c(:,:,j-4, Ch2Frame);
+                Channel2 = chData4c(:,:,j-4, Ch1Frame);
             end
             
             se = strel('disk', 10);
@@ -85,7 +85,11 @@ function [transformation, ZDiff] = getTransformationMultiModal(obj)
         close(f)
     end
     for i = 1:size(obj.cal.file.inFocus1 ,2)
-        tform = simtform2d(nanmedian(Scale(:,i)), nanmedian(RotationAngle(:,i)), [nanmedian(Translation1(:,i)), nanmedian(Translation2(:,i))]);
+        AngleList = deg2rad(RotationAngle(:,i));
+        mean_x = mean(cos(AngleList));
+        mean_y = mean(sin(AngleList));
+        mean_angle = rad2deg(atan2(mean_y, mean_x));
+        tform = simtform2d(nanmedian(Scale(:,i)), mean_angle, [nanmedian(Translation1(:,i)), nanmedian(Translation2(:,i))]);
         transformation{i,1} = tform;
     end
 end

@@ -565,8 +565,9 @@ classdef MPMovie < Core.Movie
                         for j = 1:size(data2Store, 3)
                             Min = min(data2Store(:,:,j), [], 'all');
                             Min2 = mean(data2Store(:,:,j), 'all');
-                            tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
-                            data2 = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
+                            %tform = simtform2d(cal.Transformation{i,1}.Scale, cal.Transformation{i,1}.RotationAngle, cal.Transformation{i,1}.Translation);
+                            %data2 = imwarp(double(data2Store(:,:,j)),tform,"OutputView",imref2d(size(double(data2Store1(:,:,j)))));
+                            data2 = data2Store(:,:,j);
                             data2(data2 < Min) = Min2;
                             data2Store2(:,:,j) = uint16(data2);
     

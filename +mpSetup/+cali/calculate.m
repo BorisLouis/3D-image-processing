@@ -92,6 +92,11 @@ waitbar(.5,h,'getting new order for channels')
 
 waitbar(.7,h,'getting image shifts')
 % find image shift in order to have the same ROIs to a pixel resoltuon
+[ imShifts1 ] = mpSetup.cali.simpleImShift2( cal.inFocus1, chData1c, chData2c );
+
+waitbar(.8,h,'refining ROIs')
+% refine the ROIs to consider the shifts
+[ cal.ROI1 ] = mpSetup.cali.refineROI( cal.ROI1, imShifts1 );
 
 if multiModal == true
     [ cal.ROI2 ] = mpSetup.cali.defineROI( commonwin, chCentCam3, chCentCam4, imS );
@@ -108,11 +113,10 @@ if multiModal == true
     [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam );
     [ cal.focusMet2, cal.inFocus2, cal.fit2 ] = mpSetup.cali.getFocusMetric( chData3c, chData4c , Z1, Z2, 1);
     [ cal.neworder2, cal.inFocus2 ] = mpSetup.cali.getNewOrder( cal.inFocus2 );
-    %[ imShifts ] = mpSetup.cali.simpleImShift2MultiModal(cal.inFocus1, cal.inFocus2, chData1c, chData2c, chData3c, chData4c);
-    [ imShifts2 ] = mpSetup.cali.simpleImShift2(cal.inFocus2, chData3c, chData4c);
+    [ imShifts2 ] = mpSetup.cali.simpleImShift2( cal.inFocus2, chData1c, chData2c );  
     [ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts2 );
     [ cal.ROI2FullCam ] = mpSetup.cali.refineROI( cal.ROI2FullCam, imShifts2 );
-    %[ cal.ROI1, cal.ROI2, cal.ROI2FullCam ] = mpSetup.cali.refineROI( cal.ROI1, cal.ROI2, cal.ROI2FullCam, imShifts );
+
 else
     [ imShifts1 ] = mpSetup.cali.simpleImShift2( cal.inFocus1, chData1c, chData2c);
     waitbar(.8,h,'refining ROIs')

@@ -205,13 +205,13 @@ else
             data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:)./C2(i+size(chC3,3));
         end
 
-        waitbar(.7,h,'Channel2: Applying transformation...')
-        for i = 1:size(data2,3)
-            tform = cal.Transformation{i,1};
-            for f = 1:size(data2,4)
-                data2(:,:,i,f) = imwarp(data2(:,:,i,f),tform,"OutputView",imref2d(size(data2(:,:,i,f))));
-            end
-        end
+        % waitbar(.7,h,'Channel2: Applying transformation...')
+        % for i = 1:size(data2,3)
+        %     tform = cal.Transformation{i,1};
+        %     for f = 1:size(data2,4)
+        %         data2(:,:,i,f) = imwarp(data2(:,:,i,f),tform,"OutputView",imref2d(size(data2(:,:,i,f))));
+        %     end
+        % end
     
         
         waitbar(.9,h,'Channel2: Reordering...')

@@ -29,7 +29,7 @@ testSRCal.retrieveSRCalMov;
 %% extract zData
 detectParam.delta = 6;
 detectParam.chi2 = 40;
-detectParam.consThresh = 5;
+detectParam.consThresh = 4;
 
 trackParam.commonPlanes = 1; 
 trackParam.euDistPx = 5;

@@ -201,6 +201,10 @@ classdef MPPlaneCalibration < handle
                 obj.cal.fullPath = obj.path;
                 %obj.cal.file = obj.allCal(1).file;
                 %obj.cal.file = rmfield(obj.cal.file,{'focusMet2','fit2','Zpos'});
+                ROI2(:,3) = ones(size(ROI2, 1), 1)*min(ROI2(1,3), ROI1(1,3));
+                ROI2(:,4) = ones(size(ROI2, 1), 1)*min(ROI2(1,4), ROI1(1,4));
+                ROI1(:,3) = ones(size(ROI2, 1), 1)*min(ROI2(1,3), ROI1(1,3));
+                ROI1(:,4) = ones(size(ROI2, 1), 1)*min(ROI2(1,4), ROI1(1,4));
                 obj.cal.file.ROI2 = ROI2;
                 obj.cal.file.ROI2FullCam = ROI2FullCam;
                 obj.cal.file.Icorrf2 = squeeze(mean(allICorrF1,3));
@@ -218,17 +222,17 @@ classdef MPPlaneCalibration < handle
             else
             end
             
-            if allData(1).file.multiModal == true
-                [Transformations, ZDiff] = mpSetup.cali.getTransformationMultiModal(obj);
-                obj.cal.file.Transformation = Transformations;
-                avZDiff = nanmean(ZDiff,1);
-                tmp2 = cell2mat({obj.cal.file.inFocus2.zPos}) - avZDiff;
-                RelPos = tmp2 - mean(tmp2);
-                for m = 1:size(obj.cal.file.inFocus2, 2)
-                    obj.cal.file.inFocus2(m).relZPos = RelPos(m);
-                    obj.cal.file.inFocus2(m).zPos = tmp2(m);
-                end
-            end
+            % if allData(1).file.multiModal == true
+            %     [Transformations, ZDiff] = mpSetup.cali.getTransformationMultiModal(obj);
+            %     obj.cal.file.Transformation = Transformations;
+            %     avZDiff = nanmean(ZDiff,1);
+            %     tmp2 = cell2mat({obj.cal.file.inFocus2.zPos}) - avZDiff;
+            %     RelPos = tmp2 - mean(tmp2);
+            %     for m = 1:size(obj.cal.file.inFocus2, 2)
+            %         obj.cal.file.inFocus2(m).relZPos = RelPos(m);
+            %         obj.cal.file.inFocus2(m).zPos = tmp2(m);
+            %     end
+            % end
 
             [~] = obj.determineCAMConfig;
             disp('================>DONE<====================');
