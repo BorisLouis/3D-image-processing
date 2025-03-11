@@ -4,6 +4,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
 %camera and then use simple integration to find the areas of fluorescence
 %and background
     %From Rafa:
+    Raw = im;
     sig = im(20:end-20,:);
     sig = sig(:);
     bg = im(:,1000:1040);
@@ -99,7 +100,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
     if doFigure
         corner = round(chC - [chXw, chYw]./2);
         figure()
-        imagesc(im)
+        imagesc(Raw)
         axis image
         for i = 1:size(chP,1)
             rectangle('Position', [corner(i,1) corner(i,2) chXw(i), chYw(i)])

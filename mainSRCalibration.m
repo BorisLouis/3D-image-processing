@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+file.path = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal  = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -28,11 +28,11 @@ testSRCal.retrieveSRCalMov;
 
 %% extract zData
 detectParam.delta = 6;
-detectParam.chi2 = 40;
-detectParam.consThresh = 5;
+detectParam.chi2 = 20;
+detectParam.consThresh = 4;
 
 trackParam.commonPlanes = 1; 
-trackParam.euDistPx = 5;
+trackParam.euDistPx = 25;
 
 testSRCal.retrieveSRCalData(detectParam,trackParam);
 

@@ -60,12 +60,12 @@ end
 
 waitbar(.1,h,'Finding channels')
 % find channels
-[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan, DarkFieldPhase );
-[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan, DarkFieldPhase );
+[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, true, nChan, DarkFieldPhase );
+[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, true, nChan, DarkFieldPhase );
 commonwin = min([commonW1; commonW2]); 
 if multiModal == true
-    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, false, nChan, DarkFieldPhase );
-    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, false, nChan, DarkFieldPhase );
+    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, true, nChan, DarkFieldPhase );
+    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, true, nChan, DarkFieldPhase );
     commonwin = min([commonW1; commonW2; commonW3; commonW4]); 
 else 
 end
@@ -92,7 +92,7 @@ waitbar(.5,h,'getting new order for channels')
 
 waitbar(.7,h,'getting image shifts')
 % find image shift in order to have the same ROIs to a pixel resoltuon
-[ imShifts1 ] = mpSetup.cali.simpleImShift2( cal.inFocus1, chData1c, chData2c );
+[ imShifts1 ] = mpSetup.cali.simpleImShift3( cal.inFocus1, chData1c, chData2c );
 
 waitbar(.8,h,'refining ROIs')
 % refine the ROIs to consider the shifts
@@ -113,7 +113,7 @@ if multiModal == true
     [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam );
     [ cal.focusMet2, cal.inFocus2, cal.fit2 ] = mpSetup.cali.getFocusMetric( chData3c, chData4c , Z1, Z2, 1);
     [ cal.neworder2, cal.inFocus2 ] = mpSetup.cali.getNewOrder( cal.inFocus2 );
-    [ imShifts2 ] = mpSetup.cali.simpleImShift2( cal.inFocus2, chData1c, chData2c );  
+    [ imShifts2 ] = mpSetup.cali.simpleImShift3( cal.inFocus2, chData1c, chData2c );  
     [ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts2 );
     [ cal.ROI2FullCam ] = mpSetup.cali.refineROI( cal.ROI2FullCam, imShifts2 );
 

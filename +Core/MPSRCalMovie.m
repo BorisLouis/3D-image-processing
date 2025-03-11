@@ -27,7 +27,8 @@ classdef MPSRCalMovie < Core.MPCalMovie
         end
         
         function [SRCalibData, dataPerPlane] = getSRCalData(obj,trackParam)
-            for q = 1:obj.info.multiModal + 1
+            %for q = 1:obj.info.multiModal + 1
+            for q = 2
                 switch nargin
                     case 1
                         error('Need tracking parameters to SR-Calibrate')
@@ -555,13 +556,13 @@ classdef MPSRCalMovie < Core.MPCalMovie
                 %least 5 point away from the limit !
                 
                         [~,idx] = max(data2Test(data2Test.plane==8,:).magX+data2Test(data2Test.plane==8,:).magY);
-                        if length(data2Test.plane(data2Test.plane==8))-idx<5 
+                        if length(data2Test.plane(data2Test.plane==8))-idx<3 
                             partData{i} = []; 
                          
                         end
                             [~,idx] = max(data2Test(data2Test.plane==1,:).magX+data2Test(data2Test.plane==1,:).magY);
                         
-                        if idx<5
+                        if idx<3
                            partData{i} = []; 
                         end
                     case '3DFit'

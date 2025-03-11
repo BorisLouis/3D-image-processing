@@ -111,7 +111,7 @@ else
     isTransmission1 = isTransmission1(newor);
     close(h)
 
-    if info.rotational == true
+    % if info.rotational == true
         %background substraction
         se = strel('disk', 12);
         h = waitbar(0,'Rotational tracking: background substraction...');
@@ -126,7 +126,7 @@ else
             end
         end
         close(h)
-    end
+    % end
 
     data2 = [];
 
@@ -220,7 +220,7 @@ else
         isTransmission2 = isTransmission2(newor2);
         close(h)
 
-        if info.rotational == true
+        % if info.rotational == true
             %background substraction
             h = waitbar(0,'Channel2: Rotational tracking: background substraction...');
             se = strel('disk', 12);
@@ -236,7 +236,7 @@ else
                 end
             end
             close(h)
-        end
+        % end
     else 
     end
     data = {data1; data2};

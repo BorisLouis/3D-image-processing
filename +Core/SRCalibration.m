@@ -117,9 +117,9 @@ classdef SRCalibration < handle
             MultiModal = obj.info.multiModal + 1;
             fieldsN = fieldnames(obj.SRCalMovies);
             try
-                nPlanes = obj.SRCalMovies.(fieldsN{MultiModal}).calibrated.nPlanes;
+                nPlanes = obj.SRCalMovies.(fieldsN{1}).calibrated.nPlanes;
             catch
-                nPlanes = obj.SRCalMovies.(fieldsN{MultiModal}).calibrated{1,1}.nPlanes;
+                nPlanes = obj.SRCalMovies.(fieldsN{1}).calibrated{1,1}.nPlanes;
             end
             %Checking user input
             assert(nargin==3, 'retrieveSRCalData expects 3 inputs, 1)detection Parameters, fit z parameter, tracking parameter');
