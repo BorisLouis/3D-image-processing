@@ -49,8 +49,8 @@ meanIm2 = mean(movC2,3);
 if size(movC1,1)>1000
     multiModal = true;
     cal.multiModal = multiModal;
-    [chan1,chan3, idx1] = mpSetup.cali.splitMultiModalCamera(meanIm1);
-    [chan2,chan4, idx2] = mpSetup.cali.splitMultiModalCamera(meanIm2);
+    [chan1,chan3, idx1] = mpSetup.cali.splitMultiModalCamera(meanIm1, 650);
+    [chan2,chan4, idx2] = mpSetup.cali.splitMultiModalCamera(meanIm2, 650);
 else 
     multiModal =false;
     cal.multiModal = multiModal;
@@ -92,11 +92,12 @@ waitbar(.5,h,'getting new order for channels')
 
 waitbar(.7,h,'getting image shifts')
 % find image shift in order to have the same ROIs to a pixel resoltuon
-[ imShifts1 ] = mpSetup.cali.simpleImShift3( cal.inFocus1, chData1c, chData2c );
+[ imShifts1 ] = mpSetup.cali.simpleImShift4( cal.inFocus1, chData1c, chData2c );
 
 waitbar(.8,h,'refining ROIs')
 % refine the ROIs to consider the shifts
-[ cal.ROI1 ] = mpSetup.cali.refineROI( cal.ROI1, imShifts1 );
+OldROI1 = cal.ROI1;
+[ cal.ROI1 ] = mpSetup.cali.refineROI2( cal.ROI1, imShifts1 );
 
 if multiModal == true
     [ cal.ROI2 ] = mpSetup.cali.defineROI( commonwin, chCentCam3, chCentCam4, imS );
@@ -110,18 +111,15 @@ if multiModal == true
         cal.ROI2FullCam(i+4,3) = cal.ROI2(i+4,3);
         cal.ROI2FullCam(i+4,4) = cal.ROI2(i+4,4);
     end
+    cal.cutCamerasMultiModal = [idx1, idx2];
     [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam );
     [ cal.focusMet2, cal.inFocus2, cal.fit2 ] = mpSetup.cali.getFocusMetric( chData3c, chData4c , Z1, Z2, 1);
     [ cal.neworder2, cal.inFocus2 ] = mpSetup.cali.getNewOrder( cal.inFocus2 );
-    [ imShifts2 ] = mpSetup.cali.simpleImShift3( cal.inFocus2, chData1c, chData2c );  
-    [ cal.ROI2 ] = mpSetup.cali.refineROI( cal.ROI2, imShifts2 );
-    [ cal.ROI2FullCam ] = mpSetup.cali.refineROI( cal.ROI2FullCam, imShifts2 );
-
-else
-    [ imShifts1 ] = mpSetup.cali.simpleImShift2( cal.inFocus1, chData1c, chData2c);
-    waitbar(.8,h,'refining ROIs')
-    % refine the ROIs to consider the shifts
-    [ cal.ROI1 ] = mpSetup.cali.refineROI( cal.ROI1, imShifts1 );
+    [ imShifts2 ] = mpSetup.cali.simpleImShift4( cal.inFocus2, chData3c, chData4c );  
+    OldROI2 = cal.ROI2;
+    OldROI2FullCam = cal.ROI2FullCam;
+    [ cal.ROI2 ] = mpSetup.cali.refineROI2( cal.ROI2, imShifts2 );
+    [ cal.ROI2FullCam ] = mpSetup.cali.refineROI2( cal.ROI2FullCam, imShifts2 );
 end
 
 figure()
@@ -167,7 +165,7 @@ end
 if cal.correctInt
     waitbar(.9,h,'Correcting intensity')
     % update the channel data
-    [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1 );
+    [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1);
     % calculate intensity correction
     [ cal.Icorrf1 ] = mpSetup.cali.findChInt( chData1c, chData2c, cal.inFocus1 );
     maxInt1 = max(cal.fit1(:,2:2:end),[],1);

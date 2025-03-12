@@ -1,4 +1,4 @@
-function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI )
+function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI)
 %GETCHDATA get channel data from cam data and ROI, for historical reasons
 %it can work on a single cam data, Im not sure if I want to keep this later
 %on
@@ -62,7 +62,5 @@ function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI )
             chData2c(:,:,i-size(ROI,1)/2,:) = data2c(row1:row2,col1:col2,:);
         end
     end
-    
-
 end
 

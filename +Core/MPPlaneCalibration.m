@@ -108,6 +108,7 @@ classdef MPPlaneCalibration < handle
             inFocus1 = rmfield(inFocus1,{'frame', 'zpos'});
             allRelZpos1 = zeros(nPlanes1,nFiles);
             allZpos1 = zeros(nPlanes1,nFiles);
+            allRotations1 = zeros(nPlanes1,nFiles);
 
             if allData(1).file.multiModal == true
                 nPlanes2 = length(allData(1).file.neworder2);
@@ -121,6 +122,7 @@ classdef MPPlaneCalibration < handle
                 inFocus2 = rmfield(inFocus2,{'frame', 'zpos'});
                 allRelZpos2 = zeros(nPlanes2,nFiles);
                 allZpos2 = zeros(nPlanes2,nFiles);
+                allRotations2 = zeros(nPlanes1,nFiles);
                 % for i = 1:length(allData(1).file.transformations);
                 %     allTransformations{i,1}.Dimensionality = zeros([size(allData(1).file.transformations{i,1}.Dimensionality) nFiles]);
                 %     allTransformations{i,1}.Scale = zeros([size(allData(1).file.transformations{i,1}.Scale) nFiles]);
@@ -142,6 +144,7 @@ classdef MPPlaneCalibration < handle
                 tmp1 = cell2mat({allData(i).file.inFocus1.zpos});
                 allRelZpos1(:,i) = tmp1-mean(tmp1);
                 allZpos1(:,i) = tmp1;
+                allRotations1(:,i) = allData(i).file.Rotations1;  
 
                 if allData(1).file.multiModal == true
                    allROI2(:,:,i) = allData(i).file.ROI2;
@@ -153,6 +156,7 @@ classdef MPPlaneCalibration < handle
                    tmp2 = cell2mat({allData(i).file.inFocus2.zpos});
                    allRelZpos2(:,i) = tmp2-mean(tmp2);
                    allZpos2(:,i) = tmp2;
+                   allRotations2(:,i) = allData(i).file.Rotations2;  
                    % for j = 1:length(allTransformations)
                    %     if allData(i).file.transformations{j,2} > 0.02
                    %         allTransformations{j,1}.Dimensionality(:,:,i) = allData(i).file.transformations{j,1}.Dimensionality;
@@ -188,6 +192,7 @@ classdef MPPlaneCalibration < handle
             obj.cal.file.ROI1 = ROI1;
             obj.cal.file.Icorrf1 = squeeze(mean(allICorrF1,3));
             obj.cal.file.inFocus1 = inFocus1;
+            obj.cal.file.Rotations1 = nanmedian(allRotations1,2);
 
             if allData(1).file.multiModal == true
                 ROI2 = floor(mean(allROI2,3));
@@ -209,6 +214,7 @@ classdef MPPlaneCalibration < handle
                 obj.cal.file.ROI2FullCam = ROI2FullCam;
                 obj.cal.file.Icorrf2 = squeeze(mean(allICorrF1,3));
                 obj.cal.file.inFocus2 = inFocus2; 
+                obj.cal.file.Rotations2 = nanmedian(allRotations2,2);
 
                 % for j = 1:length(allTransformations)
                 %    obj.cal.file.Transformation{j,1}.Dimensionality = nanmean(allTransformations{j,1}.Dimensionality, 3);

@@ -1,4 +1,4 @@
-function [transformation, ZDiff] = getTransformationMultiModal(obj)
+function [transformation, ZDiff] = getTransformation(obj)
     for i = 1:obj.cal.nFiles %% loop through files
         fmov = append('MPCal', num2str(i));
         [frameInfo, movInfo, ~ ]= Load.Movie.ome.getInfo(obj.MPCalibrations.(fmov).raw.fullPath);

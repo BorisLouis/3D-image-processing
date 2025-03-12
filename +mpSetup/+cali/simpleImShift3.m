@@ -1,4 +1,4 @@
-function [ finalShifts ] = simpleImShift3( inFocus, cam1, cam2)
+function [ finalShifts] = simpleImShift3( inFocus, cam1, cam2)
 %SIMPLEIMSHIFT fast im shift calculation at the pixel resolution
 %   spatial cross-correlation algorithm to determine shift of coordinates
     nPlanes = length(inFocus);
@@ -48,25 +48,26 @@ function [ finalShifts ] = simpleImShift3( inFocus, cam1, cam2)
         imCh2 = imCh2 - bgimCh2;
         imCh1 = imCh1 - bgimCh1;
         
-        % figure()
-        % subplot(1,2,1)
-        % imshowpair(imCh1,imCh2)
-        % title("before correction");
-        % hold on
+        figure()
+        subplot(1,2,1)
+        imshowpair(imCh1,imCh2)
+        title("before correction");
+        hold on
 
         config = "monomodal";
-        transf = "translation";
+        transf = "similarity";
         [optimizer,metric] = imregconfig(config);
         tform = imregcorr(imCh2,imCh1,transf);
         movingRegistered = imwarp(imCh2,tform,"OutputView",imref2d(size(imCh1)));
 
-        % subplot(1,2,2)
-        % imshowpair(imCh1,movingRegistered);
-        % title("after correction");
-        % sgtitle(append("Plane ", num2str(chIdx), " x Plane ", num2str(chIdx+8)));
+        subplot(1,2,2)
+        imshowpair(imCh1,movingRegistered);
+        title("after correction");
+        sgtitle(append("Plane ", num2str(chIdx), " x Plane ", num2str(chIdx+8)));
 
          % storing the shifts
         imShifts(chIdx,:) = [tform.Translation(2) tform.Translation(1)];
+        % imRotations(chIdx, :) = tform.RotationAngle; %in degrees
         
        
         
@@ -74,6 +75,7 @@ function [ finalShifts ] = simpleImShift3( inFocus, cam1, cam2)
     % calculate shift for a certain reference plane
     refPlane = round(nPlanes/2);
     tmpImShifts = zeros(nPlanes,2);
+    % tmpRotations = zeros(nPlanes,1);
     idx = 1:nPlanes;
     idx(idx==4) = [];
     tmpImShifts(idx,:) = imShifts;
@@ -81,8 +83,10 @@ function [ finalShifts ] = simpleImShift3( inFocus, cam1, cam2)
         
         if i<refPlane
             tmpImShifts(i,:) = -sum(imShifts(i:refPlane-1,:),1);
+            % tmpRotations(i,1) = -sum(imRotations(i:refPlane-1,:), 1);
         elseif i>refPlane
             tmpImShifts(i,:) = +sum(imShifts(refPlane:i-1,:),1);
+            % tmpRotations(i,1) = +sum(imRotations(refPlane:i-1,:), 1);
         else
             %refPlane so we do nothing
         end

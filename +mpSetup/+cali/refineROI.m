@@ -17,9 +17,9 @@ function [ ROI ] = refineROI( ROI, im_shifts, multiModal )
     row_i = ROI(:,2)+(mars-(im_shifts(:,1)));
     col_i = ROI(:,1)+(macs-(im_shifts(:,2)));
     
-    ROI(:,4) = row_w;
-    ROI(:,2) = row_i;
-    ROI(:,3) = col_w;
-    ROI(:,1) = col_i;
+    ROI(:,4) = round(row_w);
+    ROI(:,2) = round(row_i);
+    ROI(:,3) = round(col_w);
+    ROI(:,1) = round(col_i);
 end
 
