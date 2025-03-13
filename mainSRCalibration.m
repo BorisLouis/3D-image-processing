@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+file.path = 'D:\Rotational Tracking\20250304_AuBPs_184x92_PAA\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal  = 'D:\Rotational Tracking\20250304_AuBPs_184x92_PAA\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -27,12 +27,15 @@ testSRCal = Core.SRCalibration(file,path2Cal,info);
 testSRCal.retrieveSRCalMov;
 
 %% extract zData
-detectParam.delta = 6;
-detectParam.chi2 = 20;
-detectParam.consThresh = 4;
+detectParam{1}.delta = 6;
+detectParam{1}.chi2  = 50;
+detectParam{1}.consThresh = 6;
+detectParam{2}.delta = 6;
+detectParam{2}.chi2  = 30;
+detectParam{2}.consThresh = 6;
 
 trackParam.commonPlanes = 1; 
-trackParam.euDistPx = 25;
+trackParam.euDistPx = 6;
 
 testSRCal.retrieveSRCalData(detectParam,trackParam);
 
@@ -40,10 +43,11 @@ testSRCal.retrieveSRCalData(detectParam,trackParam);
 %% calc translation
 refPlane = 4;
 testSRCal.corrTranslation(refPlane);
-
 testSRCal.checkAccuracy(refPlane);
 
 %% calc rotation
 testSRCal.corrRotation(refPlane);
-
 testSRCal.checkAccuracy(refPlane);
+
+%% calc channel translations
+testSRCal.CalcAccuracyChannels(refPlane);

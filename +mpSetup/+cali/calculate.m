@@ -60,12 +60,12 @@ end
 
 waitbar(.1,h,'Finding channels')
 % find channels
-[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, true, nChan, DarkFieldPhase );
-[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, true, nChan, DarkFieldPhase );
+[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan, DarkFieldPhase );
+[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan, DarkFieldPhase );
 commonwin = min([commonW1; commonW2]); 
 if multiModal == true
-    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, true, nChan, DarkFieldPhase );
-    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, true, nChan, DarkFieldPhase );
+    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, false, nChan, DarkFieldPhase );
+    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, false, nChan, DarkFieldPhase );
     commonwin = min([commonW1; commonW2; commonW3; commonW4]); 
 else 
 end
@@ -78,7 +78,7 @@ imS = size(meanIm1);
 waitbar(.3,h,'getting channel data')
 % get data for each channel identified. chData has dim im_size1 im_size2
 % 4channels Nframes
-[ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1 );
+[ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1, []);
 
 waitbar(.4,h,'getting focus metric')
 % getting the focus metric as used in EPFL we might want to change this to
@@ -92,12 +92,11 @@ waitbar(.5,h,'getting new order for channels')
 
 waitbar(.7,h,'getting image shifts')
 % find image shift in order to have the same ROIs to a pixel resoltuon
-[ imShifts1 ] = mpSetup.cali.simpleImShift4( cal.inFocus1, chData1c, chData2c );
+[ cal.imShifts1 ] = mpSetup.cali.simpleImShift4( cal.inFocus1, chData1c, chData2c );
 
 waitbar(.8,h,'refining ROIs')
 % refine the ROIs to consider the shifts
-OldROI1 = cal.ROI1;
-[ cal.ROI1 ] = mpSetup.cali.refineROI2( cal.ROI1, imShifts1 );
+[ cal.ROI1 ] = mpSetup.cali.refineROI2( cal.ROI1, cal.imShifts1 );
 
 if multiModal == true
     [ cal.ROI2 ] = mpSetup.cali.defineROI( commonwin, chCentCam3, chCentCam4, imS );
@@ -112,14 +111,12 @@ if multiModal == true
         cal.ROI2FullCam(i+4,4) = cal.ROI2(i+4,4);
     end
     cal.cutCamerasMultiModal = [idx1, idx2];
-    [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam );
+    [ chData3c, chData4c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam, []);
     [ cal.focusMet2, cal.inFocus2, cal.fit2 ] = mpSetup.cali.getFocusMetric( chData3c, chData4c , Z1, Z2, 1);
     [ cal.neworder2, cal.inFocus2 ] = mpSetup.cali.getNewOrder( cal.inFocus2 );
-    [ imShifts2 ] = mpSetup.cali.simpleImShift4( cal.inFocus2, chData3c, chData4c );  
-    OldROI2 = cal.ROI2;
-    OldROI2FullCam = cal.ROI2FullCam;
-    [ cal.ROI2 ] = mpSetup.cali.refineROI2( cal.ROI2, imShifts2 );
-    [ cal.ROI2FullCam ] = mpSetup.cali.refineROI2( cal.ROI2FullCam, imShifts2 );
+    [ cal.imShifts2 ] = mpSetup.cali.simpleImShift4( cal.inFocus2, chData3c, chData4c );  
+    [ cal.ROI2 ] = mpSetup.cali.refineROI2( cal.ROI2, cal.imShifts2 );
+    [ cal.ROI2FullCam ] = mpSetup.cali.refineROI2( cal.ROI2FullCam, cal.imShifts2 );
 end
 
 figure()
@@ -165,20 +162,20 @@ end
 if cal.correctInt
     waitbar(.9,h,'Correcting intensity')
     % update the channel data
-    [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1);
+    [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1, cal.imShifts1);
     % calculate intensity correction
     [ cal.Icorrf1 ] = mpSetup.cali.findChInt( chData1c, chData2c, cal.inFocus1 );
     maxInt1 = max(cal.fit1(:,2:2:end),[],1);
     cal.Icorrf1 = maxInt1./max(maxInt1);
     if multiModal == true
-        [ chData3c, chData4c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam);
+        [ chData3c, chData4c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam, cal.imShifts2);
         [cal.Icorrf2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
         maxInt2 = max(cal.fit2(:, 2:2:end), [],1);
         cal.Icorrf2 = maxInt2./max(maxInt2);
         % [ MagnificationFactors ] = mpSetup.cali.GetMagnificationScale(chData1c, chData2c, chData3c, chData4c, cal.inFocus1, cal.inFocus2);
         %mpSetup.cali.plotCalMultiModal(meanIm1, meanIm2, cal.ROI1, cal.ROI2FullCam, MagnificationFactors);
         [ MagnificationFactors ] = [];
-        mpSetup.cali.plotCalMultiModal(chData1c, chData2c, chData3c, chData4c)
+        mpSetup.cali.plotCalMultiModal(chData1c, chData2c, chData3c, chData4c, cal.inFocus1, cal.inFocus2)
         sgtitle('All planes corrected')
     else
         [ MagnificationFactors ] = [];

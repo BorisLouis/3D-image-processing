@@ -27,8 +27,7 @@ classdef MPSRCalMovie < Core.MPCalMovie
         end
         
         function [SRCalibData, dataPerPlane] = getSRCalData(obj,trackParam)
-            %for q = 1:obj.info.multiModal + 1
-            for q = 2
+            for q = 1:obj.info.multiModal + 1
                 switch nargin
                     case 1
                         error('Need tracking parameters to SR-Calibrate')
@@ -53,6 +52,8 @@ classdef MPSRCalMovie < Core.MPCalMovie
                 obj.calDataPerPlane{q,1} = dataPerPlane;
                 disp('==========> DONE ! <============');
             end
+            SRCalibData = obj.SRCalData;
+            dataPerPlane = obj.calDataPerPlane;
         end
         
         function [transMat,corrData] = corrTranslation(obj,refPlane)

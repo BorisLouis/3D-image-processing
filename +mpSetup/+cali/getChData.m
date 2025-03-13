@@ -1,4 +1,4 @@
-function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI)
+function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI, imShifts)
 %GETCHDATA get channel data from cam data and ROI, for historical reasons
 %it can work on a single cam data, Im not sure if I want to keep this later
 %on
@@ -33,7 +33,10 @@ function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI)
             col2 = ROI(i,1) + ROI(i,3) - 1;
             row1 = ROI(i,2);
             row2 = ROI(i,2) + ROI(i,4) - 1;
-            chData1c(:,:,i,:) = data1c(row1:row2,col1:col2,:);
+            % if ~isempty(imShifts)
+            %     chData1c(:,:,i,:) = imrotate(chData1c(:,:,i,:), imShifts(i,4), 'crop');
+            % end
+            chData1c(:,:,i,:) = imresize(data1c(row1:row2,col1:col2,:), [ROI(1,4) ROI(1,3)]);
         end
     end
     
@@ -59,7 +62,10 @@ function [ chData1c, chData2c ] = getChData( data1c, data2c, ROI)
             col2 = ROI(i,1) + ROI(i,3) - 1;
             row1 = ROI(i,2);
             row2 = ROI(i,2) + ROI(i,4) - 1;
-            chData2c(:,:,i-size(ROI,1)/2,:) = data2c(row1:row2,col1:col2,:);
+            % if ~isempty(imShifts)
+            %     chData2c(:,:,i-size(ROI,1)/2,:) = imrotate(chData2c(:,:,i-size(ROI,1)/2,:), imShifts(i,4), 'crop');
+            % end
+            chData2c(:,:,i-size(ROI,1)/2,:) = imresize(data2c(row1:row2,col1:col2,:), [ROI(1,4) ROI(1,3)]);
         end
     end
 end

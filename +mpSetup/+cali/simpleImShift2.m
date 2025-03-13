@@ -10,7 +10,7 @@ function [ finalShifts ] = simpleImShift2( inFocus, cam1, cam2)
     if nPlanes == 2
         maxShift = 300;
     else
-        maxShift = 200;
+        maxShift = 50;
     end%[pixels]
     % generating mask, so I only look at a local max around shift 0 to
     % max_shift
@@ -41,7 +41,9 @@ function [ finalShifts ] = simpleImShift2( inFocus, cam1, cam2)
         else
             imCh2 = cam2(:,:,inFocus(idxPlane2).ch,focus);
         end
-        
+        se = strel('disk', 10);
+        imCh2 = imCh2 - imopen(imCh2, se);
+        imCh1 = imCh1 - imopen(imCh1, se);
         % cross correlation
         res    = normxcorr2(imCh1,imCh2);
         % applying the mask

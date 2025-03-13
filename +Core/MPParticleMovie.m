@@ -218,7 +218,7 @@ classdef MPParticleMovie < Core.MPMovie
                             end
                             waitbar(i/nFrames,h,['Fitting candidates: frame ' num2str(i) '/' num2str(nFrames) ' done']);
                         end
-                        %close(h);
+                        close(h);
                     else
                     end
                         %save the data

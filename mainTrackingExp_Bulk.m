@@ -38,7 +38,7 @@ info.PxSize = 81; %in nm
 
 for t = 1:numel(SizeFolder)
     for r = 1:numel(SampleFolder)
-        try
+        %try
             file.path = append(MainFolder, filesep, SizeFolder{t}, filesep, SampleFolder{r});
     
             %% create experiments
@@ -60,8 +60,8 @@ for t = 1:numel(SizeFolder)
             
             %% save Data
             trackingExp.saveData;
-        catch
-        end
+        % catch
+        % end
     end
 end
 

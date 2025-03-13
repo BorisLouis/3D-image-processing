@@ -108,7 +108,7 @@ classdef MPPlaneCalibration < handle
             inFocus1 = rmfield(inFocus1,{'frame', 'zpos'});
             allRelZpos1 = zeros(nPlanes1,nFiles);
             allZpos1 = zeros(nPlanes1,nFiles);
-            allRotations1 = zeros(nPlanes1,nFiles);
+  
 
             if allData(1).file.multiModal == true
                 nPlanes2 = length(allData(1).file.neworder2);
@@ -122,20 +122,10 @@ classdef MPPlaneCalibration < handle
                 inFocus2 = rmfield(inFocus2,{'frame', 'zpos'});
                 allRelZpos2 = zeros(nPlanes2,nFiles);
                 allZpos2 = zeros(nPlanes2,nFiles);
-                allRotations2 = zeros(nPlanes1,nFiles);
-                % for i = 1:length(allData(1).file.transformations);
-                %     allTransformations{i,1}.Dimensionality = zeros([size(allData(1).file.transformations{i,1}.Dimensionality) nFiles]);
-                %     allTransformations{i,1}.Scale = zeros([size(allData(1).file.transformations{i,1}.Scale) nFiles]);
-                %     allTransformations{i,1}.RotationAngle = zeros([size(allData(1).file.transformations{i,1}.RotationAngle) nFiles]);
-                %     allTransformations{i,1}.Translation = zeros([size(allData(1).file.transformations{i,1}.Translation) nFiles]);
-                %     allTransformations{i,1}.R = zeros([size(allData(1).file.transformations{i,1}.R) nFiles]);
-                %     allTransformations{i,1}.A = zeros([size(allData(1).file.transformations{i,1}.A) nFiles]);
-                % end
             else 
             end
 
             for i = 1:nFiles
-                
                 allROI1(:,:,i) = allData(i).file.ROI1;
                 %allFocusMet(:,:,i) = allData(i).file.focusMet;
                 %allFit(:,:,i) = allData(i).file.fit;
@@ -144,63 +134,41 @@ classdef MPPlaneCalibration < handle
                 tmp1 = cell2mat({allData(i).file.inFocus1.zpos});
                 allRelZpos1(:,i) = tmp1-mean(tmp1);
                 allZpos1(:,i) = tmp1;
-                allRotations1(:,i) = allData(i).file.Rotations1;  
 
                 if allData(1).file.multiModal == true
-                   allROI2(:,:,i) = allData(i).file.ROI2;
-                   allROI2FullCam(:,:,i) = allData(i).file.ROI2FullCam;
-                   %allFocusMet(:,:,i) = allData(i).file.focusMet;
-                   %allFit(:,:,i) = allData(i).file.fit;
-                   %allNewOrder(:,:,i) = allData(i).file.neworder; 
-                   allICorrF2(:,:,i)  = allData(i).file.Icorrf2;   
-                   tmp2 = cell2mat({allData(i).file.inFocus2.zpos});
-                   allRelZpos2(:,i) = tmp2-mean(tmp2);
-                   allZpos2(:,i) = tmp2;
-                   allRotations2(:,i) = allData(i).file.Rotations2;  
-                   % for j = 1:length(allTransformations)
-                   %     if allData(i).file.transformations{j,2} > 0.02
-                   %         allTransformations{j,1}.Dimensionality(:,:,i) = allData(i).file.transformations{j,1}.Dimensionality;
-                   %         allTransformations{j,1}.Scale(:,:,i) = allData(i).file.transformations{j,1}.Scale;
-                   %         allTransformations{j,1}.RotationAngle(:,:,i) = allData(i).file.transformations{j,1}.RotationAngle;
-                   %         allTransformations{j,1}.Translation(:,:,i) = allData(i).file.transformations{j,1}.Translation;
-                   %         allTransformations{j,1}.R(:,:,i) = allData(i).file.transformations{j,1}.R;
-                   %         allTransformations{j,1}.A(:,:,i) = allData(i).file.transformations{j,1}.A;
-                   %     else
-                   %         allTransformations{j,1}.Dimensionality(:,:,i) = NaN(1,1);
-                   %         allTransformations{j,1}.Scale(:,:,i) = NaN(1,1);
-                   %         allTransformations{j,1}.RotationAngle(:,:,i) = NaN(1,1);
-                   %         allTransformations{j,1}.Translation(:,:,i) = NaN(1,2);
-                   %         allTransformations{j,1}.R(:,:,i) = NaN(2,2);
-                   %         allTransformations{j,1}.A(:,:,i) = NaN(3,3);
-                   %     end
-                   % end
-                else 
+                    allROI2(:,:,i) = allData(i).file.ROI2;
+                    allROI2FullCam(:,:,i) = allData(i).file.ROI2FullCam;
+                    %allFocusMet(:,:,i) = allData(i).file.focusMet;
+                    %allFit(:,:,i) = allData(i).file.fit;
+                    %allNewOrder(:,:,i) = allData(i).file.neworder; 
+                    allICorrF2(:,:,i)  = allData(i).file.Icorrf2;   
+                    tmp2 = cell2mat({allData(i).file.inFocus2.zpos});
+                    allRelZpos2(:,i) = tmp2-mean(tmp2);
+                    allZpos2(:,i) = tmp2;
                 end
- 
             end
 
-            ROI1 = floor(mean(allROI1,3));
-            RelZPos1 = mean(allRelZpos1,2);
+            ROI1 = floor(nanmean(allROI1,3));
+            RelZPos1 = nanmean(allRelZpos1,2);
             tmp1 = num2cell(RelZPos1');
             [inFocus1(1,:).relZPos] = tmp1{:};
-            tmp1 = num2cell(mean(allZpos1,2)');
+            tmp1 = num2cell(nanmean(allZpos1,2)');
             [inFocus1(1,:).zPos] = tmp1{:};
             obj.cal.nFiles = nFiles;
             obj.cal.fullPath = obj.path;
             obj.cal.file = obj.allCal(1).file;
             obj.cal.file = rmfield(obj.cal.file,{'focusMet1','fit1','Zpos'});
             obj.cal.file.ROI1 = ROI1;
-            obj.cal.file.Icorrf1 = squeeze(mean(allICorrF1,3));
+            obj.cal.file.Icorrf1 = squeeze(nanmean(allICorrF1,3));
             obj.cal.file.inFocus1 = inFocus1;
-            obj.cal.file.Rotations1 = nanmedian(allRotations1,2);
 
             if allData(1).file.multiModal == true
-                ROI2 = floor(mean(allROI2,3));
-                ROI2FullCam = floor(mean(allROI2FullCam,3));
-                RelZPos2 = mean(allRelZpos2,2);
+                ROI2 = floor(nanmean(allROI2,3));
+                ROI2FullCam = floor(nanmean(allROI2FullCam,3));
+                RelZPos2 = nanmean(allRelZpos2,2);
                 tmp2 = num2cell(RelZPos2');
                 [inFocus2(1,:).relZPos] = tmp2{:};
-                tmp2 = num2cell(mean(allZpos2,2)');
+                tmp2 = num2cell(nanmean(allZpos2,2)');
                 [inFocus2(1,:).zPos] = tmp2{:};
                 obj.cal.nFiles = nFiles;
                 obj.cal.fullPath = obj.path;
@@ -214,7 +182,7 @@ classdef MPPlaneCalibration < handle
                 obj.cal.file.ROI2FullCam = ROI2FullCam;
                 obj.cal.file.Icorrf2 = squeeze(mean(allICorrF1,3));
                 obj.cal.file.inFocus2 = inFocus2; 
-                obj.cal.file.Rotations2 = nanmedian(allRotations2,2);
+
 
                 % for j = 1:length(allTransformations)
                 %    obj.cal.file.Transformation{j,1}.Dimensionality = nanmean(allTransformations{j,1}.Dimensionality, 3);
