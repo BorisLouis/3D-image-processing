@@ -273,7 +273,7 @@ classdef SRCalibration < handle
 
                     tform = imregcorr(Im2, Im1, "similarity");
                     Im2Moved = imwarp(Im2,tform, "OutputView",imref2d(imsize));
-
+                    
                     subplot(2, nPlanes, p)
                     scatter(coords1(:,2), coords1(:,1))
                     hold on 
