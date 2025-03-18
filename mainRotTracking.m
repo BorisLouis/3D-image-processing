@@ -6,9 +6,9 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'G:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuBPs_polarization\sample_1';
+file.path  = 'S:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuBPs_polarization\sample_1';
 file.ext   = '.ome.tif';
-path2Cal = 'G:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuNPs';
+path2Cal = 'S:\multicolor_polarization\polarisation\20241223_AuBPs_193x90_calib_polaris\2D_AuNPs';
 dimension = '3D';
 
 %detection parameter

@@ -554,8 +554,11 @@ classdef MPParticleMovie < Core.MPMovie
                         if(planes2Check(i) > currentPlane)
                             direction = +1;%check below (Plane 1 is the uppest plane 8 is lowest)
                         end
-
-                        [isPart] = Core.MPParticleMovie.isPartPlane(currentCand,cand,direction,consThresh,zMethod);
+                        rotational = obj.info.rotational;
+                        if rotational == 1
+                            consThresh = obj.ROI{q,1};
+                        end
+                        [isPart] = Core.MPParticleMovie.isPartPlane(currentCand,cand,direction,consThresh,zMethod,rotational);
                         if ~all(isPart ==0)
                             id = cand.plane(isPart);
                             particle(id,:) = cand(isPart,:);
@@ -596,7 +599,7 @@ classdef MPParticleMovie < Core.MPMovie
 
      methods (Static)
        
-         function [isPart]   = isPartPlane(current, next, direction,consThresh,zMethod)
+         function [isPart]   = isPartPlane(current, next, direction,consThresh,zMethod,rotational)
             %This function aim at determining whether a candidate from one
             %plane and the another are actually the same candidate on
             %different plane or different candidate. The decision is based
@@ -609,7 +612,7 @@ classdef MPParticleMovie < Core.MPMovie
 
             thresh = consThresh;
             [checkRes1] = Core.MPParticleMovie.checkEuDistRot([current.row, current.col],...
-                [next.row, next.col],thresh);
+                [next.row, next.col],thresh,rotational);
             
             if strcmp(zMethod,'PSFE')
              % Test ellipticity
@@ -629,7 +632,9 @@ classdef MPParticleMovie < Core.MPMovie
             % Test focus Metric
             maxExpFM = current.fMetric+0.1*current.fMetric;
             checkRes3 = next.fMetric < maxExpFM;
-            
+            if rotational == 1
+                checkRes3 = 1;
+            end
             %isPart will only be true for particle that passes the 3 tests
             isPart = checkRes1.*checkRes2.*checkRes3;
             
@@ -664,13 +669,17 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
 
-        function [checkRes] = checkEuDistRot(current,next,Thresh)
+        function [checkRes] = checkEuDistRot(current,next,Thresh,rotational)
             %Use to check if the Euclidian distance is within reasonable
             %range
             EuDist = sqrt((current(:,1) - next(:,1)).^2 +...
                 (current(:,2) - next(:,2)).^2);
             checkRes = EuDist < Thresh;
-
+            if rotational == 1
+                [~,Idx] = min(EuDist);
+                checkRes = zeros(size(EuDist));
+                checkRes(Idx) = 1;
+            end
             if isempty(checkRes)
                 checkRes = false;
             end
@@ -816,13 +825,13 @@ classdef MPParticleMovie < Core.MPMovie
             bkgVar = std(px2SumBkg);
             %calculate signal
             int = px2SumInt - bkg;
-            int = mean(int,'all');
+            int = sum(sum(int));
             %SNR = max(max(px2SumInt))/bkgVar;
             SNR = sqrt(int);
-            % if or(SNR<0,int<0)
-            %     int = sum(sum(px2SumInt));
-            %     SNR = sqrt(int);
-            % end
+            if or(SNR<0,int<0)
+                int = sum(sum(px2SumInt));
+                SNR = sqrt(int);
+            end
            
         end
        
