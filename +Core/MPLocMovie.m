@@ -382,23 +382,24 @@ classdef MPLocMovie < Core.MPParticleMovie
                                             partVolIm = obj.getPartVolIm(partData,ROIRad,fData);
                                             [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);                            
                                             if obj.info.rotational == 1
-                                                partVolIm = obj.getPartVolIm(partData,ROIRad-1,fData);
-                                                PartWithBg = obj.getPartVolIm(partData, ROIRad+1, fData);
-                                                PartPadded = padarray(partVolIm, [2 2], 0, 'both');
-                                                PartWithBg(PartPadded ~= 0) = NaN;
-                                                for p = 1:size(PartWithBg, 3)
-                                                    partVolIm(:,:,p) = partVolIm(:,:,p) - nanmedian(PartWithBg(:,:,p), 'all');
-                                                    [~, ~, MagX, MagY] = Localization.phasor(partVolIm(:,:,p));
-                                                    MagPlane(p,1) = MagX*MagY;
-                                                    PlaneNum(p,1) = obj.calibrated{1, 1}.oRelZPos(p);
-                                                end
-                                                options = fitoptions('gauss1');
-                                                options.Lower = [0, min(PlaneNum), 0];
-                                                options.Upper = [max(MagPlane) + min(MagPlane), max(PlaneNum), max(PlaneNum) - min(PlaneNum)];
-                                                f = fit(PlaneNum, MagPlane, 'gauss1', options);
-                                                coeff = coeffvalues(f);
-                                                Int = coeff(1);
-                                                %[Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);
+                                                Int = nanmean(partData.intensity);
+                                                % partVolIm = obj.getPartVolIm(partData,ROIRad-1,fData);
+                                                % PartWithBg = obj.getPartVolIm(partData, ROIRad+1, fData);
+                                                % PartPadded = padarray(partVolIm, [2 2], 0, 'both');
+                                                % PartWithBg(PartPadded ~= 0) = NaN;
+                                                % % for p = 1:size(PartWithBg, 3)
+                                                % %     partVolIm(:,:,p) = partVolIm(:,:,p) - nanmedian(PartWithBg(:,:,p), 'all');
+                                                % %     % [~, ~, MagX, MagY] = Localization.phasor(partVolIm(:,:,p));
+                                                % %     % MagPlane(p,1) = MagX*MagY;
+                                                % %     % PlaneNum(p,1) = obj.calibrated{1, 1}.oRelZPos(p);
+                                                % % end
+                                                % % options = fitoptions('gauss1');
+                                                % % options.Lower = [0, min(PlaneNum), 0];
+                                                % % options.Upper = [max(MagPlane) + min(MagPlane), max(PlaneNum), max(PlaneNum) - min(PlaneNum)];
+                                                % % f = fit(PlaneNum, MagPlane, 'gauss1', options);
+                                                % % coeff = coeffvalues(f);
+                                                % % Int = coeff(1);
+                                                % [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);
                                             end
                                         end
     
@@ -771,34 +772,13 @@ classdef MPLocMovie < Core.MPParticleMovie
             partVolIm(partVolIm == 0) = NaN;
             %Get ROI XZ, YZ scaled to same pixel size
             
+            Mag = [];
+            Nplanes = 0;
             for i = 1:size(partVolIm,3)
-                Mag(i) = nanmean(partVolIm(:,:,i),'all');
+                Mag(end+1) = nanmean(partVolIm(:,:,i),'all');
             end
             Int = nansum(Mag);
-            % domain = planePos(1:size(Mag,2));
-            % idx = ~isnan(Mag) & Mag ~= 0;
-            % domain = domain(idx);
-            % Mag = Mag(idx);
-            % if size(Mag,2) > 3
-            %     guess.sig = 2*obj.info.FWHM_px*pxSize/1000;
-            %     guess.mu  = planePos(find(Mag == max(Mag),1,'first'));
-            %     guess.A   = unique(max(Mag))-unique(min(Mag));
-            % 
-            %     params = [guess.A guess.mu guess.sig unique(min(Mag))];
-            % 
-            %     gaussianModel = fittype('a*exp(-((x-b)^2)/(2*c^2)) + d', ...
-            %                     'independent', 'x', ...
-            %                     'coefficients', {'a', 'b', 'c', 'd'});
-            %     opts = fitoptions(gaussianModel);
-            %     opts.Lower = [0, 0, 0, 0]; 
-            %     opts.Upper = [max(Mag), max(domain), max(domain)-min(domain), max(Mag)];  
-            %     opts.StartPoint = params; 
-            %     [fitResult] = fit(domain', Mag', gaussianModel, opts);
-            %     coef = coeffvalues(fitResult);
-            %     Int = coef(1)*sqrt(2*pi)*coef(3);
-            % else
-            %     Int = NaN;
-            % end
+
         end
 
         function [data] = resolveXYZ3DFit(obj,partData,ROI,q)

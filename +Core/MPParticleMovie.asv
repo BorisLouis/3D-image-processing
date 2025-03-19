@@ -197,7 +197,12 @@ classdef MPParticleMovie < Core.MPMovie
                             disp(['Fitting candidates: frame ' num2str(i) ' / ' num2str(nFrames)]);
                             idx = frames(i);
                             %#1 Extract Candidate Position for specific frame
-                            [data] = obj.getFrame(idx, q);
+                            if obj.info.rotationalCalib == 1
+                                data =  obj.calibrated{2, q};  
+                            else
+                                [data] = obj.getFrame(idx, q);
+                            end
+
 
                             [frameCandidate] = obj.getCandidatePos(idx, q);
                             
@@ -210,6 +215,12 @@ classdef MPParticleMovie < Core.MPMovie
                                 
                                 
                             locPos{i} = obj.superResLocFit(data,frameCandidate,roiSize);
+                            if obj.info.rotationalCalib == 1
+                                [data] = obj.getFrame(idx, q);
+                                LocPosPartInt = obj.superResLocFit(data,frameCandidate,roiSize);
+                                locPos{i}.intensity = LocPosPartInt.intensity;
+                                locPos{i}.SNR = LocPosPartInt.SNR;
+                            end
                                 
                             end
                             waitbar(i/nFrames,h,['Fitting candidates: frame ' num2str(i) '/' num2str(nFrames) ' done']);
@@ -234,9 +245,9 @@ classdef MPParticleMovie < Core.MPMovie
                  %Extract the position of the candidate of a given frame
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                 if isnan(z)
-                    locPos = obj.unCorrLocPos{q,1}{idx};
+                    locPos = obj.CorrLocPos{q,1}{idx};
                 else
-                    locPos = obj.unCorrLocPos{q,1}{z,1}{idx};
+                    locPos = obj.CorrLocPos{q,1}{z,1}{idx};
                 end
                
                 if isempty(locPos)
@@ -301,6 +312,7 @@ classdef MPParticleMovie < Core.MPMovie
                             idx = frames(i);
                             %#1 Extract localized Position for specific frame
                             z = NaN;
+        
                             [fCandMet] = obj.getLocPos(idx, q, z);
                             
                             if isempty(fCandMet)
@@ -367,6 +379,7 @@ classdef MPParticleMovie < Core.MPMovie
                     elseif run == 0
                         obj.particles{q,1} = particle;
                     end
+
                 end
             end
             
@@ -554,11 +567,8 @@ classdef MPParticleMovie < Core.MPMovie
                         if(planes2Check(i) > currentPlane)
                             direction = +1;%check below (Plane 1 is the uppest plane 8 is lowest)
                         end
-                        rotational = obj.info.rotational;
-                        if rotational == 1
-                            consThresh = obj.ROI{q,1};
-                        end
-                        [isPart] = Core.MPParticleMovie.isPartPlane(currentCand,cand,direction,consThresh,zMethod,rotational);
+
+                        [isPart] = Core.MPParticleMovie.isPartPlane(currentCand,cand,direction,consThresh,zMethod);
                         if ~all(isPart ==0)
                             id = cand.plane(isPart);
                             particle(id,:) = cand(isPart,:);
@@ -599,7 +609,7 @@ classdef MPParticleMovie < Core.MPMovie
 
      methods (Static)
        
-         function [isPart]   = isPartPlane(current, next, direction,consThresh,zMethod,rotational)
+         function [isPart]   = isPartPlane(current, next, direction,consThresh,zMethod)
             %This function aim at determining whether a candidate from one
             %plane and the another are actually the same candidate on
             %different plane or different candidate. The decision is based
@@ -612,7 +622,7 @@ classdef MPParticleMovie < Core.MPMovie
 
             thresh = consThresh;
             [checkRes1] = Core.MPParticleMovie.checkEuDistRot([current.row, current.col],...
-                [next.row, next.col],thresh,rotational);
+                [next.row, next.col],thresh);
             
             if strcmp(zMethod,'PSFE')
              % Test ellipticity
@@ -632,9 +642,7 @@ classdef MPParticleMovie < Core.MPMovie
             % Test focus Metric
             maxExpFM = current.fMetric+0.1*current.fMetric;
             checkRes3 = next.fMetric < maxExpFM;
-            if rotational == 1
-                checkRes3 = 1;
-            end
+            
             %isPart will only be true for particle that passes the 3 tests
             isPart = checkRes1.*checkRes2.*checkRes3;
             
@@ -669,17 +677,13 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
 
-        function [checkRes] = checkEuDistRot(current,next,Thresh,rotational)
+        function [checkRes] = checkEuDistRot(current,next,Thresh)
             %Use to check if the Euclidian distance is within reasonable
             %range
             EuDist = sqrt((current(:,1) - next(:,1)).^2 +...
                 (current(:,2) - next(:,2)).^2);
             checkRes = EuDist < Thresh;
-            if rotational == 1
-                [~,Idx] = min(EuDist);
-                checkRes = zeros(size(EuDist));
-                checkRes(Idx) = 1;
-            end
+
             if isempty(checkRes)
                 checkRes = false;
             end
@@ -820,18 +824,26 @@ classdef MPParticleMovie < Core.MPMovie
              %get background pixels
             bkg = ROI;
             bkg(rowIdx,colIdx) = 0;
+            Padsize = (size(ROI, 1) - size(px2SumInt, 1))./2;
+            if Padsize > 2
+                CutIdx = Padsize - 2;
+            end
+            bkg(1:CutIdx, :) = 0;
+            bkg(:, 1:CutIdx) = 0;
+            bkg(end-cutIdx:end, :) = 0;
+            bkg(:, end-cutIdx:end)
             px2SumBkg = bkg(bkg~=0);
             bkg = mean(px2SumBkg);
             bkgVar = std(px2SumBkg);
             %calculate signal
             int = px2SumInt - bkg;
-            int = sum(sum(int));
+            int = mean(int,'all');
             %SNR = max(max(px2SumInt))/bkgVar;
             SNR = sqrt(int);
-            if or(SNR<0,int<0)
-                int = sum(sum(px2SumInt));
-                SNR = sqrt(int);
-            end
+            % if or(SNR<0,int<0)
+            %     int = sum(sum(px2SumInt));
+            %     SNR = sqrt(int);
+            % end
            
         end
        
@@ -997,7 +1009,7 @@ classdef MPParticleMovie < Core.MPMovie
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes
-                    if obj.info.rotational == 1                        
+                    if obj.info.rotationalCalib == 1                        
                         currentIM = MeanIm(:,:,j);
                         %localization occurs here
                         switch detectionMethod 

@@ -197,7 +197,12 @@ classdef MPParticleMovie < Core.MPMovie
                             disp(['Fitting candidates: frame ' num2str(i) ' / ' num2str(nFrames)]);
                             idx = frames(i);
                             %#1 Extract Candidate Position for specific frame
-                            [data] = obj.getFrame(idx, q);
+                            if obj.info.rotationalCalib == 1
+                                data =  obj.calibrated{2, q};  
+                            else
+                                [data] = obj.getFrame(idx, q);
+                            end
+
 
                             [frameCandidate] = obj.getCandidatePos(idx, q);
                             
@@ -210,6 +215,12 @@ classdef MPParticleMovie < Core.MPMovie
                                 
                                 
                             locPos{i} = obj.superResLocFit(data,frameCandidate,roiSize);
+                            if obj.info.rotationalCalib == 1
+                                [data] = obj.getFrame(idx, q);
+                                LocPosPartInt = obj.superResLocFit(data,frameCandidate,roiSize);
+                                locPos{i}.intensity = LocPosPartInt.intensity;
+                                locPos{i}.SNR = LocPosPartInt.SNR;
+                            end
                                 
                             end
                             waitbar(i/nFrames,h,['Fitting candidates: frame ' num2str(i) '/' num2str(nFrames) ' done']);
@@ -234,9 +245,9 @@ classdef MPParticleMovie < Core.MPMovie
                  %Extract the position of the candidate of a given frame
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                 if isnan(z)
-                    locPos = obj.unCorrLocPos{q,1}{idx};
+                    locPos = obj.CorrLocPos{q,1}{idx};
                 else
-                    locPos = obj.unCorrLocPos{q,1}{z,1}{idx};
+                    locPos = obj.CorrLocPos{q,1}{z,1}{idx};
                 end
                
                 if isempty(locPos)
@@ -301,6 +312,7 @@ classdef MPParticleMovie < Core.MPMovie
                             idx = frames(i);
                             %#1 Extract localized Position for specific frame
                             z = NaN;
+        
                             [fCandMet] = obj.getLocPos(idx, q, z);
                             
                             if isempty(fCandMet)
@@ -367,6 +379,7 @@ classdef MPParticleMovie < Core.MPMovie
                     elseif run == 0
                         obj.particles{q,1} = particle;
                     end
+
                 end
             end
             
@@ -811,6 +824,14 @@ classdef MPParticleMovie < Core.MPMovie
              %get background pixels
             bkg = ROI;
             bkg(rowIdx,colIdx) = 0;
+            Padsize = (size(ROI, 1) - size(px2SumInt, 1))./2;
+            if Padsize > 2
+                CutIdx = Padsize - 2;
+            end
+            bkg(1:CutIdx, :) = 0;
+            bkg(:, 1:CutIdx) = 0;
+            bkg(end-(CutIdx-1):end, :) = 0;
+            bkg(:, end-(CutIdx-1):end) = 0;
             px2SumBkg = bkg(bkg~=0);
             bkg = mean(px2SumBkg);
             bkgVar = std(px2SumBkg);
@@ -988,7 +1009,7 @@ classdef MPParticleMovie < Core.MPMovie
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes
-                    if obj.info.rotational == 1                        
+                    if obj.info.rotationalCalib == 1                        
                         currentIM = MeanIm(:,:,j);
                         %localization occurs here
                         switch detectionMethod 
