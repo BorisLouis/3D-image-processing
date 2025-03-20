@@ -321,6 +321,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 else
                     [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
                 end
+                % run = 1;
 
                 if run
                     
@@ -872,15 +873,15 @@ classdef MPLocMovie < Core.MPParticleMovie
                     [file2Analyze] = Core.Movie.getFileInPath(Path, ext);
                     %Check if some candidate were already stored
                     if any(contains({file2Analyze.name},'particle')==true)
-                        particle = load([file2Analyze(1).folder filesep 'particle.mat']);
-                        if isfield(particle, 'Particle')
-                            particle = particle.Particle;
+                        Particle = load([file2Analyze(1).folder filesep 'particle.mat']);
+                        if isfield(Particle, 'Particle')
+                            Particle = Particle.Particle;
                         else
-                            particle = particle.particle;
+                            Particle = Particle.particle;
                         end
 
-                        if size(particle, 2) == 1
-                            for z = 1:size(particle,1)
+                        if size(Particle, 2) == 1
+                            for z = 1:size(Particle,1)
                                 %Particle = particle{z,1};
                                 try
                                     if isfield(Particle,'SRList')
@@ -906,17 +907,17 @@ classdef MPLocMovie < Core.MPParticleMovie
 
                             end
                         else
-                            if isfield(particle,'SRList')
-                                if ~isempty(particle.SRList)
+                            if isfield(Particle,'SRList')
+                                if ~isempty(Particle.SRList)
                                     run = false;
-                                    SRList = particle.SRList;
+                                    SRList = Particle.SRList;
                                 else
                                     run = true;
                                 end
-                            elseif isfield(particle{q,1},'SRList')
-                                if ~isempty(particle{q,1}.SRList)
+                            elseif isfield(Particle{q,1},'SRList')
+                                if ~isempty(Particle{q,1}.SRList)
                                     run = false;
-                                    SRList = particle{q,1}.SRList;
+                                    SRList = Particle{q,1}.SRList;
                                 else
                                     run = true;
                                 end

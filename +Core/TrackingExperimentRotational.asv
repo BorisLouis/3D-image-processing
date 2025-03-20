@@ -350,9 +350,7 @@ classdef TrackingExperimentRotational < handle
                 n = n+1;
                 closest_indicesNoNaN = closest_indices;
                 closest_indicesNoNaN(isnan(closest_indicesNoNaN)) = [];
-                unique_valsNoNaN = unique_vals;
-                unique_valsNoNaN(isnan(unique_valsNoNaN)) = [];
-                duplicates = unique_vals(histc(closest_indicesNoNaN, unique_valsNoNaN) > 1);
+                duplicates = unique_vals(histc(closest_indicesNoNaN, unique_vals) > 1);
     
                 for i = 1:numel(duplicates)
                     duplicate_value = duplicates(i);
@@ -370,14 +368,6 @@ classdef TrackingExperimentRotational < handle
 
                 unique_vals = unique(closest_indices);
                 unique_vals(isnan(unique_vals)) = [];
-<<<<<<< HEAD
-
-                if n == 10
-=======
-                if n == max(size(distances))
->>>>>>> aecf167656605fa027d63eaf28551aa63baaa419
-                    break
-                end
             end
 
             closest_indices(:,2) = closest_indices(:,1);

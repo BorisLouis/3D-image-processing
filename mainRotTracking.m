@@ -3,24 +3,41 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
+<<<<<<< HEAD
 path2SRCal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
 
 %file info
 file.path  = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol\3_cP\sample1';
 file.ext   = '.ome.tif';
 path2Cal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+=======
+path2SRCal ='S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+
+%file info
+file.path  = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol\45_cP\sample1';
+file.ext   = '.ome.tif';
+path2Cal = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+>>>>>>> aecf167656605fa027d63eaf28551aa63baaa419
 dimension = '3D';
 
 %detection parameter
 detectParam{1}.delta = 6;
+<<<<<<< HEAD
 detectParam{1}.chi2  = 25;
 detectParam{1}.consThresh = 4;
 
 detectParam{2}.delta = 6;
 detectParam{2}.chi2  = 25;
+=======
+detectParam{1}.chi2  = 35;
+detectParam{1}.consThresh = 4;
+
+detectParam{2}.delta = 6;
+detectParam{2}.chi2  = 35;
+>>>>>>> aecf167656605fa027d63eaf28551aa63baaa419
 detectParam{2}.consThresh = 4;
 %tracking parameter
-trackParam.radius  = 800;%nm
+trackParam.radius  = 3500;%nm
 trackParam.memory  = 50;
 
 %% Storing info about the file
@@ -36,7 +53,10 @@ info.rotational = 1; %Rotational tracking
 info.rotationalCalib = 0;
 info.euDist = 1500;
 info.expTime = 0.010; %in sec
+<<<<<<< HEAD
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
+=======
+>>>>>>> aecf167656605fa027d63eaf28551aa63baaa419
 info.PxSize = 95;
 
 %% create experiments

@@ -167,8 +167,8 @@ classdef MPParticleMovie < Core.MPMovie
                     folder = append('calibrated', num2str(q));
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
-                    %[run,locPos] = obj.existLocPos(path,'.mat');
-                    run = 1;
+                    [run,locPos] = obj.existLocPos(path,'.mat');
+                    % run = 1;
                     
                     if run
                         switch nargin
