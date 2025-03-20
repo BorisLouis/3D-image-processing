@@ -13,19 +13,12 @@ RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
 RotCalib = RotCalib.RotCalib;
 Amplitude = RotCalib.I_mean;
 NumRotations = 2; %estimated number of rotations
-
 %% Calculate angular velocity from the traces
 for a = 1:size(subFolders, 2)
     Traces = open(append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat"));
-    Traces = Traces.CommonTraces;
+    Traces = Traces.Traces;
 
-    angular_speed = [];
     for q = 1:size(Traces, 1)
-        MSD = [];
-        Diff = [];
-        time = [];
-        tau_values = [];
-        deltas = [];
         if isnan(Traces.I(q))
             angular_speed(q, 1) = NaN;
         else
@@ -35,6 +28,7 @@ for a = 1:size(subFolders, 2)
             for i = 1:size(Diff, 1)
                 Angles(i,1) = 0.25*real(acos(Diff(i)./Amplitude));
             end
+            KeepAngles(q,:) = Angles;
             tau_values = 1:floor(length(Angles));
             
             for n = 1:size(tau_values,2) - 1
@@ -55,9 +49,8 @@ for a = 1:size(subFolders, 2)
             angular_speed(q, 1) = sqrt(2*D_theta)*180/pi;
         end
     end
-    Traces.AngSpeed = angular_speed;
-    CommonTraces = Traces;
-    Filename = append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat");
-    save(Filename, "CommonTraces")
 end
 
+Traces.AngSpeed = angular_speed;
+Filename = append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat");
+save(Filename, "Traces")

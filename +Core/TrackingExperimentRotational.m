@@ -344,7 +344,7 @@ classdef TrackingExperimentRotational < handle
             unique_vals = unique(closest_indices);
             n = 0;
 
-            while numel(unique_vals) < numel(closest_indices)
+            while numel(unique_vals) < min(size(distances))
                 n = n+1;
                 duplicates = unique_vals(histc(closest_indices, unique_vals) > 1);
     
