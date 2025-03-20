@@ -134,10 +134,10 @@ classdef MPLocMovie < Core.MPParticleMovie
                                         end
             
                                         %correct second channel
-                                        if q == 2
-                                            Transformation = obj.SRCal{2, 1}.Transformations{currentPlane, 1};
-                                            [corrData.col,corrData.row] = transformPointsForward(Transformation,corrData.col, corrData.row);
-                                        end
+                                        % if q == 2
+                                        %     Transformation = obj.SRCal{2, 1}.Transformations{currentPlane, 1};
+                                        %     [corrData.col,corrData.row] = transformPointsForward(Transformation,corrData.col, corrData.row);
+                                        % end
                                         %we store the corrected data
                                         obj.corrLocPos{q,1}{i}(currData.plane==currentPlane,{'row','col','plane'}) = corrData;        
                                     end

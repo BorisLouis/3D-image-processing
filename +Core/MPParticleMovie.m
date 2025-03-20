@@ -72,7 +72,11 @@ classdef MPParticleMovie < Core.MPMovie
                     %Localization occurs here
                     assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                     assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
-                    [candidate] = obj.detectCandidate(detectParam,frames,q);
+                    if q == 1
+                        [candidate] = obj.detectCandidate(detectParam,frames,q);
+                    elseif q == 2
+                        [candidate] = obj.detectCandidate(detectParam,frames,q);
+                    end
                     
                 elseif ~isempty(candidate)
                 else
@@ -245,9 +249,9 @@ classdef MPParticleMovie < Core.MPMovie
                  %Extract the position of the candidate of a given frame
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                 if isnan(z)
-                    locPos = obj.CorrLocPos{q,1}{idx};
+                    locPos = obj.corrLocPos{q,1}{idx};
                 else
-                    locPos = obj.CorrLocPos{q,1}{z,1}{idx};
+                    locPos = obj.corrLocPos{q,1}{z,1}{idx};
                 end
                
                 if isempty(locPos)
@@ -401,7 +405,7 @@ classdef MPParticleMovie < Core.MPMovie
             function showCandidate(obj,idx)
                 %Display Candidate
                 for q = 1:(obj.info.multiModal + 1)
-                    if obj.info.rotational ~= 1
+                    if obj.info.rotationalCalib ~= 1
                         assert(length(idx)==1, 'Only one frame can be displayed at once');
                         [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
                         assert(~isempty(obj.candidatePos{q,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
@@ -414,7 +418,7 @@ classdef MPParticleMovie < Core.MPMovie
                         
                         candidate = obj.getCandidatePos(idx,q);
                         
-                    elseif obj.info.rotational == 1
+                    elseif obj.info.rotationalCalib == 1
                         [frame] = obj.calibrated{2,q};
                         nImages = size(frame,3);
                         nsFig = ceil(nImages/4);
@@ -976,7 +980,7 @@ classdef MPParticleMovie < Core.MPMovie
             chi2   = detectParam.chi2;
             h = waitbar(0,'detection of candidates...');
             
-            if obj.info.rotational == 1
+            if obj.info.rotationalCalib == 1
                 % AllFramesFile = append(obj.raw.movInfo.Path,filesep,'calibrated',num2str(q),filesep,'AllFrames.mat');
                 % if ~exist(AllFramesFile)
                 %     run = 1;
@@ -1094,7 +1098,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                 idx = find(position.row==0,1,'First');
                 if isempty(idx)
-                    if obj.info.rotational == 1
+                    if obj.info.rotationalCalib == 1
                         for z = 1:size(candidate,1)
                             candidate{z} = position;
                         end
@@ -1103,7 +1107,7 @@ classdef MPParticleMovie < Core.MPMovie
                         candidate{frames(i)} = position;
                     end                   
                 else
-                    if obj.info.rotational == 1
+                    if obj.info.rotationalCalib == 1
                         for z = 1:size(candidate,1)
                             candidate{z} = position(1:idx-1,:);
                         end

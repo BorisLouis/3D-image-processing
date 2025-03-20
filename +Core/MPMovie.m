@@ -287,6 +287,12 @@ classdef MPMovie < Core.Movie
                 for i = 1:numel(fieldsN)
                     %Load plane
                     [mov] = Load.Movie.tif.getframes(obj.calibrated{1,q}.filePath.(fieldsN{i}),idx);
+                    if isprop(obj, "SRCal")
+                        if q == 2
+                            Transformation = obj.SRCal{2, 1}.Transformations{i, 1}; 
+                            mov = imwarp(mov,Transformation, "OutputView",imref2d(size(mov)));
+                        end
+                    end
                     data(:,:,i) = double(mov);
                     
                 end

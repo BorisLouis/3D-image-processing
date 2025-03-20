@@ -364,6 +364,10 @@ classdef TrackingExperimentRotational < handle
 
                 unique_vals = unique(closest_indices);
                 unique_vals(isnan(unique_vals)) = [];
+
+                if n == 10
+                    break
+                end
             end
 
             closest_indices(:,2) = closest_indices(:,1);
