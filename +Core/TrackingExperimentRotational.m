@@ -328,11 +328,6 @@ classdef TrackingExperimentRotational < handle
                     coords1_common = coords1(ismember(time1, common_time), :);
                     coords2_common = coords2(ismember(time2, common_time), :);
                 
-                    if isempty(common_time)
-                        avg_distance = Inf;
-                        return;
-                    end
-                
                     distance = sqrt(sum((coords1_common - coords2_common).^2, 2));
                     distances(i, j) = mean(distance);
                 end
@@ -340,13 +335,24 @@ classdef TrackingExperimentRotational < handle
             
             %[~, TracesIdx] = max(size(distances));
             [closest, closest_indices] = min(distances, [], 2);
+            for i = 1:size(distances, 1)
+                if all(isnan(distances(i,:)))
+                    closest_indices(i) = NaN;
+                    closest(i) = NaN;
+                end
+            end
+            
 
             unique_vals = unique(closest_indices);
             n = 0;
 
             while numel(unique_vals) < min(size(distances))
                 n = n+1;
-                duplicates = unique_vals(histc(closest_indices, unique_vals) > 1);
+                closest_indicesNoNaN = closest_indices;
+                closest_indicesNoNaN(isnan(closest_indicesNoNaN)) = [];
+                unique_valsNoNaN = unique_vals;
+                unique_valsNoNaN(isnan(unique_valsNoNaN)) = [];
+                duplicates = unique_vals(histc(closest_indicesNoNaN, unique_valsNoNaN) > 1);
     
                 for i = 1:numel(duplicates)
                     duplicate_value = duplicates(i);
@@ -364,6 +370,9 @@ classdef TrackingExperimentRotational < handle
 
                 unique_vals = unique(closest_indices);
                 unique_vals(isnan(unique_vals)) = [];
+                if n == max(size(distances))
+                    break
+                end
             end
 
             closest_indices(:,2) = closest_indices(:,1);

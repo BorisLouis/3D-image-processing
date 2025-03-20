@@ -401,7 +401,7 @@ classdef MPParticleMovie < Core.MPMovie
             function showCandidate(obj,idx)
                 %Display Candidate
                 for q = 1:(obj.info.multiModal + 1)
-                    if obj.info.rotational ~= 1
+                    if obj.info.rotationalCalib ~= 1
                         assert(length(idx)==1, 'Only one frame can be displayed at once');
                         [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
                         assert(~isempty(obj.candidatePos{q,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
@@ -414,7 +414,7 @@ classdef MPParticleMovie < Core.MPMovie
                         
                         candidate = obj.getCandidatePos(idx,q);
                         
-                    elseif obj.info.rotational == 1
+                    elseif obj.info.rotationalCalib == 1
                         [frame] = obj.calibrated{2,q};
                         nImages = size(frame,3);
                         nsFig = ceil(nImages/4);
@@ -976,7 +976,7 @@ classdef MPParticleMovie < Core.MPMovie
             chi2   = detectParam.chi2;
             h = waitbar(0,'detection of candidates...');
             
-            if obj.info.rotational == 1
+            if obj.info.rotationalCalib == 1
                 % AllFramesFile = append(obj.raw.movInfo.Path,filesep,'calibrated',num2str(q),filesep,'AllFrames.mat');
                 % if ~exist(AllFramesFile)
                 %     run = 1;
