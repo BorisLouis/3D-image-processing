@@ -370,12 +370,8 @@ classdef TrackingExperimentRotational < handle
 
                 unique_vals = unique(closest_indices);
                 unique_vals(isnan(unique_vals)) = [];
-<<<<<<< HEAD
-
-                if n == 10
-=======
+                
                 if n == max(size(distances))
->>>>>>> aecf167656605fa027d63eaf28551aa63baaa419
                     break
                 end
             end
