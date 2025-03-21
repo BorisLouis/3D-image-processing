@@ -289,7 +289,14 @@ classdef MPMovie < Core.Movie
                     [mov] = Load.Movie.tif.getframes(obj.calibrated{1,q}.filePath.(fieldsN{i}),idx);
                     if isprop(obj, "SRCal")
                         if q == 2
-                            Transformation = obj.SRCal{2, 1}.Transformations{i, 1}; 
+                            Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
+                            Transformation.RotationAngle = 0;
+                            Transformation.Translation = [Transformation.Translation(1), Transformation.Translation(2)];
+                            Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
+                                                sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
+                            Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
+                                                Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Scale*cosd(Transformation.RotationAngle) Transformation.Translation(2);
+                                                0 0 1];
                             mov = imwarp(mov,Transformation, "OutputView",imref2d(size(mov)));
                         end
                     end

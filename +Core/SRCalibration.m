@@ -270,7 +270,7 @@ classdef SRCalibration < handle
                     Im2 = zeros(imsize);
                     Im1(sub2ind(imsize, round(coords1(:,1)), round(coords1(:,2)))) = 1;
                     Im2(sub2ind(imsize, round(coords2(:,1)), round(coords2(:,2)))) = 1;
-
+                
                     tform = imregcorr(Im2, Im1, "similarity");
                     Im2Moved = imwarp(Im2,tform, "OutputView",imref2d(imsize));
                     

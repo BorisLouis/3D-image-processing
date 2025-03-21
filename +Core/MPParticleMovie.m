@@ -98,7 +98,12 @@ classdef MPParticleMovie < Core.MPMovie
                 else
                 end
 
+                
+
                 obj.candidatePos{q,1} = candidate;
+                if obj.info.rotationalCalib == 1
+                    obj.candidatePos{q,1} = obj.candidatePos{1,1};
+                end
                 obj.info.detectParam = detectParam;
             end
         end
