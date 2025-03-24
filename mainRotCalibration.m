@@ -7,7 +7,7 @@ path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
 MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
-subFolders = {'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8', 'sample_9', 'sample_10'};
+subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8', 'sample_9', 'sample_10'};
 file.ext   = '.ome.tif';
 path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
@@ -58,29 +58,29 @@ for i = 1:size(subFolders, 2)
         testMov.findCandidatePos(detectParam);
         testMov.getROIs;
         testMov.showCandidate(1);
-        
-        %% get TrackingData
-        val2Use = 'bestFocus';
-        trackingExp.retrieveTrackData(detectParam,trackParam);
-        traces = trackingExp.getTraces3D;
-        trackingExp.ConsolidateChannels3;
-        trackingExp.RotationalCalibration;
-
-        AmplitudeI = [AmplitudeI; trackingExp.traces3Dcommon.I];
-        AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
-    % catch
-    % end
 end
-AmplitudeI(isnan(AmplitudeI)) = [];
-AmplitudeI0(isnan(AmplitudeI0)) = [];
-RotCalib.I_all = AmplitudeI;
-RotCalib.I_mean = nanmean(AmplitudeI);
-RotCalib.I_std = std(AmplitudeI);
-RotCalib.I0_all = AmplitudeI0;
-RotCalib.I0_mean = nanmean(AmplitudeI0);
-RotCalib.I0_std = std(AmplitudeI0);
-
-filename = append(MainFolder, filesep, 'RotCalib.mat');
-save(filename, "RotCalib");
-
+%         %% get TrackingData
+%         val2Use = 'bestFocus';
+%         trackingExp.retrieveTrackData(detectParam,trackParam);
+%         traces = trackingExp.getTraces3D;
+%         trackingExp.ConsolidateChannels3;
+%         trackingExp.RotationalCalibration;
+% 
+%         AmplitudeI = [AmplitudeI; trackingExp.traces3Dcommon.I];
+%         AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
+%     % catch
+%     % end
+% end
+% AmplitudeI(isnan(AmplitudeI)) = [];
+% AmplitudeI0(isnan(AmplitudeI0)) = [];
+% RotCalib.I_all = AmplitudeI;
+% RotCalib.I_mean = nanmean(AmplitudeI);
+% RotCalib.I_std = std(AmplitudeI);
+% RotCalib.I0_all = AmplitudeI0;
+% RotCalib.I0_mean = nanmean(AmplitudeI0);
+% RotCalib.I0_std = std(AmplitudeI0);
+% 
+% filename = append(MainFolder, filesep, 'RotCalib.mat');
+% save(filename, "RotCalib");
+% 
 

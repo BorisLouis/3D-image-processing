@@ -197,7 +197,7 @@ classdef MPMovie < Core.Movie
             [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
             %Get the data of the requested frame
             [frame] = getFrame(obj,idx);
-            pxSize = obj.info.pxSize/1000;%in µm
+            pxSize = obj.info.pxSize/1000;%in Âµm
             scaleBarPx = scaleBar/pxSize;
             planes = size(frame,3);
             
@@ -255,7 +255,7 @@ classdef MPMovie < Core.Movie
                 hold on
                 x = size(currentIM,2)-scaleBarPx-(0.05*size(currentIM,2)):size(currentIM,2)-0.05*size(currentIM,2);
                 y = ones(1,length(x))*size(currentIM,1)-0.05*size(currentIM,2);
-                text(mean(x),mean(y)-0.04*size(currentIM,1),[num2str(scaleBar) ' µm'],'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',8);
+                text(mean(x),mean(y)-0.04*size(currentIM,1),[num2str(scaleBar) ' Âµm'],'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',8);
                 plot(x,y,'-w','LineWidth',2.5);
                 axis image;
                 
@@ -288,17 +288,15 @@ classdef MPMovie < Core.Movie
                     %Load plane
                     [mov] = Load.Movie.tif.getframes(obj.calibrated{1,q}.filePath.(fieldsN{i}),idx);
 
-                    %%% For multimodal: zoom, translate and rotate the
-                    %%% frames of ch2 so it fits exactly on ch1.
                     if isprop(obj, "SRCal")
                         if q == 2
                             try
-                                CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
-                                CMb = obj.SRCal{1, 1}.rot.CMb{i-1,1} - obj.SRCal{2, 1}.rot.CMb{i-1,1}; 
-                                CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
-                            catch
                                 CMa = obj.SRCal{1, 1}.rot.CMa{i,1} - obj.SRCal{2, 1}.rot.CMa{i,1};
                                 CMb = obj.SRCal{1, 1}.rot.CMb{i,1} - obj.SRCal{2, 1}.rot.CMb{i,1}; 
+                                CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
+                            catch
+                                CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
+                                CMb = obj.SRCal{1, 1}.rot.CMb{i-1,1} - obj.SRCal{2, 1}.rot.CMb{i-1,1}; 
                                 CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
                             end
                             Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
