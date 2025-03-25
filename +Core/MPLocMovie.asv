@@ -361,8 +361,12 @@ classdef MPLocMovie < Core.MPParticleMovie
                         else
                             
                             fData = obj.getFrame(i,q);
-                            ROIRad = ceil(obj.info.FWHM_px/2+1);
- 
+                            if obj.info.rotational == 1
+                                ROIRad = 2;
+                            else
+                                ROIRad = ceil(obj.info.FWHM_px/2+1);
+                            end
+                            
                             for j = 1:length(frameData)
                                 partData = frameData{j};
                                 
@@ -776,7 +780,7 @@ classdef MPLocMovie < Core.MPParticleMovie
             for i = 1:size(partVolIm,3)
                 Mag(end+1) = nanmean(partVolIm(:,:,i),'all');
             end
-            Int = nansum(Mag);
+            Int = nanmean(Mag);
 
         end
 

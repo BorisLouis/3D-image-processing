@@ -99,13 +99,41 @@ classdef MPParticleMovie < Core.MPMovie
                 end
 
                 
-
+                candidatePos{q,1} = candidate;
                 obj.candidatePos{q,1} = candidate;
-                if obj.info.rotationalCalib == 1
-                    obj.candidatePos{q,1} = obj.candidatePos{1,1};
-                end
-                obj.info.detectParam = detectParam;
             end
+
+            %%% For rotational tracking: detect particles in the two
+            %%% channels. If they are visible in both, only keep ch1
+            if obj.info.rotational == 1
+                threshold = 10;
+                for frameIdx = 1:size(candidatePos{1,1}, 1)
+                    data1 = candidatePos{1,1}{frameIdx};
+                    data2 = candidatePos{2,1}{frameIdx};
+                    combined = [data1; data2];
+
+                    toRemove = false(size(combined, 1), 1);
+                    for i = 1:size(combined,1)
+                        if toRemove(i)
+                            continue
+                        end
+                        samePlaneIdx = combined.plane == combined.plane(i);
+                        distances = sqrt((combined.row(i) - combined.row).^2 + ...
+                            (combined.col(i) - combined.col).^2);
+                        closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
+                        for j = closeParticles'
+                            if j > i
+                                toRemove(j) = true;
+                            end
+                        end
+                    end
+                    candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+                end
+            end
+            candidatePos{2,1} = candidatePos{1,1};
+
+            obj.candidatePos = candidatePos;
+            obj.info.detectParam = detectParam;
         end
         
         function getROIs(obj)
@@ -653,7 +681,8 @@ classdef MPParticleMovie < Core.MPMovie
             checkRes3 = next.fMetric < maxExpFM;
             
             %isPart will only be true for particle that passes the 3 tests
-            isPart = checkRes1.*checkRes2.*checkRes3;
+            %isPart = checkRes1.*checkRes2.*checkRes3;
+            isPart = checkRes1.*checkRes2;
             
             if(length(find(isPart))>1)
                 
@@ -836,6 +865,8 @@ classdef MPParticleMovie < Core.MPMovie
             Padsize = (size(ROI, 1) - size(px2SumInt, 1))./2;
             if Padsize > 2
                 CutIdx = Padsize - 2;
+            else
+                CutIdx = Padsize;
             end
             bkg(1:CutIdx, :) = 0;
             bkg(:, 1:CutIdx) = 0;

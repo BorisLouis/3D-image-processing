@@ -293,12 +293,12 @@ classdef MPMovie < Core.Movie
                     if isprop(obj, "SRCal")
                         if q == 2
                             try
-                                CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
-                                CMb = obj.SRCal{1, 1}.rot.CMb{i-1,1} - obj.SRCal{2, 1}.rot.CMb{i-1,1}; 
-                                CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
-                            catch
                                 CMa = obj.SRCal{1, 1}.rot.CMa{i,1} - obj.SRCal{2, 1}.rot.CMa{i,1};
                                 CMb = obj.SRCal{1, 1}.rot.CMb{i,1} - obj.SRCal{2, 1}.rot.CMb{i,1}; 
+                                CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
+                            catch
+                                CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
+                                CMb = obj.SRCal{1, 1}.rot.CMb{i-1,1} - obj.SRCal{2, 1}.rot.CMb{i-1,1}; 
                                 CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
                             end
                             Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
