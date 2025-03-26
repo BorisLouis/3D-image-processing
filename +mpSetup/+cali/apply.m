@@ -84,8 +84,6 @@ else
                 frame = data1(:,:,k,i);
                 bg1(:,:,k,i) = imopen(frame, se);
                 data1(:,:,k,i) = frame - bg1(:,:,k,i);
-                % MedianInt = median(data1(:,:,k,i), 'all');
-                % data1(:,:,k,i) = data1(:,:,k,i) - MedianInt;
             end
         end
         close(h)
@@ -143,8 +141,6 @@ else
                     frame = data2(:,:,k,i);
                     bg2(:,:,k,i) = imopen(frame, se);
                     data2(:,:,k,i) = frame - bg2(:,:,k,i);
-                    % MedianInt = median(data2(:,:,k,i), 'all');
-                    % data2(:,:,k,i) = data2(:,:,k,i) - MedianInt;
                     data2(:,:,k,i) = data2(:,:,k,i)*(mean(bg1(:,:,k,i), 'all')./mean(bg2(:,:,k,i), 'all'));
                 end
             end

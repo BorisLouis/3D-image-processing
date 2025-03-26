@@ -127,7 +127,9 @@ classdef MPParticleMovie < Core.MPMovie
                             end
                         end
                     end
-                    candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+                    if ~isempty(toRemove)
+                        candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+                    end
                 end
             end
             candidatePos{2,1} = candidatePos{1,1};

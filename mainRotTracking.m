@@ -13,11 +13,11 @@ dimension = '3D';
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 25;
+detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 4;
 
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 25;
+detectParam{2}.chi2  = 30;
 detectParam{2}.consThresh = 4;
 %tracking parameter
 trackParam.radius  = 3500;%nm
@@ -36,7 +36,7 @@ info.rotational = 1; %Rotational tracking
 info.rotationalCalib = 0;
 info.euDist = 1500;
 info.expTime = 0.010; %in sec
-info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
+info.RadTime = []; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
 
 %% create experiments

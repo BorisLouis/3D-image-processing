@@ -128,7 +128,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
     
                         ImPrev.time = length(TrackedData_data);
                         ImPrev.data = ImPrev.AddMemoryToPreviouslyTrackedData( TrackedData_data{end},MemoryArray_data);
-                        if obj.info.rotational == true
+                        if obj.info.rotationalCalib == true
                             NextFrame.dataNext(:,3) = 0;
                             ImPrev.data(:,3) = 0;
                         end

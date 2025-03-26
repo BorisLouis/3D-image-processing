@@ -3,13 +3,13 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2SRCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
-subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8', 'sample_9', 'sample_10'};
+MainFolder = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
-path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
@@ -37,14 +37,14 @@ info.rotational = 1; %Rotational tracking
 info.rotationalCalib = 1;
 info.Bipyramid = [184, 92]; %Long axis, short axis in nm
 info.euDist = 500;
-info.expTime = 0.010; %in sec
-info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
+info.expTime = 0.100; %in sec
+info.RadTime = 5; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
 
 AmplitudeI = [];
 AmplitudeI0 = [];
 for i = 1:size(subFolders, 2)
-    % try
+    try
         file.path = append(MainFolder, filesep, subFolders{i});
     
         %% create experiments
@@ -68,8 +68,8 @@ for i = 1:size(subFolders, 2)
 
         AmplitudeI = [AmplitudeI; trackingExp.traces3Dcommon.I];
         AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
-    % catch
-    % end
+    catch
+    end
 end
 AmplitudeI(isnan(AmplitudeI)) = [];
 AmplitudeI0(isnan(AmplitudeI0)) = [];

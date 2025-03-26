@@ -2,11 +2,12 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
-subFolders = {'sample_1', 'sample_2'};
+MainFolder = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
+ExpTime = 0.100; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -15,6 +16,7 @@ Amplitude = RotCalib.I_mean;
 NumRotations = 2; %estimated number of rotations
 
 %% Calculate angular velocity from the traces
+AngSpeed = [];
 for a = 1:size(subFolders, 2)
     Traces = open(append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat"));
     Traces = Traces.CommonTraces;
@@ -47,17 +49,30 @@ for a = 1:size(subFolders, 2)
                 value = median(deltas);
                 MSD(q,dt) = value;
             end
-                 
-            time_lags = tau_values*0.010;
-            p = fit(time_lags(1, 50:80).', MSD(q, 50:80).', 'a*x+b');
+
+            time_lags = tau_values*ExpTime;
+            p = fit(time_lags(1, 70:90).', MSD(q, 70:90).', 'a*x+b'); %% take range where the slope is the steepest
             coeff = coeffvalues(p);
             D_theta = coeff(1) / 2;
-            angular_speed(q, 1) = sqrt(2*D_theta)*180/pi;
+            if isreal(sqrt(2*D_theta)*180/pi)
+                angular_speed(q, 1) = sqrt(2*D_theta)*180/pi;
+            else
+                angular_speed(q, 1) = NaN;
+            end
+
         end
     end
     Traces.AngSpeed = angular_speed;
     CommonTraces = Traces;
     Filename = append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat");
     save(Filename, "CommonTraces")
+
+    AngSpeed = [AngSpeed; angular_speed];
 end
 
+AngSpeed(isnan(AngSpeed)) = [];
+AngularSpeed.All = AngSpeed;
+AngularSpeed.mean = mean(AngSpeed);
+AngularSpeed.median = median(AngSpeed);
+AngularSpeed.std = std(AngSpeed);
+save(append(path2RotCal, filesep, 'AngularSpeeds.mat'), 'AngularSpeed')

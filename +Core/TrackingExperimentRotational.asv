@@ -406,7 +406,7 @@ classdef TrackingExperimentRotational < handle
     
                     Diff = Int1-Int2;
                     Ratio = Int1./Int2;
-                    Time = common_time*obj.info.expTime;
+                    Time = [0:1:size(Diff,1)-1]*obj.info.expTime;
     
                     traces3Dcommon{end,3} = Diff;
                     traces3Dcommon{end,4} = Ratio;
