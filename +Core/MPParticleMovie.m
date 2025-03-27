@@ -29,7 +29,7 @@ classdef MPParticleMovie < Core.MPMovie
         function findCandidatePos(obj,detectParamFull, frames)
             %Method to perform localization on each plane for each frame
             %Check if some candidate exists already in the folder (previously saved)
-            for q = 1:(obj.info.multiModal+1)
+            for q = 1:obj.info.multiModal+1
                 if iscell(detectParamFull)
                     if q == 1
                         detectParam = detectParamFull{1};
@@ -98,41 +98,39 @@ classdef MPParticleMovie < Core.MPMovie
                 else
                 end
 
-                
                 candidatePos{q,1} = candidate;
                 obj.candidatePos{q,1} = candidate;
             end
 
             %%% For rotational tracking: detect particles in the two
             %%% channels. If they are visible in both, only keep ch1
-            if obj.info.rotational == 1
-                threshold = 10;
-                for frameIdx = 1:size(candidatePos{1,1}, 1)
-                    data1 = candidatePos{1,1}{frameIdx};
-                    data2 = candidatePos{2,1}{frameIdx};
-                    combined = [data1; data2];
-
-                    toRemove = false(size(combined, 1), 1);
-                    for i = 1:size(combined,1)
-                        if toRemove(i)
-                            continue
-                        end
-                        samePlaneIdx = combined.plane == combined.plane(i);
-                        distances = sqrt((combined.row(i) - combined.row).^2 + ...
-                            (combined.col(i) - combined.col).^2);
-                        closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
-                        for j = closeParticles'
-                            if j > i
-                                toRemove(j) = true;
-                            end
-                        end
-                    end
-                    if ~isempty(toRemove)
-                        candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
-                    end
-                end
-            end
-            candidatePos{2,1} = candidatePos{1,1};
+            % if obj.info.rotational == 1
+            %     threshold = 10;
+            %     for frameIdx = 1:size(candidatePos{1,1}, 1)
+            %         data1 = candidatePos{1,1}{frameIdx};
+            %         data2 = candidatePos{2,1}{frameIdx};
+            %         combined = [data1; data2];
+            % 
+            %         toRemove = false(size(combined, 1), 1);
+            %         for i = 1:size(combined,1)
+            %             if toRemove(i)
+            %                 continue
+            %             end
+            %             samePlaneIdx = combined.plane == combined.plane(i);
+            %             distances = sqrt((combined.row(i) - combined.row).^2 + ...
+            %                 (combined.col(i) - combined.col).^2);
+            %             closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
+            %             for j = closeParticles'
+            %                 if j > i
+            %                     toRemove(j) = true;
+            %                 end
+            %             end
+            %         end
+            %         if ~isempty(toRemove)
+            %             candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+            %         end
+            %     end
+            % end
 
             obj.candidatePos = candidatePos;
             obj.info.detectParam = detectParam;
@@ -190,7 +188,7 @@ classdef MPParticleMovie < Core.MPMovie
             end  
             
             function SRLocalizeCandidate(obj,detectParam,frames)
-                for q = 1:(obj.info.multiModal+1)
+                for q = 1:obj.info.multiModal+1
                     if iscell(detectParam)
                         roiSize = detectParam{1,q}.delta;
                     else
@@ -419,6 +417,55 @@ classdef MPParticleMovie < Core.MPMovie
                         obj.particles{q,1} = particle;
                     end
 
+                end
+                
+                %%%Rotational tracking: pass the particles to both channels
+                if obj.info.rotational == 1
+                    for i = 1:size(obj.particles{1,1}.List, 2)
+                        ParticlesCh1 = obj.particles{1,1}.List{1,i};
+                        ParticlesCh2 = obj.particles{2,1}.List{1,i};
+                        SamePart = [];
+                        if ~isempty(ParticlesCh1)
+                            for j = 1:size(ParticlesCh1 ,1)
+                                SelectedPartCh1 = ParticlesCh1{j,1};
+                                if ~isempty(ParticlesCh2)
+                                    for k = 1:size(ParticlesCh2,1)
+                                        SelectedPartCh2 = ParticlesCh2{1,1};
+                                        %%% Check if at least 3 planes are in
+                                        %%% common
+                                        commonPlanes= intersect(SelectedPartCh1.plane, SelectedPartCh2.plane);
+                                        PlaneCheck = size(commonPlanes, 1) >= 3;
+        
+                                        %%% check distances
+                                        Coords1 = SelectedPartCh1(ismember(SelectedPartCh1.plane, commonPlanes), :);
+                                        Coords2 = SelectedPartCh2(ismember(SelectedPartCh1.plane, commonPlanes), :);
+                                        Dist = nanmean(sqrt((Coords1.row - Coords2.row).^2 + (Coords1.row - Coords2.row).^2));
+                                        DistCheck = Dist*obj.info.PxSize < obj.info.euDist;
+        
+                                        %%% Both checks have to be fullfilled
+                                        SamePart(k,:) = PlaneCheck*DistCheck;
+                                    end
+                                else
+                                    SamePart = [];
+                                end
+                            end
+                        else
+                            SamePart = zeros(size(ParticlesCh2,1), 1);
+                        end
+                        SelectedParticlesCh1 = obj.particles{1,1}.List{1,i};
+                        if ~isempty(SamePart)
+                            SelectPart = SamePart == 0;
+                            SelectedParticlesCh2 = obj.particles{2, 1}.List{1,i}(SelectPart);
+                        else
+                            SelectedParticlesCh2 = obj.particles{2, 1}.List{1,i};
+                        end
+                        obj.particles{1,1}.List{1,i} = {};
+                        obj.particles{2,1}.List{1,i} = {};
+                        obj.particles{1,1}.List{1,i} = [SelectedParticlesCh1; SelectedParticlesCh2];
+                        obj.particles{2,1}.List{1,i} = [SelectedParticlesCh1; SelectedParticlesCh2];
+                        obj.particles{1,1}.nParticles(1,i) = size(obj.particles{1,1}.List{1,i}, 1);
+                        obj.particles{2,1}.nParticles(1,i) = size(obj.particles{2,1}.List{1,i}, 1);
+                    end
                 end
             end
             

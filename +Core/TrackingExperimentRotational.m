@@ -394,7 +394,7 @@ classdef TrackingExperimentRotational < handle
                     Int1 = channel1{closest_indices(i,1),1}.intensity;
                     time1 = channel1{closest_indices(i,1),1}.t;
                     Int2 = channel2{closest_indices(i,2),1}.intensity;
-                    time2 = channel2{closest_indices(i,1),1}.t;
+                    time2 = channel2{closest_indices(i,2),1}.t;
                 
                     common_time = intersect(time1, time2);
                     
