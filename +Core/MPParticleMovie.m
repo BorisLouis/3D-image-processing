@@ -131,7 +131,6 @@ classdef MPParticleMovie < Core.MPMovie
             %         end
             %     end
             % end
-
             obj.candidatePos = candidatePos;
             obj.info.detectParam = detectParam;
         end
