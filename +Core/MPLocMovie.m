@@ -383,24 +383,18 @@ classdef MPLocMovie < Core.MPParticleMovie
                                             partVolIm = obj.getPartVolIm(partData,ROIRad,fData);
                                             [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);                            
                                             if obj.info.rotational == 1
-                                                % Int = nanmean(partData.intensity);
-                                                partVolIm = obj.getPartVolIm(partData,ROIRad-1,fData);
-                                                PartWithBg = obj.getPartVolIm(partData, ROIRad+1, fData);
-                                                PartPadded = padarray(partVolIm, [2 2], 0, 'both');
-                                                PartWithBg(PartPadded ~= 0) = NaN;
+                                                PartWithBg = obj.getPartVolIm(partData, ROIRad*2, fData);
+                                                filter = ones(5,5);
                                                 for p = 1:size(PartWithBg, 3)
-                                                    partVolIm(:,:,p) = partVolIm(:,:,p) - nanmedian(PartWithBg(:,:,p), 'all');
-                                                    % [~, ~, MagX, MagY] = Localization.phasor(partVolIm(:,:,p));
-                                                    % MagPlane(p,1) = MagX*MagY;
-                                                    % PlaneNum(p,1) = obj.calibrated{1, 1}.oRelZPos(p);
+                                                    sumMatrix = conv2(PartWithBg(:,:,p), filter, 'valid');
+                                                    [maxVal, maxIndex] = max(sumMatrix(:));
+                                                    [yStart, xStart] = ind2sub(size(sumMatrix), maxIndex);
+                                                    PartVolIm(:,:,p) = PartWithBg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p);
+                                                    Bg = PartWithBg(:,:,p);
+                                                    Bg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1)) = NaN;
+                                                    PartVolIm(:,:,p) = PartVolIm(:,:,p) - nanmedian(Bg, 'all');
                                                 end
-                                                % % options = fitoptions('gauss1');
-                                                % % options.Lower = [0, min(PlaneNum), 0];
-                                                % % options.Upper = [max(MagPlane) + min(MagPlane), max(PlaneNum), max(PlaneNum) - min(PlaneNum)];
-                                                % % f = fit(PlaneNum, MagPlane, 'gauss1', options);
-                                                % % coeff = coeffvalues(f);
-                                                % % Int = coeff(1);
-                                                [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);
+                                                [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),PartVolIm, q);
                                             end
                                         end
     
@@ -766,18 +760,12 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
         
         function [Int] = getXYZIntRot(obj, partData, partVolIm,q)
-            % bf = partData.plane(3);
-            % planePos = obj.calibrated{1,q}.oRelZPos;
-            partVolIm(partVolIm == 0) = NaN;
-            %Get ROI XZ, YZ scaled to same pixel size
-            
             Mag = [];
             Nplanes = 0;
             for i = 1:size(partVolIm,3)
                 Mag(end+1) = nanmean(partVolIm(:,:,i),'all');
             end
             Int = nansum(Mag);
-
         end
 
         function [data] = resolveXYZ3DFit(obj,partData,ROI,q)

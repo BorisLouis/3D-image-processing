@@ -3,15 +3,15 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+path2SRCal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
 
 %file info
 file.ext   = '.ome.tif';
-path2Cal = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+path2Cal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
 dimension = '3D';
 
 %path info
-MainFolder = 'S:\Rotational Tracking';
+MainFolder = 'D:\Rotational Tracking';
 SubFolders = {'20250303_AuBPS_184x92_glycerol'};
 SubsubFolders = { 'AuBPs_184x92_in_glycerol'};
 SubsubsubFolders = {'3_cP', '5_cP', '20_cP', '45_cP'};
@@ -19,10 +19,10 @@ SubsubsubsubFolders = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5'}; %
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 35;
+detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 4;
 detectParam{2}.delta = 10; %High for rotational tracking
-detectParam{2}.chi2  = 35;
+detectParam{2}.chi2  = 40;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -51,7 +51,7 @@ for t = 1:numel(SubFolders)
             for c = 1:numel(SubsubsubsubFolders)
                 file.path = append(MainFolder, filesep, SubFolders{t}, filesep, SubsubFolders{r},...
                     filesep, SubsubsubFolders{a}, filesep, SubsubsubsubFolders{c});
-                % try
+                try
                     %% create experiments
                     trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
                     
@@ -73,8 +73,8 @@ for t = 1:numel(SubFolders)
                     
                     %% save Data
                     trackingExp.saveData;
-                % catch
-                % end
+                catch
+                end
             end
         end
     end
