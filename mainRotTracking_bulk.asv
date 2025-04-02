@@ -22,7 +22,7 @@ detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 4;
 detectParam{2}.delta = 10; %High for rotational tracking
-detectParam{2}.chi2  = 40;
+detectParam{2}.chi2  = 45;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -51,7 +51,7 @@ for t = 1:numel(SubFolders)
             for c = 1:numel(SubsubsubsubFolders)
                 file.path = append(MainFolder, filesep, SubFolders{t}, filesep, SubsubFolders{r},...
                     filesep, SubsubsubFolders{a}, filesep, SubsubsubsubFolders{c});
-                try
+                % try
                     %% create experiments
                     trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
                     

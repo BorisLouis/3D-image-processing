@@ -10,10 +10,10 @@ R = [184, 92]; %Long axis, short axis in nm
 fitRDiff = 7; %in number of data
 minSize = 15; %frames
 ext = '.mat';
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol';
+MainFolder = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol';
 SubFolder = {'3_cP', '5_cP', '20_cP', '45_cP'};
 SubsubFolder = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5'};
 

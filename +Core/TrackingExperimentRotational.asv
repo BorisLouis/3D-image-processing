@@ -460,7 +460,7 @@ classdef TrackingExperimentRotational < handle
 
                                 % Merge traces
                                 merged(j) = true;
-                                common_time = intersect(trace1.t, trace2.t);
+
                                 merged_trace = [trace1; trace2];
                                 for o = 1:size(common_time)
                                     idx = find(merged_trace.t == common_time(o));
