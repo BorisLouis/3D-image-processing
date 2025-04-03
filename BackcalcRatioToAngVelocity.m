@@ -2,12 +2,12 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 
 %file info
-MainFolder = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.100; % in sec
+ExpTime = 0.10; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));

@@ -11,14 +11,13 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
             error('Unknown dim, dim needs to be provided as 1D 2D or 3D')
     end
 
-    assert(min(size(msad))==1,'MSD needs to be provided as a vector')
-  %  assert(and(fitRange<=1,isnumeric(fitRange)),'fit Range needs to be numerical between 0 and 1');
+    % assert(min(size(msad))==1,'MSD needs to be provided as a vector')
+    % assert(and(fitRange<=1,isnumeric(fitRange)),'fit Range needs to be numerical between 0 and 1');
     
-    tofit = msad(1:fitRange);
-    tau   = tau(1:fitRange);
+    tofit = msad(1, 1:fitRange);
+    tau   = msad(2, 1:fitRange);
     f     = fit(tau(:),tofit(:),'a*x+b');
     
     g = coeffvalues(f);
     Dr = g(1)/div;
-
 end

@@ -3,15 +3,15 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+path2SRCal = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
 
 %file info
 file.ext   = '.ome.tif';
-path2Cal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+path2Cal = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
 dimension = '3D';
 
 %path info
-MainFolder = 'D:\Rotational Tracking';
+MainFolder = 'S:\Rotational Tracking';
 SubFolders = {'20250303_AuBPS_184x92_glycerol'};
 SubsubFolders = { 'AuBPs_184x92_in_glycerol'};
 SubsubsubFolders = {'3_cP', '5_cP', '20_cP', '45_cP'};

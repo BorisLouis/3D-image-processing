@@ -7,13 +7,13 @@ expTime = 0.010; %in sec
 Temp = 296.15; %temperature in Kelvin
 ParticleType = 'Bipyramid'; %bipyramid, ellipsoid, rod, cilinder,...
 R = [184, 92]; %Long axis, short axis in nm
-fitRDiff = 7; %in number of data
-minSize = 15; %frames
+fitRDiff = 4; %in number of data
+minSize = 20; %frames
 ext = '.mat';
-path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol';
+MainFolder = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol';
 SubFolder = {'3_cP', '5_cP', '20_cP', '45_cP'};
 SubsubFolder = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5'};
 
@@ -54,34 +54,36 @@ for r = 1:numel(SubFolder)
             
                 %%% calculate angels
                 TotInt = currPart{1,1} + currPart{1,2};
-                I1 = currPart{1,1}./TotInt;
-                I2 = currPart{1,2}./TotInt;
-                Diff = I1 - I2;
-            
-                Theta = 0.5*real(acos(Diff./calibration.I0_mean));
+                Diff = currPart{1,1} - currPart{1,2};
+                Time = currPart{1,5};
+
                 Phi = real(acos(sqrt(TotInt./calibration.TotI0_mean)));
+                ampI = calibration.TotI0_mean*(cos(Phi)).^2;
             
+                Theta = 0.5*real(acos(Diff./ampI));          
                 coord = [Theta, Phi];
             
                 %For Theta
-                msadTheta = MSD.Rotational.calc(coord(:,1));
-                tau = (1:length(msadTheta))'*expTime;
-                allmsadTheta(i,1:length(msadTheta)) = msadTheta;
+                tau = Time;
+                [msadTheta, ~] = MSD.Rotational.calc(coord(:,1), tau, expTime);
+                allmsadTheta(i,1:length(msadTheta)) = msadTheta(1,:);
                 DTheta   = MSD.Rotational.getDiffCoeff(msadTheta,tau,fitRDiff,'2D');
                 nTheta   = MSD.Rotational.getViscosity(DTheta,R,ParticleType, Temp);
                 vTheta   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
             
                 %For Phi
-                msadPhi = MSD.Rotational.calc(coord(:,2));
+                tau = Time;
+                msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
                 tau = (1:length(msadPhi))'*expTime;
-                allmsadPhi(i,1:length(msadPhi)) = msadPhi;
+                allmsadPhi(i,1:length(msadPhi)) = msadPhi(1,:);
                 DPhi   = MSD.Rotational.getDiffCoeff(msadPhi,tau,fitRDiff,'2D');
                 nPhi   = MSD.Rotational.getViscosity(DPhi,R,ParticleType, Temp);
                 vPhi   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
             
                 %For both
-                msadr = MSD.calc(coord);%convert to um;
-                allMSDR(i,1:length(msadr)) = msadr;
+                tau = Time;
+                msadr = MSD.Rotational.calc(coord, tau, expTime);%convert to um;
+                allMSDR(i,1:length(msadr)) = msadr(1,:);
                 DR   = MSD.Rotational.getDiffCoeff(msadr,tau,fitRDiff,'3D');
                 nR   = MSD.Rotational.getViscosity(DR,R,ParticleType,Temp);
                 dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
@@ -113,8 +115,9 @@ for r = 1:numel(SubFolder)
             filename = [path filesep 'msadRes.mat'];
             save(filename,'allRes');
 
-            disp(append('The viscosity is ', num2str(mean(Visc)), ' cP'))
         catch
         end
     end
+    disp(append('The viscosity is ', num2str(nanmean(Visc)), ' cP'))
+    disp(append('number of traces is ', num2str(numel(Visc))))
 end
