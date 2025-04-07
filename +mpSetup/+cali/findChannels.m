@@ -13,16 +13,23 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
     if DarkFieldPhase == 1
         xmean = mean(im, 1);
         ymean = mean(im, 2);
-        x2 = medfilt1(xmean, 30);
+        x2 = medfilt1(xmean, 25);
         y2 = medfilt1(ymean, 30);
         bgthr = 100;   
 
         Prominence = 20;
-        [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
+        [f, pks, w, p] = findpeaks(x2, 'WidthReference','halfheight', 'MinPeakProminence',Prominence);
+        if size(pks, 2) > 8
+            [f, pks, w, p] = findpeaks(x2, 'WidthReference','halfheight', 'MinPeakProminence',Prominence, 'MaxPeakWidth', 150);
+        end
         while size(p, 2) > 8
             [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
             Prominence = Prominence + 1;
-        end     
+        end   
+        while size(p, 2) < 8
+            [f, pks, w, p] = findpeaks(x2, 'MinPeakProminence',Prominence);
+            Prominence = Prominence - 1;
+        end
         Deletewidth = 35;
         colsToDelete = [1:pks(1)+Deletewidth, pks(2)-Deletewidth:pks(3)+Deletewidth, pks(4)-Deletewidth:pks(5)+Deletewidth, pks(6)-Deletewidth:pks(7)+Deletewidth, pks(8)-Deletewidth:size(im, 2)];
         im(:, colsToDelete) = bgthr;
@@ -33,6 +40,10 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
             [f, pks, w, p] = findpeaks(y2, 'MinPeakProminence',Prominence);
             Prominence = Prominence + 1;
         end     
+        while size(p, 1) < 2
+            [f, pks, w, p] = findpeaks(y2, 'MinPeakProminence',Prominence);
+            Prominence = Prominence - 1;
+        end
         RowsToDelete = [1:pks(1)+Deletewidth, pks(2)-Deletewidth:size(im, 1)];
         im(RowsToDelete, :) = bgthr;
         

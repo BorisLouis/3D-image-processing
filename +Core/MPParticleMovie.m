@@ -100,6 +100,11 @@ classdef MPParticleMovie < Core.MPMovie
 
                 candidatePos{q,1} = candidate;
                 obj.candidatePos{q,1} = candidate;
+
+                if obj.info.rotationalCalib == 1
+                    candidatePos{2,1} = candidatePos{1,1};
+                    obj.candidatePos{2,1} = obj.candidatePos{1,1};
+                end
             end
 
             %%% For rotational tracking: detect particles in the two

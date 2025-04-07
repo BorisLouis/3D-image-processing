@@ -302,7 +302,9 @@ classdef MPMovie < Core.Movie
                                 CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
                             end
                             Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
-                            Transformation.Translation = [Transformation.Translation(1) - CDiff(1)*Transformation.Scale + 4, Transformation.Translation(2) - CDiff(2)*Transformation.Scale + 10];
+                            % Transformation.Translation = [Transformation.Translation(1) - CDiff(1)*Transformation.Scale + 4, Transformation.Translation(2) - CDiff(2)*Transformation.Scale + 10];
+                            % Transformation.Translation = [Transformation.Translation(1) - CDiff(1), Transformation.Translation(2)+ CDiff(2)];
+                            Transformation.Translation = [Transformation.Translation(1), Transformation.Translation(2)];
                             Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
                                                 sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
                             Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
