@@ -25,7 +25,7 @@ function [MSD,Dgamma] = calc(coord, tau, expTime)
             
             idx = cnt:stp:size(coord,1);
             SelectTheta = coord(idx,1).';
-            SelectPhit = coord(idx,1).';
+            SelectPhi = coord(idx,1).';
             Dtau = diff(tau(1,idx).');
 
             for z = 1:size(SelectTheta, 2)-1
@@ -42,7 +42,7 @@ function [MSD,Dgamma] = calc(coord, tau, expTime)
             for z = 1:size(Dtau, 1)
                 Idx = round(Dtau(z,1) ./ expTime);
                 DthetaMatrix{Idx, 1} = [DthetaMatrix{Idx, 1}, Dtheta(1,z)];
-                DphiMatrix{Idx,1} = [DphiMatrix{Idx,1}, Dphi(1,z)];
+                DphiMatrix{Idx,1} = [DphiMatrix{Idx,1}, DPhi(1,z)];
             end
             cnt = cnt + 1;
         end
