@@ -14,7 +14,7 @@ path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_r
 
 %% Path info
 MainFolder = 'S:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol';
-SubFolder = {'45_cP'}; %'3_cP', '5_cP', '20_cP', 
+SubFolder = {'3_cP', '5_cP', '20_cP','45_cP'}; % 
 SubsubFolder = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5'};
 
 
@@ -59,10 +59,10 @@ for r = 1:numel(SubFolder)
                 Diff = I1 - I2;
                 Time = currPart{1,5};
 
-                Phi = real(acos(sqrt(TotInt./(calibration.TotI0_mean.*2))));
+                Phi = real(acos(sqrt(TotInt./(calibration.TotI0_mean))));
                 ampI = calibration.I0_mean*(cos(Phi)).^2;
             
-                Theta = 0.5*real(acos(Diff./(calibration.TotI0_mean.*2)));          
+                Theta = 0.5*real(acos(Diff./(ampI)));          
                 coord = [Theta, Phi];
             
                 %For Theta

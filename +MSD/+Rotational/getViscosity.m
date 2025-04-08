@@ -24,5 +24,5 @@ function [nr] = getViscosity(D,r, partType, T)
             error('Unknown dim, dim needs to be provided as 1D 2D or 3D')
     end
 
-    nr = (1.380649*10^(-23)*T)/(W)*1000;%in cp
+    nr = (1.380649*10^(-23)*T)/(W);%in cp
 end
