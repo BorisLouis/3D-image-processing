@@ -380,19 +380,24 @@ classdef MPLocMovie < Core.MPParticleMovie
                                'VariableNames',{'row','col','z','rowM','colM','zM','adjR'});
     
                                         else
-                                            partVolIm = obj.getPartVolIm(partData,ROIRad,fData);
-                                            [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),partVolIm, q);                            
+                                            PartVolIm = obj.getPartVolIm(partData,ROIRad,fData);
+                                            [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane'}),PartVolIm, q);                            
                                             if obj.info.rotational == 1
+                                                PartVolIm = [];
                                                 PartWithBg = obj.getPartVolIm(partData, ROIRad*2, fData);
                                                 filter = ones(5,5);
                                                 for p = 1:size(PartWithBg, 3)
-                                                    sumMatrix = conv2(PartWithBg(:,:,p), filter, 'valid');
-                                                    [maxVal, maxIndex] = max(sumMatrix(:));
+                                                    sumMatrix(:,:,p) = conv2(PartWithBg(:,:,p), filter, 'valid');
+                                                end
+                                                [maxVal, maxIndex] = max(sumMatrix, [], 'all');
+                                                [x1, x2, ~] = ind2sub(size(sumMatrix), maxIndex);
+                                                maxIndex = sub2ind(size(sumMatrix(:,:,1)), x1, x2);
+                                                for p = 1:size(PartWithBg,3)
                                                     [yStart, xStart] = ind2sub(size(sumMatrix), maxIndex);
                                                     PartVolIm(:,:,p) = PartWithBg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p);
-                                                    Bg = PartWithBg(:,:,p);
-                                                    Bg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1)) = NaN;
-                                                    PartVolIm(:,:,p) = PartVolIm(:,:,p) - nanmedian(Bg, 'all');
+                                                    Bg(:,:,p) = PartWithBg(:,:,p);
+                                                    Bg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p) = NaN;
+                                                    PartVolIm(:,:,p) = PartVolIm(:,:,p) - nanmedian(Bg(:,:,p), 'all');
                                                 end
                                                 [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),PartVolIm, q);
                                             end

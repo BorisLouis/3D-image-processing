@@ -16,7 +16,7 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
     
     tofit = msad(1, 1:fitRange);
     tau   = msad(2, 1:fitRange);
-    f     = fit(tau(:),tofit(:),'a*x+b');
+    f     = fit(tau(:),tofit(:),'a*x');
     
     g = coeffvalues(f);
     Dr = g(1)/div;
