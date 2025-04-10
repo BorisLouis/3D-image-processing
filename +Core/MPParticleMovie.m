@@ -101,41 +101,41 @@ classdef MPParticleMovie < Core.MPMovie
                 candidatePos{q,1} = candidate;
                 obj.candidatePos{q,1} = candidate;
 
-                if obj.info.rotationalCalib == 1
-                    candidatePos{2,1} = candidatePos{1,1};
-                    obj.candidatePos{2,1} = obj.candidatePos{1,1};
-                end
+                % if obj.info.rotationalCalib == 1
+                %     candidatePos{2,1} = candidatePos{1,1};
+                %     obj.candidatePos{2,1} = obj.candidatePos{1,1};
+                % end
             end
 
             %%% For rotational tracking: detect particles in the two
             %%% channels. If they are visible in both, only keep ch1
-            % if obj.info.rotational == 1
-            %     threshold = 10;
-            %     for frameIdx = 1:size(candidatePos{1,1}, 1)
-            %         data1 = candidatePos{1,1}{frameIdx};
-            %         data2 = candidatePos{2,1}{frameIdx};
-            %         combined = [data1; data2];
-            % 
-            %         toRemove = false(size(combined, 1), 1);
-            %         for i = 1:size(combined,1)
-            %             if toRemove(i)
-            %                 continue
-            %             end
-            %             samePlaneIdx = combined.plane == combined.plane(i);
-            %             distances = sqrt((combined.row(i) - combined.row).^2 + ...
-            %                 (combined.col(i) - combined.col).^2);
-            %             closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
-            %             for j = closeParticles'
-            %                 if j > i
-            %                     toRemove(j) = true;
-            %                 end
-            %             end
-            %         end
-            %         if ~isempty(toRemove)
-            %             candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
-            %         end
-            %     end
-            % end
+            if obj.info.rotationalCalib == 1
+                threshold = 10;
+                for frameIdx = 1:size(candidatePos{1,1}, 1)
+                    data1 = candidatePos{1,1}{frameIdx};
+                    data2 = candidatePos{2,1}{frameIdx};
+                    combined = [data1; data2];
+
+                    toRemove = false(size(combined, 1), 1);
+                    for i = 1:size(combined,1)
+                        if toRemove(i)
+                            continue
+                        end
+                        samePlaneIdx = combined.plane == combined.plane(i);
+                        distances = sqrt((combined.row(i) - combined.row).^2 + ...
+                            (combined.col(i) - combined.col).^2);
+                        closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
+                        for j = closeParticles'
+                            if j > i
+                                toRemove(j) = true;
+                            end
+                        end
+                    end
+                    if ~isempty(toRemove)
+                        candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+                    end
+                end
+            end
             obj.candidatePos = candidatePos;
             obj.info.detectParam = detectParam;
         end

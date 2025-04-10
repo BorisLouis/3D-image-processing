@@ -770,6 +770,7 @@ classdef MPLocMovie < Core.MPParticleMovie
             for i = 1:size(partVolIm,3)
                 Mag(end+1) = nanmean(partVolIm(:,:,i),'all');
             end
+            Mag(Mag < 0) = 0;
             Int = nansum(Mag);
         end
 

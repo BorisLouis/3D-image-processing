@@ -303,11 +303,11 @@ classdef TrackingExperimentRotational < handle
             channel1 = obj.traces3D{1,1};
             idx = cellfun(@(x) height(x) >= 10, channel1(:,1));
             channel1 = channel1(idx, :);
-            channel1 = obj.cleanTraces(channel1, 1000, 1);
+            % channel1 = obj.cleanTraces(channel1, 1000, 1);
             channel2 = obj.traces3D{2,1};
             idx = cellfun(@(x) height(x) >= 10, channel2(:,1));
             channel2 = channel2(idx, :);
-            channel2 = obj.cleanTraces(channel2, 1000, 2);
+            % channel2 = obj.cleanTraces(channel2, 1000, 2);
             numTraces1 = size(channel1, 1);
             numTraces2 = size(channel2, 1);
         
@@ -460,7 +460,7 @@ classdef TrackingExperimentRotational < handle
 
                                 % Merge traces
                                 merged(j) = true;
-
+                                common_time = intersect(trace1.t, trace2.t);
                                 merged_trace = [trace1; trace2];
                                 for o = 1:size(common_time)
                                     idx = find(merged_trace.t == common_time(o));

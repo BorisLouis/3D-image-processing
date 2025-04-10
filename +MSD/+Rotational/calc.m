@@ -1,4 +1,4 @@
-function [MSD,Dgamma] = calc(coord, tau, expTime)
+function [MSD] = calc2(coord, tau, expTime)
 
     dim = size(coord,2);
     
@@ -13,70 +13,39 @@ function [MSD,Dgamma] = calc(coord, tau, expTime)
     MSAD = zeros(size(coord,1)-1,1);
     %Calculate mean-square-displacement
     maxIdx = round((max(tau)-min(tau))/expTime);
-    DthetaMatrix = cell(maxIdx, 1);
-    DphiMatrix = cell(maxIdx, 1);
-    for i = 1:size(coord,1)-1
+    AngDisp = [];
+    for dt = 1:size(coord,1)-1
         
-        stp = i;
         cnt =  1;
-        Dr  = [];
         
-        while cnt<=stp && cnt+stp<=size(coord,1)
+        while cnt<=dt && cnt+dt<=size(coord,1)
             
-            idx = cnt:stp:size(coord,1);
-            SelectTheta = coord(idx,1).';
-            SelectPhi = coord(idx,1).';
-            Dtau = diff(tau(1,idx).');
+            idx = cnt:dt:size(coord,1);
+            DTheta = diff(coord(idx,1)).';
+            DPhi = diff(coord(idx,2)).';
+            TimeLagcorr = abs(diff(tau(idx)) - dt*expTime) < 0.002;
 
-            for z = 1:size(SelectTheta, 2)-1
-                theta1 = SelectTheta(z+1);
-                theta2 = SelectTheta(z);
-                Dtheta(z) = mod(theta2 - theta1 + pi, 2*pi) - pi;
-            end
+            DTheta(TimeLagcorr == 0) = [];
+            DPhi(TimeLagcorr == 0) = [];
 
-            for z = 1:size(SelectPhi, 2)-1
-                Phi1 = SelectPhi(z+1);
-                Phi2 = SelectPhi(z);
-                DPhi(z) = mod(Phi2 - Phi1 + pi, 2*pi) - pi;
-            end
-            for z = 1:size(Dtau, 1)
-                Idx = round(Dtau(z,1) ./ expTime);
-                DthetaMatrix{Idx, 1} = [DthetaMatrix{Idx, 1}, Dtheta(1,z)];
-                DphiMatrix{Idx,1} = [DphiMatrix{Idx,1}, DPhi(1,z)];
-            end
+            AngDisp= [AngDisp; (sqrt((DTheta).^2 + (DPhi).^2))'];
+
             cnt = cnt + 1;
         end
-    end
-    
-    for i = 1:size(DthetaMatrix, 1)
-        DsTheta = DthetaMatrix{i,1};
-        DsPhi = DphiMatrix{i,1};
-        Timelag(i) = i*expTime;
 
-        gamma = [];
-        for a = 1:size(DsTheta, 2)
-            r1 = [cos(DsPhi(a)) .* cos(DsTheta(a)), cos(DsPhi(a)) .* sin(DsTheta(a)), sin(DsPhi(a))];
-            r2 = [cos(0) .* cos(0), cos(0) .* sin(0), sin(0)];
-            cos_gamma = dot(r1, r2);
-            Dr = max(-1, min(1, cos_gamma));
-            gamma(a) = acos(Dr);
-        end
-
-        Dgamma = [];
-        if ~isempty(gamma)
-            Dgamma = gamma(~isnan(gamma));
-            if ~isempty(Dgamma)
-                unitVectors = [cos(Dgamma); sin(Dgamma)];
-                meanVector = mean(unitVectors, 2);
-                meanAngle = atan2(meanVector(2), meanVector(1));
-                MSAD(i) = meanAngle;
+        if ~isempty(AngDisp)
+            Dr = AngDisp(~isnan(AngDisp));
+            
+            if ~isempty(Dr)
+                MSAD(dt) = mean(Dr.^2);
             else
-                MSAD(i) = NaN;
+                MSAD(dt) = NaN;
             end
         else
-            MSAD(i) = NaN;
+            MSAD(dt) = NaN;
         end
+        TimeLag(dt) = dt*expTime;
     end
-    
-    MSD = [MSAD'; Timelag];
+
+    MSD = [MSAD'; TimeLag];
 end
