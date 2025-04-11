@@ -395,9 +395,11 @@ classdef MPLocMovie < Core.MPParticleMovie
                                                 for p = 1:size(PartWithBg,3)
                                                     [yStart, xStart] = ind2sub(size(sumMatrix), maxIndex);
                                                     PartVolIm(:,:,p) = PartWithBg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p);
-                                                    Bg(:,:,p) = PartWithBg(:,:,p);
-                                                    Bg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p) = NaN;
-                                                    PartVolIm(:,:,p) = PartVolIm(:,:,p) - nanmedian(Bg(:,:,p), 'all');
+                                                    % Bg(:,:,p) = PartWithBg(:,:,p);
+                                                    % Bg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p) = NaN;
+                                                    % PartVolIm(:,:,p) = PartVolIm(:,:,p) - nanmedian(Bg(:,:,p), 'all');
+                                                    Bg = nanmedian(fData(:,:,p), "all");
+                                                    PartVolIm(:,:,p) = PartVolIm(:,:,p) - Bg;
                                                 end
                                                 [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),PartVolIm, q);
                                             end

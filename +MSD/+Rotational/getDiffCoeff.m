@@ -14,8 +14,8 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
     % assert(min(size(msad))==1,'MSD needs to be provided as a vector')
     % assert(and(fitRange<=1,isnumeric(fitRange)),'fit Range needs to be numerical between 0 and 1');
     
-    tofit = msad(1, 1:fitRange);
-    tau   = msad(2, 1:fitRange);
+    tofit = [0, msad(1, 1:fitRange)];
+    tau   = [0, msad(2, 1:fitRange)];
     f     = fit(tau(:),tofit(:),'a*x');
     
     g = coeffvalues(f);

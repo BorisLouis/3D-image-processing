@@ -7,7 +7,7 @@ expTime = 0.010; %in sec
 Temp = 296.15; %temperature in Kelvin
 ParticleType = 'Bipyramid'; %bipyramid, ellipsoid, rod, cilinder,...
 R = [184, 92]; %Long axis, short axis in nm
-fitRDiff = 4; %in number of data
+fitRDiff = 1; %in number of data
 minSize = 20; %frames
 ext = '.mat';
 path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
@@ -68,10 +68,10 @@ for r = 1:numel(SubFolder)
                     Diff = I1 - I2;
                     Time = currPart{1,5};
 
-                    Phi = real(acos(sqrt(TotInt./calibration.TotI0_mean)));
+                    Phi = real(acos(sqrt(TotInt/(2*median(TotInt)))));
                     ampI = calibration.I0_mean*(cos(Phi)).^2;
                 
-                    Theta = 0.5*real(acos(Diff./calibration.I0_mean));          
+                    Theta = 0.5*real(acos(Diff./(calibration.I0_mean)));          
                     coord = [Theta, Phi];
 
                     %  DiffTot = diff(Phi);
