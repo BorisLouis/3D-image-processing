@@ -14,7 +14,7 @@ path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_r
 
 %% Path info
 MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
-SubFolder = {'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 'glycerol_100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+SubFolder = {'glycerol_100', 'glycerol_85', 'glycerol_90','glycerol_95', 'glycerol_100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
 
@@ -69,10 +69,10 @@ for r = 1:numel(SubFolder)
                     Diff = Diff - mean(Diff);
                     Time = currPart{1,5};
 
-                    Phi = real(acos(sqrt(TotInt/(calibration.TotI0_mean/2))));
+                    Phi = real(acos(sqrt(TotInt/(50))));
                     % ampI = calibration.I0_mean*(cos(Phi)).^2;
                 
-                    Theta = 0.5*real(acos(Diff./calibration.I0_mean/2));          
+                    Theta = 0.5*real(acos(Diff./0.3));          
                     coord = [Theta, Phi];
 
                     %  DiffTot = diff(Phi);
@@ -134,6 +134,8 @@ for r = 1:numel(SubFolder)
                     allRes(i).diffTot = DiffTotmean;
                     allRes(i).diffI = DiffImean;
                     Visc(end+1, 1) = abs(nR);
+
+                    Sat(i,1) = msadr(:,)
                 % catch
                 % end
               

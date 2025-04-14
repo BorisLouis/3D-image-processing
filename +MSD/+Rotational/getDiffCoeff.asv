@@ -17,10 +17,12 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
     tofit = [0, msad(1, 1:fitRange)];
     tau   = [0, msad(2, 1:fitRange)];
 
-    f     = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-c*x))');
+    msadtest = msad(2,:)./mean(msad(1, 750:799))*0.5;
+
+    f     = fit(msad(2,:)',(msadtest)','2*(1-(1-0.15)*exp(-b*x))');
     % figure()
-    % plot(f, msad(2,:)',msad(1,:)');
+    % plot(f, msad(2,:)',(msadtest)');
     
     g = coeffvalues(f);
-    Dr = g(3)/2;
+    Dr = g(2)/div;
 end
