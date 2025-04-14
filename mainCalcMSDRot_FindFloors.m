@@ -1,0 +1,126 @@
+clc ;
+clear ;
+close all;
+
+%% USER INPUT
+expTime = 0.010; %in sec
+Temp = 296.15; %temperature in Kelvin
+ParticleType = 'Bipyramid'; %bipyramid, ellipsoid, rod, cilinder,...
+R = [184, 92]; %Long axis, short axis in nm
+fitRDiff = 1; %in number of data
+minSize = 20; %frames
+ext = '.mat';
+path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+
+%% Path info
+MainFolder = 'D:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
+SubFolder = {'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 'glycerol_100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
+
+
+f = waitbar(0,'Initializing');
+DiffIMatrix = [];
+DiffTotMatrix = [];
+for r = 1:numel(SubFolder)
+    Visc = [];
+    DiffTotCol = [];
+    DiffICol = [];
+    stepsizes = [];
+    for o = 1:numel(SubsubFolder)
+        % try
+            path = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o});
+    
+            %% Loading
+            folder = dir(path);
+            idx = contains({folder.name},'trackResultsCommonCh.mat');
+            folder(~idx) = [];
+            f2Load = [folder(1).folder filesep folder(1).name];
+            tmpData = load(f2Load);
+            name = fieldnames(tmpData);
+            data = tmpData.(name{1});
+            
+            calibration = load(append(path2RotCal, filesep, 'RotCalib.mat'));
+            name = fieldnames(calibration);
+            calibration = calibration.(name{1,1});
+            %% Processing
+            currMov =  data(1).traces;
+            allHeight = cellfun(@height,currMov(:,1));
+            idx = allHeight>minSize;
+            currMov = currMov(idx,:);
+            allRes = struct('msadTheta',0,'msadPhi',0,'msadr',0,'tau',0,'DTheta',0,'DPhi',0,'Dr',0,...
+                'nTheta',0,'nPhi',0,'nr',0,'vTheta',0,'vPhi',0,'vr',0, 'Totamp', 0);
+            allRes(length(currMov)).masdTheta = [];
+            maxLength = max(allHeight);
+            allmsadTheta = zeros(length(currMov),maxLength-1);
+            allmsadPhi = allmsadTheta;
+            allmsad = allmsadPhi;
+            
+           
+            initialGuess = [0.5, 100];
+
+            costFunc = @(params) optimizeViscosity(params, currMov, expTime, fitRDiff, R, ParticleType, Temp);
+            [optimalParams, ~] = fminsearch(costFunc, initialGuess);
+
+            Results.OptimalFloorTheta = optimalParams(1);
+            Results.OptimalFloorPhi = optimalParams(2);
+
+            [~, Results.EndTheta, Results.EndPhi, Results.EndR] = optimizeViscosity([OptimalFloorTheta, OptimalFloorPhi], currMov, expTime, fitRDiff, R, ParticleType, Temp);   
+
+            Filename = append(folder.folder, filesep, 'OptimizationResults.mat');
+            save(Filename, 'Results')
+           
+    end
+end
+ close(f)
+
+ function [error, EndTheta, EndPhi, EndR] = optimizeViscosity(params, currMov, expTime, fitRDiff, R, ParticleType, Temp)
+    FloorTheta = params(1);
+    FloorPhi = params(2);
+    
+    Sat = zeros(size(currMov, 1), 3);
+
+    for i = 1:size(currMov,1)
+        try
+            currPart = currMov(i,:);
+            TotInt = currPart{1,1} + currPart{1,2};
+            I1 = currPart{1,1} ./ TotInt;
+            I2 = currPart{1,2} ./ TotInt;
+            Diff = I1 - I2;
+            Diff = Diff - mean(Diff);
+            Time = currPart{1,5};
+
+            Phi = real(acos(sqrt(TotInt / FloorPhi)));
+            Theta = 0.5 * real(acos(Diff ./ FloorTheta));
+            coord = [Theta, Phi];
+
+            % MSAD Theta
+            tau = Time;
+            msadTheta = MSD.Rotational.calc(coord(:,1), tau, expTime);
+
+            % MSAD Phi
+            msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
+
+            % MSAD 3D
+            msadr = MSD.Rotational.calc(coord, tau, expTime);
+
+            % Store saturation values (assuming 800 is max length)
+            if size(msadPhi,2) >= 799
+                Sat(i,1) = mean(msadPhi(1,750:799));
+                Sat(i,2) = mean(msadTheta(1,750:799));
+                Sat(i,3) = mean(msadr(1,750:799));
+            else
+                Sat(i,:) = NaN; % or extrapolate if necessary
+            end
+        catch
+            Sat(i,:) = NaN; % ignore problematic traces
+        end
+    end
+
+    % Mean saturation values
+    EndTheta = nanmean(Sat(:,1));
+    EndPhi = nanmean(Sat(:,2));
+    EndR = nanmean(Sat(:,3));
+
+    % Error function to minimize (distance from 0.5 saturation)
+    error = (EndR - 0.5)^2;
+end

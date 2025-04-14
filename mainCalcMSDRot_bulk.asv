@@ -10,11 +10,11 @@ R = [184, 92]; %Long axis, short axis in nm
 fitRDiff = 1; %in number of data
 minSize = 20; %frames
 ext = '.mat';
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
-SubFolder = {'glycerol_100', 'glycerol_85', 'glycerol_90','glycerol_95', 'glycerol_100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+MainFolder = 'D:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
+SubFolder = {'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 'glycerol_100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
 
@@ -55,6 +55,8 @@ for r = 1:numel(SubFolder)
             allmsadPhi = allmsadTheta;
             allmsad = allmsadPhi;
             
+            FloorPhi = 100;
+            FloorTheta = 0.5;
             
             for i = 1:size(currMov,1)
                 % try
@@ -69,10 +71,10 @@ for r = 1:numel(SubFolder)
                     Diff = Diff - mean(Diff);
                     Time = currPart{1,5};
 
-                    Phi = real(acos(sqrt(TotInt/(50))));
+                    Phi = real(acos(sqrt(TotInt/(FloorPhi))));
                     % ampI = calibration.I0_mean*(cos(Phi)).^2;
                 
-                    Theta = 0.5*real(acos(Diff./0.3));          
+                    Theta = 0.5*real(acos(Diff./FloorTheta));          
                     coord = [Theta, Phi];
 
                     %  DiffTot = diff(Phi);
@@ -135,11 +137,19 @@ for r = 1:numel(SubFolder)
                     allRes(i).diffI = DiffImean;
                     Visc(end+1, 1) = abs(nR);
 
-                    Sat(i,1) = msadr(:,)
+                    Sat(i, 1) = mean(msadPhi(1, 750:799));
+                    Sat(i, 2) = mean(msadTheta(1, 750:799));
+                    Sat(i, 3) = mean(msadr(1, 750:799));
+
+
                 % catch
                 % end
-              
+                    
             end
+
+            EndTheta = nanmean(Sat(:,1));
+            EndPhi = nanmean(Sat(:,2));
+            EndR = nanmean(Sat(:,3));
 
 
             
