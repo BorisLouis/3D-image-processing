@@ -64,7 +64,7 @@ for r = 1:numel(SubFolder)
             Results.OptimalFloorTheta = optimalParams(1);
             Results.OptimalFloorPhi = optimalParams(2);
 
-            [~, Results.EndTheta, Results.EndPhi, Results.EndR] = optimizeViscosity([OptimalFloorTheta, OptimalFloorPhi], currMov, expTime, fitRDiff, R, ParticleType, Temp);   
+            [~, Results.EndR] = optimizeViscosity([Results.OptimalFloorTheta, Results.OptimalFloorPhi], currMov, expTime, fitRDiff, R, ParticleType, Temp);   
 
             Filename = append(folder.folder, filesep, 'OptimizationResults.mat');
             save(Filename, 'Results')
@@ -73,13 +73,19 @@ for r = 1:numel(SubFolder)
 end
  close(f)
 
- function [error, EndTheta, EndPhi, EndR] = optimizeViscosity(params, currMov, expTime, fitRDiff, R, ParticleType, Temp)
+ function [error, EndR] = optimizeViscosity(params, currMov, expTime, fitRDiff, R, ParticleType, Temp)
     FloorTheta = params(1);
     FloorPhi = params(2);
     
-    Sat = zeros(size(currMov, 1), 3);
+    Sat = zeros(15,1);
 
-    for i = 1:size(currMov,1)
+    if size(currMov,1) > 15
+        rrr = 15;
+    else
+        rrr = size(currMov,1);
+    end
+
+    for i = 1:rrr
         try
             currPart = currMov(i,:);
             TotInt = currPart{1,1} + currPart{1,2};
@@ -92,34 +98,24 @@ end
             Phi = real(acos(sqrt(TotInt / FloorPhi)));
             Theta = 0.5 * real(acos(Diff ./ FloorTheta));
             coord = [Theta, Phi];
-
-            % MSAD Theta
             tau = Time;
-            msadTheta = MSD.Rotational.calc(coord(:,1), tau, expTime);
-
-            % MSAD Phi
-            msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
 
             % MSAD 3D
             msadr = MSD.Rotational.calc(coord, tau, expTime);
 
             % Store saturation values (assuming 800 is max length)
-            if size(msadPhi,2) >= 799
-                Sat(i,1) = mean(msadPhi(1,750:799));
-                Sat(i,2) = mean(msadTheta(1,750:799));
-                Sat(i,3) = mean(msadr(1,750:799));
+            if size(msadr,2) >= 799
+                Sat(i,1) = mean(msadr(1,750:799));
             else
-                Sat(i,:) = NaN; % or extrapolate if necessary
+                Sat(i,1) = NaN; % or extrapolate if necessary
             end
         catch
-            Sat(i,:) = NaN; % ignore problematic traces
+            Sat(i,1) = NaN; % ignore problematic traces
         end
     end
 
     % Mean saturation values
-    EndTheta = nanmean(Sat(:,1));
-    EndPhi = nanmean(Sat(:,2));
-    EndR = nanmean(Sat(:,3));
+    EndR = nanmean(Sat(:,1));
 
     % Error function to minimize (distance from 0.5 saturation)
     error = (EndR - 0.5)^2;
