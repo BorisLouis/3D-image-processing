@@ -263,111 +263,132 @@ end
 function [frameInfo] = fixCamTiming(frameInfo)
     tmpInfo = frameInfo;
     timing = [tmpInfo.time];
+    
+    meanExpTime = (frameInfo(end).time - frameInfo(1).time)/(str2double(frameInfo(end).T)+1);
+
+    assert(meanExpTime-frameInfo(1).expT<0.002,'Timing between frames is really wrong, please check')
+    
+    cellC = {frameInfo.C};
+    matC = cellfun(@str2num,cellC);
+    %We check the first 20 frames as they should be perfectly synchronized
+    %if camera sync was properly used.
+    test = abs(diff(matC(1:end)));
+
+    idx = find(test(1:50)==0);
+
+    frameInfo(idx) = [];
+
+    frameInfo(end-(idx-1)) = [];
+    
+
+
+    %check if average difference between frames is the same
     %Check that the timing is correct by taking the difference. Where the
     %camera are synchronize it will give 0 and expTime if camera are
     %asynchronize, it will be exptime everywhere in the bingging and the
     %end
-    test = diff(timing);
-    %extract the indices of the desync part
-    idxStart = find(test<mean(test),1,'first');
-    idxEnd  = find(test<mean(test),1,'last');
-    %delete the data
-    tmpInfo([1:idxStart-1,idxEnd:end])=[];
-    
-    %check that we kept the same number of frame for the two cameras
-    camera = cellfun(@str2num,{tmpInfo.C});  
-    assert(sum(camera==0)==sum(camera==1),'Something went wrong when fixing the sync');
-    
-    newTiming = [tmpInfo.time];
-    %let us renumber the T after the deletion
-    refCam = camera(1);
-%    if str2double(tmpInfo(1).T) ==0
-%         refCam= camera(1);
-%         modifier = 0;
+    % test = diff(timing);
+    % %extract the indices of the desync part
+    % idxStart = find(test<mean(test),1,'first');
+    % idxEnd  = find(test<mean(test),1,'last');
+    % %delete the data
+    % tmpInfo([1:idxStart-1,idxEnd:end])=[];
+    % 
+    % %check that we kept the same number of frame for the two cameras
+    % camera = cellfun(@str2num,{tmpInfo.C});  
+    % assert(sum(camera==0)==sum(camera==1),'Something went wrong when fixing the sync');
 % 
-%     elseif str2double(tmpInfo(2).T) ==0
-%         refCam= camera(2);
-%         modifier = 1;
-%    end
-    treatedIdx = false(size([tmpInfo.time]));
-    idxRefCam = find(strcmp({tmpInfo.C},num2str(refCam))==1);
-    inds = 1:length(treatedIdx);
-    for i = 1: length(idxRefCam)
-        currRefId = idxRefCam(i);
-        currT = tmpInfo(currRefId).T;
-        %get the time of the ref camera for the current frame
-        timeCurrRef = tmpInfo(currRefId).time;
-
-        %find another frame with similar timing
-        id = find((abs([tmpInfo.time]-timeCurrRef))<1.2);
-        
-        id(ismember(id,inds(treatedIdx))) = [];
-        
-        
-        newId = id(id~=currRefId);
-
-        %find the closest time point
-        [~,diffTest] = min(abs([tmpInfo(newId).time]-timeCurrRef));
+%     newTiming = [tmpInfo.time];
+%     %let us renumber the T after the deletion
+%     refCam = camera(1);
+% % 
+%     treatedIdx = false(size([tmpInfo.time]));
+%     idxRefCam = find(strcmp({tmpInfo.C},num2str(refCam))==1);
+%     inds = 1:length(treatedIdx);
+%     for i = 1: length(idxRefCam)
+% 
+%         % if i == 678
+%         %     disp('stop');
+%         % end
+% 
+%         currRefId = idxRefCam(i);
+%         currT = tmpInfo(currRefId).T;
+%         %get the time of the ref camera for the current frame
+%         timeCurrRef = tmpInfo(currRefId).time;
+% 
+%         %find another frame with similar timing
+%         id = find((abs([tmpInfo.time]-timeCurrRef))<1.2);
+% 
+%         id(ismember(id,inds(treatedIdx))) = [];
+% 
+% 
+%         newId = id(id~=currRefId);
+% 
+%         %find the closest time point
+%         [~,diffTest] = min(abs([tmpInfo(newId).time]-timeCurrRef));
+% 
+% 
+%         %assign the closest time point
+%         id = sort([currRefId,newId(diffTest)]);
+%         treatedIdx(id) = 1;
+%         id = id(id~= currRefId);
+%         tmpInfo(id).T = currT;
+% 
+%     end
+% 
+%     % test that the camera are indeed synchroneous
+%     maxT = str2double(tmpInfo(end).T);
+%     for i = 1:maxT
+% 
+%         idx = strcmp({tmpInfo.T},{num2str(i)});
+% 
+%         camDiff = {tmpInfo(idx).C};
+% 
+%         %test cam diff
+%         %#1 we test that there is only 2 camera frames
+%         assert(length(camDiff)<=2,'More than two camera for a single frame')
+%         %#2 
+%         assert(~strcmp(camDiff{1}, camDiff{2}),'The two cameras corresponding to the same time point are not different')
+% 
+%         %test timing difference
+%         camTiming = {tmpInfo(idx).time};
+% 
+%         assert(abs(camTiming{1} - camTiming{2}) < tmpInfo(i+1).expT, 'Camera delay bigger than exposure time after fixing, something is wrong')
+% 
+% 
+%     end
     
-        
-        %assign the closest time point
-        id = sort([currRefId,newId(diffTest)]);
-        treatedIdx(id) = 1;
-        id = id(id~= currRefId);
-        tmpInfo(id).T = currT;
-        
-        %previous version:
-%         %if current index is not reference camera we need to fix things
-%         if camera(i) ~=refCam
-%         
-%             % prev: abs(newTiming(i)-newTiming)<mean(test)
-%             tmpInfo(i).T = currT;
-%             
-%         else
-%             %if it is the ref camera then currT becomes the camera
-%             currT = tmpInfo(i).T;
-%             
-%         end
-        
-    end
-    
-    % test that the camera are indeed synchroneous
-    maxT = str2double(tmpInfo(end).T);
-    for i = 1:maxT
-        
-        idx = strcmp({tmpInfo.T},{num2str(i)});
-        
-        camDiff = {tmpInfo(idx).C};
-        
-        %test cam diff
-        %#1 we test that there is only 2 camera frames
-        assert(length(camDiff)<=2,'More than two camera for a single frame')
-        %#2 
-        assert(~strcmp(camDiff{1}, camDiff{2}),'The two cameras corresponding to the same time point are not different')
-        
-        %test timing difference
-        camTiming = {tmpInfo(idx).time};
-        
-        assert(abs(camTiming{1} - camTiming{2}) < tmpInfo(i+1).expT, 'Camera delay bigger than exposure time after fixing, something is wrong')
-        
-        
-    end
-    
-    if strcmp(tmpInfo(1).T,'0')
+    if strcmp(frameInfo(1).T,'0')
     else
-        timeFrame = str2double({tmpInfo.T});
-        
-        timeFrame = timeFrame -timeFrame(1);
 
-        for i =1:length(timeFrame)
-            tmpInfo(i).T = num2str(timeFrame(i));
+        Cam = frameInfo(1).C;
+        % 
+        %timeFrame = str2double({tmpInfo.T});
+        % timeFrame = timeFrame -timeFrame(1);
+        timeFrame = str2double({frameInfo.T});
+        for i = 1:length(timeFrame)
+            if strcmp(frameInfo(i).C,Cam)
+                
+                 
+                frameInfo(i).T = num2str(timeFrame(i)-timeFrame(1));
 
+            end
         end
-
     end
     
+    T = [cellfun(@str2double,{frameInfo.T})];
+
+    val = unique(T);
+    edges = [val val(end)+1];
+    N = histcounts(T,edges);
     
-    frameInfo = tmpInfo;
+    idx = N<2;
+
+    if ~all(idx==0)
+    
+        frameInfo(T==val(idx)) = [];
+
+    end
     warning('There was some issues with the synchronization, we had to fixed the out of sync frames');
 
 end
