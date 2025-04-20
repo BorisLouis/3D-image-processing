@@ -2,12 +2,12 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+MainFolder = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.10; % in sec
+ExpTime = 0.100; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -23,7 +23,6 @@ for a = 1:size(subFolders, 2)
 
     angular_speed = [];
     for q = 1:size(Traces, 1)
-        MSD = [];
         Diff = [];
         time = [];
         tau_values = [];
@@ -33,29 +32,15 @@ for a = 1:size(subFolders, 2)
         else
             Diff = Traces.Diff{q};
             time = Traces.Diff{q};
-            
-            for i = 1:size(Diff, 1)
-                Angles(i,1) = 0.25*real(acos(Diff(i)./Amplitude));
-            end
-            tau_values = 1:floor(length(Angles));
-            
-            for n = 1:size(tau_values,2) - 1
-                dt = tau_values(n);
-                for i = 1:size(Angles,1)-dt
-                    deltas(i) = Angles(i+dt) - Angles(i);  % Difference between successive angles
-                    deltas(i) = (deltas(i)).^2;
-                end
-                deltas(deltas == 0) = [];
-                value = median(deltas);
-                MSD(q,dt) = value;
-            end
 
-            time_lags = tau_values*ExpTime;
-            p = fit(time_lags(1, 70:90).', MSD(q, 70:90).', 'a*x+b'); %% take range where the slope is the steepest
-            coeff = coeffvalues(p);
-            D_theta = coeff(1) / 2;
-            if isreal(sqrt(2*D_theta)*180/pi)
-                angular_speed(q, 1) = sqrt(2*D_theta)*180/pi;
+            Theta = 0.5*real(acos(Diff./Amplitude));
+            tau = Traces.Time(q,:);
+
+            [msadTheta] = MSD.Rotational.calc(Theta, tau, ExpTime);
+            DTheta   = MSD.Rotational.getDiffCoeff(msadTheta,tau,4,'2D');
+
+            if isreal(sqrt(DTheta)*180/pi)
+                angular_speed(q, 1) = sqrt(DTheta)*180/pi;
             else
                 angular_speed(q, 1) = NaN;
             end

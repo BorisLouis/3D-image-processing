@@ -14,8 +14,8 @@ path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_r
 
 %% Path info
 MainFolder = 'D:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
-SubFolder = {'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 'glycerol_100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
-SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
+SubFolder = {'glycerol_100', 'glycerol_95', 'glycerol_90','glycerol_85'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+SubsubFolder = {'sample1', 'sample2'}; % 'sample3','sample4', 'sample5'
 
 
 f = waitbar(0,'Initializing');
