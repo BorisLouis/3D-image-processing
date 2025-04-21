@@ -109,7 +109,7 @@ classdef MPParticleMovie < Core.MPMovie
 
             %%% For rotational tracking: detect particles in the two
             %%% channels. If they are visible in both, only keep ch1
-            if obj.info.rotationalCalib == 1
+            if obj.info.rotational == 1
                 threshold = 10;
                 for frameIdx = 1:size(candidatePos{1,1}, 1)
                     data1 = candidatePos{1,1}{frameIdx};
@@ -133,6 +133,7 @@ classdef MPParticleMovie < Core.MPMovie
                     end
                     if ~isempty(toRemove)
                         candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+                        candidatePos{2,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
                     end
                 end
             end

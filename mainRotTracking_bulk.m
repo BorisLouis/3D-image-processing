@@ -3,15 +3,15 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'D:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
+path2SRCal = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
 
 %file info
 file.ext   = '.ome.tif';
-path2Cal = 'D:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
+path2Cal = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
 dimension = '3D';
 
 %path info
-MainFolder = 'D:\Rotational Tracking';
+MainFolder = 'E:\Rotational Tracking';
 SubFolders = {'20250407_AuBPs_184s92_glycerol'};
 SubsubFolders = {'Glycerol'};
 SubsubsubFolders = {'glycerol_80', 'glycerol_85', 'glycerol_90', 'glycerol_95', 'glycerol_100'}; %, 'glycerol_85', , 
@@ -19,10 +19,10 @@ SubsubsubsubFolders = {'sample1','sample2', 'sample3', 'sample4','sample5'}; %, 
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 60;
+detectParam{1}.chi2  = 40;
 detectParam{1}.consThresh = 4;
-detectParam{2}.delta = 10; %High for rotational tracking
-detectParam{2}.chi2  = 60;
+detectParam{2}.delta = 6; %High for rotational tracking
+detectParam{2}.chi2  = 40;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -39,7 +39,7 @@ info.detectionMethod = 'MaxLR'; %'Intensity'; %MaxLR (for maximum likehood ratio
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 
-info.rotationalCalib = 1;
+info.rotationalCalib = 0;
 info.euDist = 1000;
 info.expTime = 0.010; %in sec
 info.RadTime = []; %in degrees per second (speed of rotating waveplate)
