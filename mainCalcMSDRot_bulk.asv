@@ -14,7 +14,7 @@ path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_r
 
 %% Path info
 MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
-SubFolder = {'glycerol_80', 'glycerol_85', 'glycerol_90'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+SubFolder = {'glycerol_90', 'glycerol_85', 'glycerol_90'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
 
@@ -143,10 +143,10 @@ for r = 1:numel(SubFolder)
             disp(append('Theta visc = ', num2str(nanmedian([allRes.nTheta]))))
             disp(append('Total visc = ', num2str(nanmedian([allRes.nr]))))
 
-            for z = 1:size(allRes, 2)
-                StepPhi(z,1) = allRes(z).msadPhi(1,1);  
-                StepTheta(z,1) = allRes(z).msadTheta(1,1);  
-                StepAll(z,1) = allRes(z).msadr(1,1);  
+            for z = 1:size(allRes, 1)
+                StepPhi(z,1) = allRes(z).msadPhi{1,1};  
+                StepTheta(z,1) = allRes(z).msadTheta{1,1};  
+                StepAll(z,1) = allRes(z).msadr{1,1};  
             end
             ResultsPhi(o, r) = nanmedian(StepPhi);
             ResultsTheta(o, r) = nanmedian(StepTheta);

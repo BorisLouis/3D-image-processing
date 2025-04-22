@@ -14,16 +14,20 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
     % assert(min(size(msad))==1,'MSD needs to be provided as a vector')
     % assert(and(fitRange<=1,isnumeric(fitRange)),'fit Range needs to be numerical between 0 and 1');
     
-    tofit = msad(1, 70:145);
-    tau   = msad(2, 70:145);
+    tofit = msad(1, 1:fitRange);
+    tau   = msad(2, 1:fitRange);
 
-    % f     = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-c*x))');
-    % f     = fit(tau',tofit','a*x+b');
-    f     = fit(msad(2,:)',msad(1,:)','a*exp(-b*x)*sin(c*x)+d*(1-exp(-e*x))');
-    figure()
-    plot(f, msad(2,:)',msad(1,:)');
-    % plot(f, tau',tofit')
+    % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-c*x))');
+    [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-exp(-c*x))');
+   
+    % figure()
+    % plot(f, msad(2,:)',msad(1,:)');
+    % % % plot(f, tau',tofit')
     
-    g = coeffvalues(f);
-    Dr = g(1)/2;
+    if gov.rsquare > 0.85
+        g = coeffvalues(f);
+        Dr = g(2)/div;
+    else
+        Dr = NaN;
+    end
 end
