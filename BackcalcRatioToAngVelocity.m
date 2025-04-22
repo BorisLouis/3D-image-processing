@@ -2,27 +2,30 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %file info
-MainFolder = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.100; % in sec
+ExpTime = 0.0100; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
 RotCalib = RotCalib.RotCalib;
-Amplitude = RotCalib.I_mean;
+Amplitude = 1;%RotCalib.I_mean;
 NumRotations = 2; %estimated number of rotations
 
 %% Calculate angular velocity from the traces
 AngSpeed = [];
+f = waitbar(0, 'initializing');
 for a = 1:size(subFolders, 2)
     Traces = open(append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat"));
     Traces = Traces.CommonTraces;
 
     angular_speed = [];
+    
     for q = 1:size(Traces, 1)
+        waitbar(q./size(Traces, 1), f, append('Calculating: sample ', num2str(a), ' out of ', num2str(size(subFolders, 2))))
         Diff = [];
         time = [];
         tau_values = [];

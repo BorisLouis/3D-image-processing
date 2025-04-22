@@ -14,7 +14,7 @@ dimension = '3D';
 MainFolder = 'E:\Rotational Tracking';
 SubFolders = {'20250407_AuBPs_184s92_glycerol'};
 SubsubFolders = {'Glycerol'};
-SubsubsubFolders = {'glycerol_80', 'glycerol_85', 'glycerol_90', 'glycerol_95', 'glycerol_100'}; %, 'glycerol_85', , 
+SubsubsubFolders = {'glycerol 95', 'glycerol 100'}; %, 'glycerol_85', , 
 SubsubsubsubFolders = {'sample1','sample2', 'sample3', 'sample4','sample5'}; %, 'sample1', 'sample2', 'sample3','sample5'
 
 %detection parameter

@@ -10,11 +10,11 @@ R = [184, 92]; %Long axis, short axis in nm
 fitRDiff = 4; %in number of data
 minSize = 20; %frames
 ext = '.mat';
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
-SubFolder = {'glycerol_80', 'glycerol_85', 'glycerol_90'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+MainFolder = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
+SubFolder = {'glycerol 80', 'glycerol 85', 'glycerol 90'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
 
@@ -54,9 +54,6 @@ for r = 1:numel(SubFolder)
             allmsadPhi = allmsadTheta;
             allmsad = allmsadPhi;
             
-            FloorPhi = 105;
-            FloorTheta = 0.56;
-            
             for i = 1:size(currMov,1)
                 try
                     waitbar(i./size(currMov,1),f, append('doing microrheology: sample ', num2str(o + (r - 1)*(numel(SubsubFolder))), ' out of ', num2str(numel(SubFolder)*numel(SubsubFolder))));
@@ -67,13 +64,32 @@ for r = 1:numel(SubFolder)
                     I1 = currPart{1,3}./TotInt;
                     I2 = currPart{1,4}./TotInt;
                     Diff = I1 - I2;
-                    % Diff = Diff - mean(Diff);
+                    Diff = Diff - mean(Diff);
                     Time = currPart{1,5};
 
                     Phi = real(acos(sqrt(TotInt/(calibration.TotI0_mean))));
                     %ampI = calibration.I0_mean*(cos(Phi)).^2;
+                    if size(Diff,1) == max(allHeight)
+                        z = figure()
+                        plot(Time, TotInt)
+                        xlim([0 8])
+                        xlabel('Time (s)')
+                        ylabel('I_1 + I_2')
+                        title(append('Total Intensity trace - ', SubFolder{r}))
+                        Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'TotInt', num2str(r), '.png');
+                        saveas(z, Filename)
+    
+                        g = figure()
+                        plot(Time, Diff)
+                        xlim([0 8])
+                        xlabel('Time (s)')
+                        ylabel('(I_1 - I_2)/I_t_o_t')
+                        title(append('DIfference Intensity trace - ', SubFolder{r}))
+                        Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'DiffInt', num2str(r), '.png');
+                        saveas(g, Filename)
+                    end
 
-                    Theta = 0.5*real(acos(Diff./calibration.I0_mean));          
+                    Theta = 0.5*real(acos(Diff));          
                     coord = [Theta, Phi];
 
                     % For Theta
@@ -143,14 +159,13 @@ for r = 1:numel(SubFolder)
             disp(append('Theta visc = ', num2str(nanmedian([allRes.nTheta]))))
             disp(append('Total visc = ', num2str(nanmedian([allRes.nr]))))
 
-            for z = 1:size(allRes, 2)
-                StepPhi(z,1) = allRes(z).msadPhi(1,1);  
-                StepTheta(z,1) = allRes(z).msadTheta(1,1);  
-                StepAll(z,1) = allRes(z).msadr(1,1);  
-            end
-            ResultsPhi(o, r) = nanmedian(StepPhi);
-            ResultsTheta(o, r) = nanmedian(StepTheta);
-            ResultsAll(o, r) = nanmedian(StepAll);
+            DResultsPhi(o, r) = nanmedian([allRes.DPhi]);
+            DResultsTheta(o, r) = nanmedian([allRes.DTheta]);
+            DResultsAll(o, r) = nanmedian([allRes.Dr]);
+
+            nResultsPhi(o, r) = nanmedian([allRes.nPhi]);
+            nResultsTheta(o, r) = nanmedian([allRes.nTheta]);
+            nResultsAll(o, r) = nanmedian([allRes.nr]);
     end
   
     disp(append('The viscosity is ', num2str(nanmean(Visc)), ' cP'))
