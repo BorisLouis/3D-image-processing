@@ -21,6 +21,8 @@ function [MSD] = calc2(coord, tau, expTime)
         while cnt<=dt && cnt+dt<=size(coord,1)
             
             idx = cnt:dt:size(coord,1);
+
+            %%% Euclidean approach
             DTheta = diff(coord(idx,1)).';
             DPhi = diff(coord(idx,2)).';
             TimeLagcorr = abs(diff(tau(idx)) - dt*expTime) < 0.002;
@@ -29,6 +31,18 @@ function [MSD] = calc2(coord, tau, expTime)
             DPhi(TimeLagcorr == 0) = [];
 
             AngDisp= [AngDisp; (sqrt((DTheta).^2 + (DPhi).^2))'];
+
+            %%% dot product approach
+            for i = 1:size(coord, 1) - 1
+                Theta1 = coord(i, 1);
+                Theta2 = coord(i+1, 1);
+                Phi1 = coord(i, 2);
+                Phi2 = coord(i+1, 2);
+
+                r1 = [sin(Theta1)*cos(Phi1), sin(Theta1)*sin(Phi1), cos(Theta1)];
+                r2 = [sin(Theta2)*cos(Phi2), sin(Theta2)*sin(Phi2), cos(Theta2)];
+                AngDisp(i,2) = acos(dot(r1, r2));
+            end
 
             cnt = cnt + 1;
         end
@@ -47,6 +61,5 @@ function [MSD] = calc2(coord, tau, expTime)
         TimeLag(dt) = dt*expTime;
     end
 
-    MSAD = MSAD(1,:)./mean(MSAD(750:799))*0.5;
     MSD = [MSAD'; TimeLag];
 end

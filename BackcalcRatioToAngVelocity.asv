@@ -2,12 +2,12 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 
 %file info
-MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.010; % in sec
+ExpTime = 0.10; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -97,10 +97,10 @@ CheckSpeed1.All = AngSpeed1;
 CheckSpeed1.mean = nanmedian(AngSpeed1);
 CheckSpeed1.std = std(AngSpeed1);
 CheckSpeed2.All = AngSpeed2;
-Checkpeed2.mean = nanmedian(AngSpeed2);
+Checkpeed2.mean = mean(AngSpeed2);
 CheckSpeed2.std = std(AngSpeed2);
 CheckSpeed3.All = AngSpeed3;
-CheckSpeed3.mean = nanmedian(AngSpeed3);
+CheckSpeed3.mean = mean(AngSpeed3);
 CheckSpeed3.std = std(AngSpeed3);
 AngularSpeed.Check1 = CheckSpeed1;
 AngularSpeed.Check2 = CheckSpeed2;

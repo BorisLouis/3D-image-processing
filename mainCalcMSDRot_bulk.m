@@ -8,13 +8,13 @@ Temp = 296.15; %temperature in Kelvin
 ParticleType = 'Bipyramid'; %Bipyramid, ellipsoid, rod, cilinder,...
 R = [184, 92]; %Long axis, short axis in nm
 fitRDiff = 4; %in number of data
-minSize = 20; %frames
+minSize = 50; %frames
 ext = '.mat';
 path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
 MainFolder = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
-SubFolder = {'glycerol 80', 'glycerol 85', 'glycerol 90'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
+SubFolder = {'glycerol 80', 'glycerol 85', 'glycerol 90', 'glycerol 95', 'glycerol 100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
 
@@ -67,12 +67,13 @@ for r = 1:numel(SubFolder)
                     Diff = Diff - mean(Diff);
                     Time = currPart{1,5};
 
-                    Phi = real(acos(sqrt(TotInt/(calibration.TotI0_mean))));
+                    Phi = 0.5*real(acos(sqrt(TotInt/(calibration.TotI0_mean))));
                     %ampI = calibration.I0_mean*(cos(Phi)).^2;
                     if size(Diff,1) == max(allHeight)
                         z = figure()
                         plot(Time, TotInt)
                         xlim([0 8])
+                        ylim([50 150])
                         xlabel('Time (s)')
                         ylabel('I_1 + I_2')
                         title(append('Total Intensity trace - ', SubFolder{r}))
@@ -82,6 +83,7 @@ for r = 1:numel(SubFolder)
                         g = figure()
                         plot(Time, Diff)
                         xlim([0 8])
+                        ylim([-0.8 0.8])
                         xlabel('Time (s)')
                         ylabel('(I_1 - I_2)/I_t_o_t')
                         title(append('DIfference Intensity trace - ', SubFolder{r}))
@@ -89,7 +91,7 @@ for r = 1:numel(SubFolder)
                         saveas(g, Filename)
                     end
 
-                    Theta = 0.5*real(acos(Diff));          
+                    Theta = 0.25*real(acos(Diff/calibration.I0_mean));          
                     coord = [Theta, Phi];
 
                     % For Theta
