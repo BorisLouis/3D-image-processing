@@ -10,10 +10,10 @@ R = [184, 92]; %Long axis, short axis in nm
 fitRDiff = 4; %in number of data
 minSize = 50; %frames
 ext = '.mat';
-path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
+MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
 SubFolder = {'glycerol 80', 'glycerol 85', 'glycerol 90', 'glycerol 95', 'glycerol 100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
@@ -69,27 +69,27 @@ for r = 1:numel(SubFolder)
 
                     Phi = 0.5*real(acos(sqrt(TotInt/(calibration.TotI0_mean))));
                     %ampI = calibration.I0_mean*(cos(Phi)).^2;
-                    if size(Diff,1) == max(allHeight)
-                        z = figure()
-                        plot(Time, TotInt)
-                        xlim([0 8])
-                        ylim([50 150])
-                        xlabel('Time (s)')
-                        ylabel('I_1 + I_2')
-                        title(append('Total Intensity trace - ', SubFolder{r}))
-                        Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'TotInt', num2str(r), '.png');
-                        saveas(z, Filename)
-    
-                        g = figure()
-                        plot(Time, Diff)
-                        xlim([0 8])
-                        ylim([-0.8 0.8])
-                        xlabel('Time (s)')
-                        ylabel('(I_1 - I_2)/I_t_o_t')
-                        title(append('DIfference Intensity trace - ', SubFolder{r}))
-                        Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'DiffInt', num2str(r), '.png');
-                        saveas(g, Filename)
-                    end
+                    % if size(Diff,1) == max(allHeight)
+                    %     z = figure()
+                    %     plot(Time, TotInt)
+                    %     xlim([0 8])
+                    %     ylim([50 150])
+                    %     xlabel('Time (s)')
+                    %     ylabel('I_1 + I_2')
+                    %     title(append('Total Intensity trace - ', SubFolder{r}))
+                    %     Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'TotInt', num2str(r), '.png');
+                    %     saveas(z, Filename)
+                    % 
+                    %     g = figure()
+                    %     plot(Time, Diff)
+                    %     xlim([0 8])
+                    %     ylim([-0.8 0.8])
+                    %     xlabel('Time (s)')
+                    %     ylabel('(I_1 - I_2)/I_t_o_t')
+                    %     title(append('DIfference Intensity trace - ', SubFolder{r}))
+                    %     Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'DiffInt', num2str(r), '.png');
+                    %     saveas(g, Filename)
+                    % end
 
                     Theta = 0.25*real(acos(Diff/calibration.I0_mean));          
                     coord = [Theta, Phi];
@@ -103,50 +103,50 @@ for r = 1:numel(SubFolder)
                     vTheta   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
 
                     % %For Phi
-                    tau = Time;
-                    msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
-                    tau = (1:length(msadPhi))'*expTime;
-                    allmsadPhi(i,1:length(msadPhi)) = msadPhi(1,:);
-                    DPhi   = MSD.Rotational.getDiffCoeff(msadPhi,tau,fitRDiff,'2D');
-                    nPhi   = MSD.Rotational.getViscosity(DPhi,R,ParticleType, Temp);
-                    vPhi   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
+                    % tau = Time;
+                    % msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
+                    % tau = (1:length(msadPhi))'*expTime;
+                    % allmsadPhi(i,1:length(msadPhi)) = msadPhi(1,:);
+                    % DPhi   = MSD.Rotational.getDiffCoeff(msadPhi,tau,fitRDiff,'2D');
+                    % nPhi   = MSD.Rotational.getViscosity(DPhi,R,ParticleType, Temp);
+                    % vPhi   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
+                    % 
+                    % %For both
+                    % tau = Time;
+                    % msadr = MSD.Rotational.calc(coord, tau, expTime);%convert to um;
+                    % allMSDR(i,1:length(msadr)) = msadr(1,:);
+                    % DR   = MSD.Rotational.getDiffCoeff(msadr,tau,fitRDiff,'3D');
+                    % nR   = MSD.Rotational.getViscosity(DR,R,ParticleType,Temp);
+                    % dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
+                    % vR = dR/10^3/(length(coord)*expTime); %rad/s
 
-                    %For both
-                    tau = Time;
-                    msadr = MSD.Rotational.calc(coord, tau, expTime);%convert to um;
-                    allMSDR(i,1:length(msadr)) = msadr(1,:);
-                    DR   = MSD.Rotational.getDiffCoeff(msadr,tau,fitRDiff,'3D');
-                    nR   = MSD.Rotational.getViscosity(DR,R,ParticleType,Temp);
-                    dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
-                    vR = dR/10^3/(length(coord)*expTime); %rad/s
 
-
-                    DiffTotmean = msadPhi(1,1);
+                    % DiffTotmean = msadPhi(1,1);
                     DiffImean = msadTheta(1,1);
 
 
                     allRes(i).msadTheta = msadTheta;% in rad^2 
-                    allRes(i).msadPhi = msadPhi;
-                    allRes(i).msadr = msadr;
+                    % allRes(i).msadPhi = msadPhi;
+                    % allRes(i).msadr = msadr;
                     allRes(i).tau = tau; % in sec
 
                     allRes(i).DTheta   = DTheta;% in rad^2 /sec
-                    allRes(i).DPhi   = DPhi;% in rad^2 /sec
-                    allRes(i).Dr  = DR;% in rad^2 /sec
+                    % allRes(i).DPhi   = DPhi;% in rad^2 /sec
+                    % allRes(i).Dr  = DR;% in rad^2 /sec
 
                     allRes(i).nTheta   = nTheta;
-                    allRes(i).nPhi   = nPhi;
-                    allRes(i).nr   = nR;
+                    % allRes(i).nPhi   = nPhi;
+                    % allRes(i).nr   = nR;
 
                     allRes(i).vTheta   = vTheta;
-                    allRes(i).vPhi   = vPhi;
-                    allRes(i).vr   = vR;
+                    % allRes(i).vPhi   = vPhi;
+                    % allRes(i).vr   = vR;
 
                     allRes(i).num  = length(msadTheta);
 
-                    allRes(i).diffTot = DiffTotmean;
+                    % allRes(i).diffTot = DiffTotmean;
                     allRes(i).diffI = DiffImean;
-                    Visc(end+1, 1) = abs(nR);
+                    Visc(end+1, 1) = abs(nTheta);
 
 
                 catch

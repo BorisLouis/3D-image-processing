@@ -2,12 +2,12 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 
 %file info
-MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.010; % in sec
+ExpTime = 0.10; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -19,7 +19,7 @@ NumRotations = 2; %estimated number of rotations
 AngSp1 = [];
 AngSp2 = [];
 AngSp3 = [];
-
+MSADPeaks = [];
 f = waitbar(0, 'initializing');
 
 for a = 1:size(subFolders, 2)
@@ -58,7 +58,7 @@ for a = 1:size(subFolders, 2)
             peaks = sort([locs1; locs2]);
             for w = 1:size(peaks, 1)-1
                 try
-                    segment = Theta(peaks(w)+25:peaks(w+1)-25, 1);
+                    segment = Theta(peaks(w)+50:peaks(w+1)-10, 1);
                     timelag = [1:size(segment, 1)]'*ExpTime;
                     g = fit(timelag, segment, 'a*x +b');
                     coeff = coeffvalues(g);
@@ -73,11 +73,19 @@ for a = 1:size(subFolders, 2)
             tau = Traces.Time(q,:);
 
             [msadTheta] = MSD.Rotational.calc(Theta, tau, ExpTime);
+            figure()
+            plot(msadTheta(2,:), msadTheta(1,:))
+            xlabel('Time (s)')
+            ylabel('MSAD (rad^2)')
+
             %%% Check 3
-            [pks,locs1,w,p] = findpeaks(medfilt1(msadTheta(1,:), 50));
+            [pksTop,locs1,w,p] = findpeaks(medfilt1(msadTheta(1,:), 50));
             [pks,locs2,w,p] = findpeaks(medfilt1(-msadTheta(1,:), 50));
             Interval = [diff(locs1), diff(locs2)]';
             AngSpeed3 = [AngSpeed3; 360./(Interval*ExpTime)/4];
+
+            %%% save peaks
+            MSADPeaks = [MSADPeaks, pksTop];
 
         end
     end
