@@ -30,9 +30,8 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
         % end
         Lower = [(0.5*max(msad(1,:))), sqrt(msad(1,1)/(2*max(msad(1,:)))), 0];
         Upper = [(1.5*max(msad(1,:))),sqrt(msad(1,1)/(0.5*max(msad(1,:)))), 100];
-        [f, gov] = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp((-2*c*x)./a))', 'Lower', Lower, 'Upper', Upper);
-        coeff = coeffvalues(f);
-        Corrected = msad(1,:);
+        % [f, gov] = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp((-2*c*x)./a))', 'Lower', Lower, 'Upper', Upper);
+        % fitRdiff = find(msad(1,:) > 0.5*pi/180, 1, 'first');
         [f, gov] = fit(msad(2,1:10)',msad(1,1:10)','2*a*x+b');
         figure()
         plot(f, msad(2,:)',msad(1,:)');
