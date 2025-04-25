@@ -8,12 +8,12 @@ Temp = 296.15; %temperature in Kelvin
 ParticleType = 'Bipyramid'; %Bipyramid, ellipsoid, rod, cilinder,...
 R = [184, 92]; %Long axis, short axis in nm
 fitRDiff = 4; %in number of data
-minSize = 50; %frames
+minSize = 75; %frames
 ext = '.mat';
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
+MainFolder = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
 SubFolder = {'glycerol 80', 'glycerol 85', 'glycerol 90', 'glycerol 95', 'glycerol 100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
@@ -24,7 +24,7 @@ DiffTotMatrix = [];
 for r = 1:numel(SubFolder)
     Visc = [];
     for o = 1:numel(SubsubFolder)
-        % try
+        try
             path = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o});
     
             %% Loading
@@ -68,30 +68,12 @@ for r = 1:numel(SubFolder)
                     Time = currPart{1,5};
 
                     Phi = 0.5*real(acos(sqrt(TotInt/(calibration.TotI0_mean))));
-                    %ampI = calibration.I0_mean*(cos(Phi)).^2;
-                    % if size(Diff,1) == max(allHeight)
-                    %     z = figure()
-                    %     plot(Time, TotInt)
-                    %     xlim([0 8])
-                    %     ylim([50 150])
-                    %     xlabel('Time (s)')
-                    %     ylabel('I_1 + I_2')
-                    %     title(append('Total Intensity trace - ', SubFolder{r}))
-                    %     Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'TotInt', num2str(r), '.png');
-                    %     saveas(z, Filename)
-                    % 
-                    %     g = figure()
-                    %     plot(Time, Diff)
-                    %     xlim([0 8])
-                    %     ylim([-0.8 0.8])
-                    %     xlabel('Time (s)')
-                    %     ylabel('(I_1 - I_2)/I_t_o_t')
-                    %     title(append('DIfference Intensity trace - ', SubFolder{r}))
-                    %     Filename = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o}, filesep, 'DiffInt', num2str(r), '.png');
-                    %     saveas(g, Filename)
-                    % end
 
+<<<<<<< HEAD
                     Theta = 0.25*real(acos(Diff./calibration.I0_mean));          
+=======
+                    Theta = 0.25*real(acos(Diff/calibration.I_mean));          
+>>>>>>> 03264620cd2cf17a5d02370b6dae27d8bc22c5e4
                     coord = [Theta, Phi];
 
                     % For Theta
@@ -154,20 +136,15 @@ for r = 1:numel(SubFolder)
                     
             end
 
-            
-            filename = [path filesep 'msadRes.mat'];
-            save(filename,'allRes');
-            disp(append('Phi visc = ', num2str(nanmedian([allRes.nPhi]))))
-            disp(append('Theta visc = ', num2str(nanmedian([allRes.nTheta]))))
-            disp(append('Total visc = ', num2str(nanmedian([allRes.nr]))))
+            disp(append('Diff = ', num2str(nanmean([allRes.DTheta]))))
+            disp(append('Visc = ', num2str(nanmean([allRes.nTheta]))))
 
-            DResultsPhi(o, r) = nanmedian([allRes.DPhi]);
             DResultsTheta(o, r) = nanmedian([allRes.DTheta]);
-            DResultsAll(o, r) = nanmedian([allRes.Dr]);
-
-            nResultsPhi(o, r) = nanmedian([allRes.nPhi]);
             nResultsTheta(o, r) = nanmedian([allRes.nTheta]);
-            nResultsAll(o, r) = nanmedian([allRes.nr]);
+        catch
+            DResultsTheta(o, r) = nan;
+            nResultsTheta(o, r) = nan;
+        end
     end
   
     disp(append('The viscosity is ', num2str(nanmean(Visc)), ' cP'))
