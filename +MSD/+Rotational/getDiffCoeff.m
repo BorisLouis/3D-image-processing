@@ -19,8 +19,8 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
 
     % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-c*x))');
     try
-        Lower = [0, 0];
-        Upper = [sqrt(msad(1,1)/(2*max(msad(1,:)))), 100];
+        % Lower = [0, 0];
+        % Upper = [sqrt(msad(1,1)/(2*max(msad(1,:)))), 100];
         % if div == 4
             % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-(1.6*c*x)^0.95))', 'Lower', Lower, 'Upper', Upper);
             % [f, gov]    = fit(msad(2,:)',msad(1,:)','0.025*(1-(1-a^2)*exp(-(4*b*x)))', 'Lower', Lower, 'Upper', Upper);
@@ -28,16 +28,17 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
             % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-(4*b*x)))');%, 'Lower', Lower, 'Upper', Upper);
             % [f, gov]    = fit(msad(2,1:4)',msad(1,1:4)','a*x');%, 'Lower', Lower, 'Upper', Upper);
         % end
-        Lower = [0, 0];
-        Upper = [(2*max(msad(1,:))), 100];
-        [f, gov] = fit(msad(2,:)',msad(1,:)','a*(1-exp(-(b*x)))');
+        msad(1,:) = msad(1,:)./mean(msad(1,:))*0.1;
+        % Lower = [0, 0];
+        % Upper = [(2*max(msad(1,:))), 100];
+        [f, gov] = fit(msad(2,1:4)',msad(1,1:4)','2*a*x + b');
         figure()
         plot(f, msad(2,:)',msad(1,:)');
         % % 
         % 
         % if gov.rsquare > 0.75
             g = coeffvalues(f);
-            Dr = g(1)/div;
+            Dr = g(1)*180/pi;
         % else
         %     Dr = NaN;
         % end

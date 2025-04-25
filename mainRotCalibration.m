@@ -3,13 +3,13 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
-path2Cal = 'D:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
@@ -34,7 +34,7 @@ info.detectionMethod = 'MaxLR'; %MaxLR (for maximum likehood ratio) %Intensity
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 
-info.rotationalCalib = 1;
+info.rotationalCalib = 0;
 info.Bipyramid = [184, 92]; %Long axis, short axis in nm
 info.euDist = 500;
 info.expTime = 0.010; %in sec

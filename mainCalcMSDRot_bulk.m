@@ -91,7 +91,7 @@ for r = 1:numel(SubFolder)
                     %     saveas(g, Filename)
                     % end
 
-                    Theta = 0.25*real(acos(Diff/calibration.I0_mean));          
+                    Theta = 0.25*real(acos(Diff./calibration.I0_mean));          
                     coord = [Theta, Phi];
 
                     % For Theta

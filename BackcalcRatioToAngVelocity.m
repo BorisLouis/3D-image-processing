@@ -7,7 +7,7 @@ path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_r
 %file info
 MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.10; % in sec
+ExpTime = 0.100; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -40,18 +40,22 @@ for a = 1:size(subFolders, 2)
             angular_speed(q, 1) = NaN;
         else
             Diff = Traces.Diff{q};
-            Diff = Diff - median(Diff);
+            r = fit(Traces.Time(q, :)', Traces.Diff{q}, ['0.3*cos(0.*x)+c']);
+            figure()
+            plot(r, Traces.Time(q, :)', Traces.Diff{q})
+            coeff = coeffvalues(r);
+            Diff = Diff - coeff(3);
             time = Traces.Diff{q};
 
             %%% Check1
             Diffsmooth = medfilt1(Diff, 90);
-            [pks,locs1,w,p] = findpeaks(Diffsmooth);
+            [pks1,locs1,w,p] = findpeaks(Diffsmooth);
             [pks,locs2,w,p] = findpeaks(-Diffsmooth);
             Int1 = [diff(locs1); diff(locs2)];
             AngSpeed1 = [AngSpeed1; 360./(Int1 * ExpTime)/4];
 
             %%% Check2
-            Theta = 0.25*real(acos(Diff./Amplitude));
+            Theta = 0.25*real(acos(Diff./coeff(1)));
             Thetasmooth = medfilt1(Theta, 90);
             [pks,locs1,w,p] = findpeaks(Thetasmooth);
             [pks,locs2,w,p] = findpeaks(-Thetasmooth);
@@ -72,11 +76,11 @@ for a = 1:size(subFolders, 2)
 
             tau = Traces.Time(q,:);
 
-            [msadTheta] = MSD.Rotational.calc(Theta, tau, ExpTime);
-            figure()
-            plot(msadTheta(2,:), msadTheta(1,:))
-            xlabel('Time (s)')
-            ylabel('MSAD (rad^2)')
+            [msadTheta] = MSD.Rotational.calc(RandomTheta, tau, ExpTime);
+            % figure()
+            % plot(msadTheta(2,:), msadTheta(1,:))
+            % xlabel('Time (s)')
+            % ylabel('MSAD (rad^2)')
 
             %%% Check 3
             [pksTop,locs1,w,p] = findpeaks(medfilt1(msadTheta(1,:), 50));
@@ -85,7 +89,8 @@ for a = 1:size(subFolders, 2)
             AngSpeed3 = [AngSpeed3; 360./(Interval*ExpTime)/4];
 
             %%% save peaks
-            MSADPeaks = [MSADPeaks, pksTop];
+            MSADPeaks{q, 1} = Diff;
+            MSADPeaks{q, 2} = mean(pksTop);
 
         end
     end

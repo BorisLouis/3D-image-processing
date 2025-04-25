@@ -272,6 +272,11 @@ classdef SRCalibration < handle
                     Im2(sub2ind(imsize, round(coords2(:,1)), round(coords2(:,2)))) = 1;
                 
                     tform = imregcorr(Im2, Im1, "similarity");
+                    % if p == 1
+                    %     tform = Transformations{2,1};
+                    % elseif p == 8
+                    %     tform = Transformations{7,1};
+                    % end
                     Im2Moved = imwarp(Im2,tform, "OutputView",imref2d(imsize));
                     
                     subplot(2, nPlanes, p)
@@ -291,6 +296,8 @@ classdef SRCalibration < handle
                     Transformations{p,1} = tform;
                     
                 end
+                Transformations{1,1} = Transformations{2,1};
+                Transformations{8,1} = Transformations{7,1};
                 sgtitle('Transformations Channel1 - Channel2')
 
                 obj.calib.corr{2,1}.Transformations = Transformations;
