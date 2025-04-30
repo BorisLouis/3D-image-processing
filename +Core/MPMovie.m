@@ -271,12 +271,13 @@ classdef MPMovie < Core.Movie
             end
         end
         
-        function [data] = getFrame(obj,idx, q)
+        function [data, CorrFactor] = getFrame(obj,idx, q)
             %Allow the user to extract data from a specific frame, behavior
             %depends on the calibration
             assert(length(idx)==1,'Only one frame at a time');
             [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
             %Behavior depend on status
+            CorrFactor = [];
             if isempty(obj.calibrated)
                 
                 [data] = getFrame@Core.Movie(obj,idx);
@@ -294,16 +295,11 @@ classdef MPMovie < Core.Movie
                         if q == 2
                             try
                                 CMa = obj.SRCal{1, 1}.rot.CMa{i,1} - obj.SRCal{2, 1}.rot.CMa{i,1};
-                                CMb = obj.SRCal{1, 1}.rot.CMb{i,1} - obj.SRCal{2, 1}.rot.CMb{i,1}; 
-                                CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
                             catch
                                 CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
-                                CMb = obj.SRCal{1, 1}.rot.CMb{i-1,1} - obj.SRCal{2, 1}.rot.CMb{i-1,1}; 
-                                CDiff = [CMa(1) - CMb(1), CMa(2) + CMb(2)];
                             end
                             Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
-                            Transformation.Translation = [Transformation.Translation(1) - CDiff(1), Transformation.Translation(2)+ CDiff(2)];
-                            Transformation.Translation = [Transformation.Translation(1), Transformation.Translation(2)];
+                            Transformation.Translation = [Transformation.Translation(1)-CMa(1), Transformation.Translation(2)-CMa(1)];
                             Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
                                                 sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
                             Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
@@ -317,7 +313,7 @@ classdef MPMovie < Core.Movie
                                 testmov(testmov == 0) = NaN;
                                 testmov1 = double(mov1);
                                 testmov1(testmov1 == 0) = NaN;
-                                mov = mov.*(nanmean(testmov1, 'all')/nanmean(testmov, 'all'));
+                                CorrFactor(i) = nanmean(testmov1, 'all')/nanmean(testmov, 'all');
                             end
                         end
                     end
@@ -458,12 +454,12 @@ classdef MPMovie < Core.Movie
 
                         %applying the calibration
                         if exist('ROI','var') == 1
-                            [data,isTransmission,ROI] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info, ROI);
+                            [data,isTransmission,ROI, Bg] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info, ROI);
                         else 
-                            [data,isTransmission,~] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
+                            [data,isTransmission,~, Bg] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
                         end
                         %saving data per plane and info to cal
-                        [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP);
+                        [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP, Bg);
                         
                     otherwise
                         extName = strrep(obj.raw.movInfo.ext,'.','');
@@ -485,7 +481,7 @@ classdef MPMovie < Core.Movie
             
         end
         
-        function [calib] = saveCalibrated(obj,data,maxFrame,isTransmission,MP)
+        function [calib] = saveCalibrated(obj,data,maxFrame,isTransmission,MP, Bg)
             
             calDir1 = [obj.raw.movInfo.Path filesep 'calibrated1'];
             calTransDir1 = [calDir1 filesep 'Transmission'];
@@ -577,6 +573,7 @@ classdef MPMovie < Core.Movie
             end
             calib1.Width  = size(data{1,1},2);
             calib1.Height = size(data{1,1},1);
+            calib1.Backgrounds = Bg.Ch1;
             calib = calib1;
             fclose(fid);
             fName = [calDir1 filesep 'calibrated1.mat'];
@@ -662,6 +659,8 @@ classdef MPMovie < Core.Movie
                     end
                     calib2.Width  = size(data2,2);
                     calib2.Height = size(data2,1);
+                    calib2.Backgrounds = Bg.Ch2;
+                    calib2.RatioCh1Ch2 = Bg.Ratio;
                     fclose(fid2);
                     calib = struct([]);
                     calib = calib2;

@@ -57,7 +57,7 @@ for i = 1:size(subFolders, 2)
         
         %% test detection parameters
         testMov = trackingExp.trackMovies.mov1;
-        testMov.findCandidatePos(detectParam);
+        testMov.findCandidatePos(detectParam,1);
         testMov.getROIs;
         testMov.showCandidate(1);
         close all

@@ -9,6 +9,7 @@ classdef MPParticleMovie < Core.MPMovie
         corrLocPos
         particles
         intData
+        BgcorrectionCh1Ch2
         
     end
     
@@ -72,10 +73,11 @@ classdef MPParticleMovie < Core.MPMovie
                     %Localization occurs here
                     assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                     assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
+                    BgCorrFactor = {};
                     if q == 1
-                        [candidate] = obj.detectCandidate(detectParam,frames,q);
+                        [candidate, ~] = obj.detectCandidate(detectParam,frames,q);
                     elseif q == 2
-                        [candidate] = obj.detectCandidate(detectParam,frames,q);
+                        [candidate, BgCorrFactor] = obj.detectCandidate(detectParam,frames,q);
                     end
                     
                 elseif ~isempty(candidate)
@@ -100,13 +102,14 @@ classdef MPParticleMovie < Core.MPMovie
 
                 candidatePos{q,1} = candidate;
                 obj.candidatePos{q,1} = candidate;
+                
 
                 % if obj.info.rotationalCalib == 1
                 %     candidatePos{2,1} = candidatePos{1,1};
                 %     obj.candidatePos{2,1} = obj.candidatePos{1,1};
                 % end
             end
-
+            obj.BgcorrectionCh1Ch2 = BgCorrFactor;
             %%% For rotational tracking: detect particles in the two
             %%% channels. If they are visible in both, only keep ch1
             if obj.info.rotational == 1
@@ -1032,7 +1035,7 @@ classdef MPParticleMovie < Core.MPMovie
         end
         
         %Methods linked to Candidate
-        function [candidate] = detectCandidate(obj,detectParam,frames,q)
+        function [candidate, BgCorrFactor] = detectCandidate(obj,detectParam,frames,q)
             %Do the actual localization
             assert(~isempty(obj.calibrated),'Data should be calibrated to detect candidate');
             assert(isstruct(detectParam),'Detection parameter should be a struct with two fields');
@@ -1099,7 +1102,7 @@ classdef MPParticleMovie < Core.MPMovie
                 
                 position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
                     zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
-                [volIm] = obj.getFrame(frames(i),q);
+                [volIm, BgCorrFactor{i,1}] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes
