@@ -420,14 +420,14 @@ classdef MPLocMovie < Core.MPParticleMovie
                                         end
                                 end
     
-                                frameData2Store(j,{'row','col','z','rowM','colM','zM','adjR', 'intensity', 'SNR'}) = data;
-                                % if obj.info.rotational == 1
-                                %     frameData2Store.intensity(j) = Int;
-                                %     frameData2Store.SNR(j) = Int;
-                                % else
-                                %     frameData2Store.intensity(j) = partData.intensity(3);
-                                %     frameData2Store.SNR(j) = partData.SNR(3);
-                                % end
+                                frameData2Store(j,{'row','col','z','rowM','colM','zM','adjR'}) = data;
+                                if obj.info.rotational == 1
+                                    frameData2Store.intensity(j) = Int;
+                                    frameData2Store.SNR(j) = Int;
+                                else
+                                    frameData2Store.intensity(j) = partData.intensity(3);
+                                    frameData2Store.SNR(j) = partData.SNR(3);
+                                end
                                 frameData2Store.t(j) = i;
     
                             end
@@ -759,10 +759,10 @@ classdef MPLocMovie < Core.MPParticleMovie
             end
            
             Int = nanmean(partData.intensity);
-            SNR = nanmean(partData.SNR);
+            SR
             %store the data
-            data = table(row,col,z,rowM,colM,zM,adjR,Int, SNR,...
-                   'VariableNames',{'row','col','z','rowM','colM','zM','adjR', 'Int', 'SNR'});
+            data = table(row,col,z,rowM,colM,zM,adjR,...
+                   'VariableNames',{'row','col','z','rowM','colM','zM','adjR'});
             
    
         end

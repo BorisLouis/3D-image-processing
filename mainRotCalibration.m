@@ -3,13 +3,13 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2SRCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
-path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
@@ -40,6 +40,7 @@ info.euDist = 500;
 info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
+info.FWHM = 3;
 
 AmplitudeI = [];
 AmplitudeI0 = [];

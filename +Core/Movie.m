@@ -169,7 +169,7 @@ classdef Movie < handle
             %             assert(~isnan(emW),'Emission wavelength should be numerical');
             %
             pxSize = obj.info.PxSize;
-            FWHM_pix = str2double('3');
+            FWHM_pix = obj.info.FWHM;
             %FWHM_pix = str2double(answer(2));
             assert(~isnan(FWHM_pix),'FWHM should be numerical');
             

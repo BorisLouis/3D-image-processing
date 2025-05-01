@@ -603,22 +603,27 @@ classdef TrackingExperimentRotational < handle
                     Start = [max(DiffTrace) - min(DiffTrace), phase(i,1), 0];
                     [f, gof] = fit(Angle, DiffTrace, Model, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
                     coeff = coeffvalues(f);
-                    obj.traces3Dcommon.I{i,1} = abs(coeff(1));
-                    obj.traces3Dcommon.I0{i,1} = abs(coeff(1))./CorrFactor;
+                    obj.traces3Dcommon{i,7} = abs(coeff(1));
+                    obj.traces3Dcommon{i,8} = abs(coeff(1))./CorrFactor;
                     plot(f, Angle, DiffTrace)
                     xlabel('Angle (rad)');
                     ylabel('Difference channel')
                     title('Channel difference plotted to a*cos(4*x + phi)) + bg')
                     ylim([-1.2 1.2])
                     saveas(fig, append(obj.path, filesep, 'DiffTraces', filesep, 'TraceDiff', num2str(i), '.png'));
-                    obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.TotInt{i,1}/CorrFactor;
+                    obj.traces3Dcommon.Corrrected{i, 11} = obj.traces3Dcommon{i,10}/CorrFactor;
                 else
+                    obj.traces3Dcommon{i,7} = NaN;
+                    obj.traces3Dcommon{i,8} = NaN;
+                    obj.traces3Dcommon{i,9} = NaN;
+                    obj.traces3Dcommon{i,10} = NaN;
+                    obj.traces3Dcommon{i,11} = NaN;
                 end      
             end
             close all
 
-            % obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
-            %     'Int1Norm', 'Int2Norm', 'Time', 'Diff', 'I', 'I0', 'TotIntTrace', 'TotInt', 'TotIntCorr'});
+            obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
+                'Int1Norm', 'Int2Norm', 'Time', 'Diff', 'I', 'I0', 'TotIntTrace', 'TotInt', 'TotIntCorr'});
             CommonTraces = obj.traces3Dcommon;
 
             Filename = append(obj.path, filesep, 'CommonTraces.mat');
