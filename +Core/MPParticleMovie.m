@@ -110,33 +110,42 @@ classdef MPParticleMovie < Core.MPMovie
                 % end
             end
             obj.BgcorrectionCh1Ch2 = BgCorrFactor;
-            %%% For rotational tracking: detect particles in the two
-            %%% channels. If they are visible in both, only keep ch1
-            if obj.info.rotational == 1
+            %%% Only done when checking the parameters (only on 1 frame) : detect particles in the two
+            %%% channels. If they are visible in both, only keep ch1.
+            if size(frames, 1) == 1
                 threshold = 10;
                 for frameIdx = 1:size(candidatePos{1,1}, 1)
                     data1 = candidatePos{1,1}{frameIdx};
                     data2 = candidatePos{2,1}{frameIdx};
-                    combined = [data1; data2];
-
-                    toRemove = false(size(combined, 1), 1);
-                    for i = 1:size(combined,1)
-                        if toRemove(i)
-                            continue
-                        end
-                        samePlaneIdx = combined.plane == combined.plane(i);
-                        distances = sqrt((combined.row(i) - combined.row).^2 + ...
-                            (combined.col(i) - combined.col).^2);
-                        closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
-                        for j = closeParticles'
-                            if j > i
-                                toRemove(j) = true;
+                    if ~isempty(data1)
+                        data1.OriginChannel(:,1) = 1;
+                        data2.OriginChannel(:,1) = 2;
+                        combined = [data1; data2];
+    
+                        toRemove = false(size(combined, 1), 1);
+                        for i = 1:size(combined,1)
+                            if toRemove(i)
+                                continue
+                            end
+                            samePlaneIdx = combined.plane == combined.plane(i);
+                            distances = sqrt((combined.row(i) - combined.row).^2 + ...
+                                (combined.col(i) - combined.col).^2);
+                            closeParticles = find(and(distances < threshold, samePlaneIdx == 1));
+                            for j = closeParticles'
+                                if j > i
+                                    toRemove(j) = true;
+                                end
                             end
                         end
-                    end
-                    if ~isempty(toRemove)
-                        candidatePos{1,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
-                        candidatePos{2,1}{frameIdx} = array2table(combined{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane'});
+                        if ~isempty(toRemove)
+                            for q = 1:obj.info.multiModal + 1
+                                CombinedLoc = combined;
+                                CombinedLoc.OriginChannel(CombinedLoc.OriginChannel == q) = 0;
+                                CombinedLoc.OriginChannel(CombinedLoc.OriginChannel ~= 0) = 1;
+                                candidatePos{q,1}{frameIdx} = array2table(CombinedLoc{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane', 'ParticlePassed'});
+                               
+                            end
+                        end
                     end
                 end
             end
@@ -469,15 +478,31 @@ classdef MPParticleMovie < Core.MPMovie
                     rowPos    = candidate.row;
                     colPos    = candidate.col;
                     planeIdx  = candidate.plane;
+                    if ismember('ParticlePassed', candidate.Properties.VariableNames)
+                        passed    = candidate.ParticlePassed;
+                    else
+                        passed = zeros(size(candidate, 1) , 1);
+                    end
                     h = figure();
                     h.Name = sprintf('Frame %d',idx);
                     for i = 1:nImages
+                        passedIdx = passed(planeIdx==i);
+                        colcoord = colPos(planeIdx==i);
+                        rowcoord = rowPos(planeIdx==i);
                         
                         subplot(2,nImages/nsFig,i)
                         hold on
                         imagesc(frame(:,:,i))
+                        colormap('hot')
                         hold on
-                        plot(colPos(planeIdx==i),rowPos(planeIdx==i),'g+','MarkerSize',10)
+                        for j = 1:size(colcoord, 1)
+                            if passedIdx(j,1) == 0
+                                color = 'g+';
+                            elseif passedIdx(j,1) == 1
+                                color = 'b+';
+                            end
+                            plot(colcoord(j),rowcoord(j),color,'MarkerSize',10)
+                        end
                         axis image;
                         % grid on;
                         % a = gca;
@@ -485,9 +510,9 @@ classdef MPParticleMovie < Core.MPMovie
                         % a.YTickLabel = [];
                         % a.GridColor = [1 1 1];
                         title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,q}.oRelZPos(i))});
-                        colormap('hot')
                         hold on
                     end
+                    sgtitle(append('Channel ', num2str(q)))
                 end
             end
             
