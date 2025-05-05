@@ -40,7 +40,7 @@ info.euDist = 500;
 info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
-info.FWHM = 3;
+info.FWHM = 5;
 
 AmplitudeI = [];
 AmplitudeI0 = [];

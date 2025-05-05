@@ -683,7 +683,7 @@ classdef MPParticleMovie < Core.MPMovie
                     currentCand = candMet(idx,:);
                     direction = -1;%Start by checking above
                     
-                    particle = [array2table(nan(nPlanes,size(currentCand,2)-2)), cell(nPlanes, 2)];
+                    particle = [array2table(nan(nPlanes,size(currentCand,2)-1)), cell(nPlanes, 1)];
                     particle.Properties.VariableNames = currentCand.Properties.VariableNames;
                     
                     particle(currentCand.plane,:) = currentCand;
@@ -1323,7 +1323,6 @@ classdef MPParticleMovie < Core.MPMovie
                 %Get the ROI
                 [roi_lims] = EmitterSim.getROI(frameCandidate.col(i), frameCandidate.row(i),...
                     delta, size(planeData,2), size(planeData,1));
-                roiLims{i,1} = roi_lims;
                 ROI = planeData(roi_lims(3):roi_lims(4),roi_lims(1):roi_lims(2));
                 roiSize = size(ROI);
                 if and(roiSize(1)==roiSize(2),mod(roiSize(1),2)==1)
@@ -1428,7 +1427,6 @@ classdef MPParticleMovie < Core.MPMovie
             candMet(idx,:) = [];
 
             candMet.gauss = gauss;
-            candMet.roiLims = roiLims;
         end
         
         function [doAvg]  = checkDoAverage(obj,ellip)
@@ -1465,7 +1463,7 @@ classdef MPParticleMovie < Core.MPMovie
         end
         
         function [newPart] = makeParticle(~,particleData)
-            newPart = [array2table(nan(5,size(particleData,2)-2)), cell(5, 2)];
+            newPart = [array2table(nan(5,size(particleData,2)-1)), cell(5, 1)];
             newPart.Properties.VariableNames = particleData.Properties.VariableNames;
             %store best focus in center
             [~,idx] = nanmax(particleData.fMetric);

@@ -382,26 +382,6 @@ classdef MPLocMovie < Core.MPParticleMovie
                                         else
                                             PartVolIm = obj.getPartVolIm(partData,ROIRad,fData);
                                             [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane', 'intensity', 'SNR'}),PartVolIm, q);                            
-                                            % if obj.info.rotational == 1
-                                            %     PartVolIm = [];
-                                            %     PartWithBg = obj.getPartVolIm(partData, ROIRad*2-1, fData);
-                                            %     % filter = ones(5,5);
-                                            %     % for p = 1:size(PartWithBg, 3)
-                                            %     %     sumMatrix(:,:,p) = conv2(PartWithBg(:,:,p), filter, 'valid');
-                                            %     % end
-                                            %     % [maxVal, maxIndex] = max(sumMatrix, [], 'all');
-                                            %     % [x1, x2, ~] = ind2sub(size(sumMatrix), maxIndex);
-                                            %     % maxIndex = sub2ind(size(sumMatrix(:,:,1)), x1, x2);
-                                            %     for p = 1:size(PartWithBg,3)
-                                            %         xStart = (size(PartWithBg, 1) - ROIRad)./2;
-                                            %         yStart = (size(PartWithBg, 2) - ROIRad)./2;
-                                            %         PartVolIm(:,:,p) = PartWithBg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p);
-                                            %         Bg(:,:,p) = PartWithBg(:,:,p);
-                                            %         Bg(xStart:xStart+(ROIRad + 1), yStart:yStart+(ROIRad + 1),p) = NaN;
-                                            %         PartVolIm(:,:,p) = PartVolIm(:,:,p) - nanmedian(Bg(:,:,p), 'all');
-                                            %     end
-                                            %     [Int] = obj.getXYZIntRot(partData(:,{'row','col','z','ellip','plane'}),PartVolIm, q);
-                                            % end
                                         end
     
                                     case '3DFit'
@@ -421,13 +401,6 @@ classdef MPLocMovie < Core.MPParticleMovie
                                 end
     
                                 frameData2Store(j,{'row','col','z','rowM','colM','zM','adjR', 'intensity', 'SNR'}) = data;
-                                % if obj.info.rotational == 1
-                                %     frameData2Store.intensity(j) = Int;
-                                %     frameData2Store.SNR(j) = Int;
-                                % else
-                                %     frameData2Store.intensity(j) = partData.intensity(3);
-                                %     frameData2Store.SNR(j) = partData.SNR(3);
-                                % end
                                 frameData2Store.t(j) = i;
     
                             end
