@@ -433,7 +433,9 @@ classdef MPParticleMovie < Core.MPMovie
                 %%% Pass the particles that are not detected in the other
                 %%% channel. When particles are added in the new channel,
                 %%% recalculate their intensity. 
-                obj.PartChannelConsolidation;
+                if obj.info.rotational == 1
+                    obj.PartChannelConsolidation;
+                end
             end
 
 
@@ -483,14 +485,44 @@ classdef MPParticleMovie < Core.MPMovie
 
                     %%% Pass particles from Ch1 to Ch2
                     ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
+                    NewParticlesCh2 = [obj.particles{2, 1}.List{1,i}, cell(size(obj.particles{2, 1}.List{1,i}, 1), 1)];
+                    [data] = obj.getFrame(i, 2); % get frame from ch2
+                    sig = [obj.info.sigma_px obj.info.sigma_px];
+                    for l = 1:size(ParticlesCh1, 1)
+                        CurrentParticle = ParticlesCh1{l, 1};
+                        NewParticle = CurrentParticle;
+                        for m = 1:size(NewParticle, 1)
+                            if ~isnan(NewParticle.plane(m))
+                                planeData = data(:,:, NewParticle.plane(m));
+                                ROI = planeData(NewParticle.roiLims{3}(3):NewParticle.roiLims{3}(4), NewParticle.roiLims{3}(1):NewParticle.roiLims{3}(2));
+                                [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
+                            end
+                        end
+                        NewParticlesCh2{end+1,1 } = NewParticle;
+                        NewParticlesCh2{end,2} = 'passed';
+                    end
 
                     %%% Pass particles from Ch2 to Ch1
                     ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
+                    NewParticlesCh1 = [obj.particles{1, 1}.List{1,i}, cell(size(obj.particles{2, 1}.List{1,i}, 1), 1)];;
+                    [data] = obj.getFrame(i, 1); % get frame from ch1
+                    sig = [obj.info.sigma_px obj.info.sigma_px];
                     for l = 1:size(ParticlesCh2, 1)
-                        ParticlesCh2
+                        CurrentParticle = ParticlesCh2{l, 1};
+                        NewParticle = CurrentParticle;
+                        for m = 1:size(NewParticle, 1)
+                            if ~isnan(NewParticle.plane(m))
+                                planeData = data(:,:, NewParticle.plane(m));
+                                ROI = planeData(NewParticle.roiLims{3}(3):NewParticle.roiLims{3}(4), NewParticle.roiLims{3}(1):NewParticle.roiLims{3}(2));
+                                [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
+                            end
+                        end
+                        NewParticlesCh1{end+1, 1} = NewParticle;
+                        NewParticlesCh1{end, 2} = 'Passed';
                     end
 
-
+                    obj.particles{1,1}.List{1,i} = NewParticlesCh1;
+                    obj.particles{2,1}.List{1,i} = NewParticlesCh2;
                 end
                 close(f)
             end
@@ -683,7 +715,7 @@ classdef MPParticleMovie < Core.MPMovie
                     currentCand = candMet(idx,:);
                     direction = -1;%Start by checking above
                     
-                    particle = [array2table(nan(nPlanes,size(currentCand,2)-1)), cell(nPlanes, 1)];
+                    particle = [array2table(nan(nPlanes,size(currentCand,2)-2)), cell(nPlanes, 2)];
                     particle.Properties.VariableNames = currentCand.Properties.VariableNames;
                     
                     particle(currentCand.plane,:) = currentCand;
@@ -1323,6 +1355,7 @@ classdef MPParticleMovie < Core.MPMovie
                 %Get the ROI
                 [roi_lims] = EmitterSim.getROI(frameCandidate.col(i), frameCandidate.row(i),...
                     delta, size(planeData,2), size(planeData,1));
+                roiLims{i,1} = roi_lims;
                 ROI = planeData(roi_lims(3):roi_lims(4),roi_lims(1):roi_lims(2));
                 roiSize = size(ROI);
                 if and(roiSize(1)==roiSize(2),mod(roiSize(1),2)==1)
@@ -1427,6 +1460,7 @@ classdef MPParticleMovie < Core.MPMovie
             candMet(idx,:) = [];
 
             candMet.gauss = gauss;
+            candMet.roiLims = roiLims;
         end
         
         function [doAvg]  = checkDoAverage(obj,ellip)
@@ -1463,7 +1497,7 @@ classdef MPParticleMovie < Core.MPMovie
         end
         
         function [newPart] = makeParticle(~,particleData)
-            newPart = [array2table(nan(5,size(particleData,2)-1)), cell(5, 1)];
+            newPart = [array2table(nan(5,size(particleData,2)-2)), cell(5, 2)];
             newPart.Properties.VariableNames = particleData.Properties.VariableNames;
             %store best focus in center
             [~,idx] = nanmax(particleData.fMetric);

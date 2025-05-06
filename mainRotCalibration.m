@@ -16,7 +16,7 @@ dimension = '3D';
 detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 60;
 detectParam{1}.consThresh = 4;
-detectParam{2}.delta = 10; 
+detectParam{2}.delta = 6; 
 detectParam{2}.chi2  = 60;
 detectParam{2}.consThresh = 4;
 

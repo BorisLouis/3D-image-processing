@@ -433,7 +433,9 @@ classdef MPParticleMovie < Core.MPMovie
                 %%% Pass the particles that are not detected in the other
                 %%% channel. When particles are added in the new channel,
                 %%% recalculate their intensity. 
-                obj.PartChannelConsolidation;
+                if obj.info.rotational == 1
+                    obj.PartChannelConsolidation;
+                end
             end
 
 
@@ -458,7 +460,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                             %%% To be same particle, particle needs to pass
                             %%% euDist test and commonplanes
-                            if euDist < 100
+                            if euDist < 20
                                 Check1 = 1;
                             else
                                 Check1 = 0;
@@ -483,14 +485,47 @@ classdef MPParticleMovie < Core.MPMovie
 
                     %%% Pass particles from Ch1 to Ch2
                     ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
+                    NewParticlesCh2 = [obj.particles{2, 1}.List{1,i}, cell(size(obj.particles{2, 1}.List{1,i}, 1), 1)];
+                    [data] = obj.getFrame(i, 2); % get frame from ch2
+                    sig = [obj.info.sigma_px obj.info.sigma_px];
+                    for l = 1:size(ParticlesCh1, 1)
+                        CurrentParticle = ParticlesCh1{l, 1};
+                        NewParticle = CurrentParticle;
+                        for m = 1:size(NewParticle, 1)
+                            if ~isnan(NewParticle.plane(m))
+                                planeData = data(:,:, NewParticle.plane(m));
+                                ROI = planeData(NewParticle.roiLims{3}(3):NewParticle.roiLims{3}(4), NewParticle.roiLims{3}(1):NewParticle.roiLims{3}(2));
+                                [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
+                            end
+                        end
+                        NewParticlesCh2{end+1,1 } = NewParticle;
+                        NewParticlesCh2{end,2} = 'passed';
+                    end
 
                     %%% Pass particles from Ch2 to Ch1
                     ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
+                    NewParticlesCh1 = [obj.particles{1, 1}.List{1,i}, cell(size(obj.particles{1, 1}.List{1,i}, 1), 1)];
+                    [data] = obj.getFrame(i, 1); % get frame from ch1
+                    sig = [obj.info.sigma_px obj.info.sigma_px];
                     for l = 1:size(ParticlesCh2, 1)
-                        ParticlesCh2
+                        CurrentParticle = ParticlesCh2{l, 1};
+                        NewParticle = CurrentParticle;
+                        for m = 1:size(NewParticle, 1)
+                            if ~isnan(NewParticle.plane(m))
+                                planeData = data(:,:, NewParticle.plane(m));
+                                ROI = planeData(NewParticle.roiLims{3}(3):NewParticle.roiLims{3}(4), NewParticle.roiLims{3}(1):NewParticle.roiLims{3}(2));
+                                [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
+                            end
+                        end
+                        NewParticlesCh1{end+1, 1} = NewParticle;
+                        NewParticlesCh1{end, 2} = 'Passed';
                     end
 
+                    obj.particles{1,1}.List{1,i} = NewParticlesCh1;
+                    obj.particles{2,1}.List{1,i} = NewParticlesCh2;
 
+                    obj.particles{1,1}.nParticles(1,i) = size(NewParticlesCh1, 1);
+                    obj.particles{2,1}.nParticles(1,i) = size(NewParticlesCh2, 1);
                 end
                 close(f)
             end

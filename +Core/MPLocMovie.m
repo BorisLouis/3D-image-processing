@@ -341,10 +341,10 @@ classdef MPLocMovie < Core.MPParticleMovie
                     for i = 1:nFrames
                       
                         frameData = data2Resolve{i};
-                        frameData2Store = table(zeros(size(frameData)),...
-                            zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
-                            zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
-                            zeros(size(frameData)),zeros(size(frameData)),zeros(size(frameData)),...
+                        frameData2Store = table(zeros(size(frameData, 1),1),...
+                            zeros(size(frameData, 1),1),zeros(size(frameData, 1),1),zeros(size(frameData, 1),1),...
+                            zeros(size(frameData, 1),1),zeros(size(frameData, 1),1),zeros(size(frameData, 1),1),...
+                            zeros(size(frameData, 1),1),zeros(size(frameData, 1),1),zeros(size(frameData, 1),1),...
                             'VariableNames',...
                             {'row','col','z','rowM','colM','zM','adjR','intensity','SNR','t'});
                         
@@ -360,11 +360,28 @@ classdef MPLocMovie < Core.MPParticleMovie
                             
                         else
                             
-                            fData = obj.getFrame(i,q);
                             ROIRad = ceil(obj.info.FWHM_px/2+1);
+                            fDataAll{1} = obj.getFrame(i, 1);
+                            fDataAll{2} = obj.getFrame(i, 2);
  
                             for j = 1:length(frameData)
-                                partData = frameData{j};
+                                partData = frameData{j,1};
+                                if obj.info.rotational == 1
+                                    if isempty(frameData{j, 2})
+                                        r = q;
+                                    elseif strcmp(frameData{j,2}, 'Passed')
+                                        if q == 1
+                                            r = 2;
+                                        elseif q == 2
+                                            r = 1;
+                                        end
+                                    end
+                                else
+                                    r = q;
+                                end
+                                fData = fDataAll{r};
+                                
+                                
                                 
                                 switch obj.info.zMethod
                                     case 'Intensity'
@@ -381,7 +398,7 @@ classdef MPLocMovie < Core.MPParticleMovie
     
                                         else
                                             PartVolIm = obj.getPartVolIm(partData,ROIRad,fData);
-                                            [data] = obj.resolveXYZInt(partData(:,{'row','col','z','ellip','plane', 'intensity', 'SNR'}),PartVolIm, q);                            
+                                            [data] = obj.resolveXYZInt(partData,PartVolIm, q);                            
                                         end
     
                                     case '3DFit'
@@ -676,7 +693,8 @@ classdef MPLocMovie < Core.MPParticleMovie
           
             pxSize = obj.info.pxSize;
           
-            bf = partData.plane(3);
+            [~, bestFocusIdx] = nanmax(partData.fMetric);
+            bf = partData.plane(bestFocusIdx);
             planePos = obj.calibrated{1,q}.oRelZPos;
             %partVolIm(partVolIm == 0) = NaN;
             %Get ROI XZ, YZ scaled to same pixel size
@@ -706,21 +724,12 @@ classdef MPLocMovie < Core.MPParticleMovie
             z = out(2);
             %if the z position is out of bound we do not consider the data
             if or(z<min(domain),z>max(domain))
-                if obj.info.rotational                   
-                    z = 0;
-                    row = partData.row(3)*pxSize;
-                    col = partData.col(3)*pxSize;
-                    zM = 0;                      
-                    rowM = 0;
-                    colM = 0;
-                else
-                    z   = NaN;                           
-                    row = NaN;
-                    col = NaN;
-                    zM   = NaN;                           
-                    rowM = NaN;
-                    colM = NaN;
-                end
+                z   = NaN;                           
+                row = NaN;
+                col = NaN;
+                zM   = NaN;                           
+                rowM = NaN;
+                colM = NaN;
             else
                 z = z*1000;
                 row = partData.row(3)*pxSize;
@@ -731,8 +740,8 @@ classdef MPLocMovie < Core.MPParticleMovie
 
             end
            
-            Int = nanmean(partData.intensity);
-            SNR = nanmean(partData.SNR);
+            Int = partData.intensity(bestFocusIdx);
+            SNR = partData.SNR(bestFocusIdx);
             %store the data
             data = table(row,col,z,rowM,colM,zM,adjR,Int, SNR,...
                    'VariableNames',{'row','col','z','rowM','colM','zM','adjR', 'Int', 'SNR'});
