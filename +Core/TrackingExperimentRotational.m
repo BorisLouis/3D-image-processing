@@ -345,76 +345,36 @@ classdef TrackingExperimentRotational < handle
             [closest, closest_indices] = min(distances, [], 2);
             [row, col] = find(distances < obj.info.euDist);
 
-            connectedtraces = cell(size(col, 1), 2);
-            IsUsed = zeros(size(col, 1),1);
+            connectedtraces = cell(size(col,1), 2);
+            IsUsed1 = zeros(max(col),1);
+            IsUsed2 = zeros(max(row),1);
             for i = 1:size(col, 1)
                 idx1 = col(i);
                 idx2 = row(i);
 
-                if isempty(connectedtraces{idx1,2})
-                    if IsUsed(idx2) == 1
+                if IsUsed1(idx1, 1) == 0
+                    if IsUsed2(idx2,1) == 1
                         for j = 1:size(connectedtraces, 1)
                             if ismember(idx2, connectedtraces{j, 2})
                                 connectedtraces{j,1} = [connectedtraces{j,1}, idx1];
                             end
                         end
                     else
-                        connectedtraces{idx1,1} = idx1;
-                        connectedtraces{idx1,2} = idx2;
+                        connectedtraces{i,1} = idx1;
+                        connectedtraces{i,2} = idx2;
                     end
                 else
-                    connectedtraces{idx1,1} = idx1;
-                    connectedtraces{idx1,2} = [connectedtraces{idx1,2}, idx2];
+                    for j = 1:size(connectedtraces, 1)
+                        if ismember(idx1, connectedtraces{j, 1})
+                            connectedtraces{j,2} = [connectedtraces{j,2}, idx2];
+                        end
+                    end
                 end
-                IsUsed(idx2) = 1;
+                IsUsed2(idx2) = 1;
+                IsUsed1(idx1) = 1;
             end
-            % for i = 1:size(distances, 1)
-            %     if all(isnan(distances(i,:)))
-            %         closest_indices(i) = NaN;
-            %         closest(i) = NaN;
-            %     end
-            % end
-            
-
-            % unique_vals = unique(closest_indices);
-            % n = 0;
-
-            % f = waitbar(0,'Removing double pairs')
-            % while numel(unique_vals) < min(size(distances))
-            %     waitbar(i./numTraces1,f,'Removing double pairs');
-            %     n = n+1;
-            %     closest_indicesNoNaN = closest_indices;
-            %     closest_indicesNoNaN(isnan(closest_indicesNoNaN)) = [];
-            %     unique_valsNoNaN = unique_vals;
-            %     unique_valsNoNaN(isnan(unique_valsNoNaN)) = [];
-            %     duplicates = unique_vals(histc(closest_indicesNoNaN, unique_valsNoNaN) > 1);
-            % 
-            %     for i = 1:numel(duplicates)
-            %         duplicate_value = duplicates(i);
-            %         duplicate_indices = find(closest_indices == duplicate_value);
-            %         [MinDup, MinDupIdx] = min(closest(duplicate_indices));
-            %         PossPartners = Inf(size(distances(:, duplicate_value)));
-            %         PossPartners(duplicate_indices(MinDupIdx)) = MinDup;
-            %         PossPartners2 = Inf(size(distances(duplicate_indices(MinDupIdx), :)));
-            %         PossPartners2(duplicate_value) = MinDup;
-            %         distances(:,duplicate_value) = PossPartners;
-            %         distances(duplicate_indices(MinDupIdx), :) = PossPartners2;
-            %     end
-            % 
-            %     [closest, closest_indices] = min(distances, [], 2);
-            % 
-            %     unique_vals = unique(closest_indices);
-            %     unique_vals(isnan(unique_vals)) = [];
-            % 
-            %     if n == max(size(distances))
-            %         break
-            %     end
-            % end
-            % close(f)
-
-            % closest_indices(:,2) = closest_indices(:,1);
-            % closest_indices(:,1) = [1:1:size(closest_indices, 1)].';
-            % closest_indices(:,3) = closest;
+   
+            connectedtraces(cellfun(@isempty,connectedtraces(:,1)), :)=[];
             
             traces3Dcommon = struct([]);
             for i = 1:size(connectedtraces, 1)

@@ -13,16 +13,16 @@ path2Cal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
-detectParam{1}.delta = 10;
-detectParam{1}.chi2  = 40;
+detectParam{1}.delta = 5;
+detectParam{1}.chi2  = 60;
 detectParam{1}.consThresh = 4;
-detectParam{2}.delta = 10; 
-detectParam{2}.chi2  = 40;
+detectParam{2}.delta = 6; 
+detectParam{2}.chi2  = 60;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
-trackParam.radius  = 1000;%nm
-trackParam.memory  = 3;
+trackParam.radius  = 800;%nm
+trackParam.memory  = 50;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
@@ -36,11 +36,11 @@ info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 
 info.rotationalCalib = 0;
 info.Bipyramid = [184, 92]; %Long axis, short axis in nm
-info.euDist = 100;
+info.euDist = 500;
 info.expTime = 0.010; %in sec
 info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
-info.FWHM = 3;
+info.FWHM = 5;
 
 AmplitudeI = [];
 AmplitudeI0 = [];

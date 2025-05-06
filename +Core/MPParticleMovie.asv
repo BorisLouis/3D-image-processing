@@ -460,7 +460,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                             %%% To be same particle, particle needs to pass
                             %%% euDist test and commonplanes
-                            if euDist < 100
+                            if euDist < 20
                                 Check1 = 1;
                             else
                                 Check1 = 0;
@@ -504,7 +504,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                     %%% Pass particles from Ch2 to Ch1
                     ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
-                    NewParticlesCh1 = [obj.particles{1, 1}.List{1,i}, cell(size(obj.particles{2, 1}.List{1,i}, 1), 1)];;
+                    NewParticlesCh1 = [obj.particles{1, 1}.List{1,i}, cell(size(obj.particles{1, 1}.List{1,i}, 1), 1)];
                     [data] = obj.getFrame(i, 1); % get frame from ch1
                     sig = [obj.info.sigma_px obj.info.sigma_px];
                     for l = 1:size(ParticlesCh2, 1)
@@ -523,6 +523,9 @@ classdef MPParticleMovie < Core.MPMovie
 
                     obj.particles{1,1}.List{1,i} = NewParticlesCh1;
                     obj.particles{2,1}.List{1,i} = NewParticlesCh2;
+
+                    obj.particles{1,1}.nParticles(1,i) = size(NewParticlesCh1, 1);
+                    obj.particles{2,1}.nParticles(1,i) = size(NewParticlesCh2, 1);
                 end
                 close(f)
             end
@@ -805,7 +808,7 @@ classdef MPParticleMovie < Core.MPMovie
             
             %isPart will only be true for particle that passes the 3 tests
             %isPart = checkRes1.*checkRes2.*checkRes3;
-            isPart = checkRes1.*checkRes2;
+            isPart = checkRes1.*checkRes2.*checkRes3;
             
             if(length(find(isPart))>1)
                 
@@ -952,9 +955,8 @@ classdef MPParticleMovie < Core.MPMovie
             if testPlanes
                 %We check that there is no "Gap" in the plane configuration
                 %as it would not make sense.
-%                 testConsec = diff(planeConfig(~isnan(planeConfig)));
-%                 checkRes = length(testConsec==1)>=2;
-                checkRes = true;
+                testConsec = diff(planeConfig(~isnan(planeConfig)));
+                checkRes = length(testConsec==1)>=2;
             else
                 
                 checkRes = false;
@@ -1012,7 +1014,7 @@ classdef MPParticleMovie < Core.MPMovie
 
         function [int,SNR, gaussian_particle_mask]  = getIntensityGauss(ROI,sig)
             % --- Step 1: Create a Gaussian-weighted mask ---
-            sz = 2*ceil(max(sig))+3;
+            sz = 2*ceil(max(sig))+1;
             [x, y] = meshgrid(-(sz(1)-1)/2:(sz(1)-1)/2, -(sz(1)-1)/2:(sz(1)-1)/2);
 
             gauss_mask = exp(-(x.^2 / (2*sig(1)^2) + y.^2 / (2*sig(2)^2)));
@@ -1056,6 +1058,7 @@ classdef MPParticleMovie < Core.MPMovie
             roi_corrected = ROI - background_mean;
 
             % --- Step 5: Compute particle intensity ---
+            gaussian_particle_mask(gaussian_particle_mask ~= 0) = 1;
             int = sum(roi_corrected .* gaussian_particle_mask, 'all');
             SNR = sum(ROI .* gaussian_particle_mask, 'all')./sum(background_mean*gaussian_particle_mask, 'all');
            

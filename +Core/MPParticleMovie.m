@@ -113,7 +113,7 @@ classdef MPParticleMovie < Core.MPMovie
             %%% Only done when checking the parameters (only on 1 frame) : detect particles in the two
             %%% channels. If they are visible in both, only keep ch1.
             if size(frames, 2) == 1
-                threshold = 10;
+                threshold = 20;
                 for frameIdx = 1:size(candidatePos{1,1}, 1)
                     data1 = candidatePos{1,1}{frameIdx};
                     data2 = candidatePos{2,1}{frameIdx};
@@ -808,7 +808,7 @@ classdef MPParticleMovie < Core.MPMovie
             
             %isPart will only be true for particle that passes the 3 tests
             %isPart = checkRes1.*checkRes2.*checkRes3;
-            isPart = checkRes1.*checkRes2;
+            isPart = checkRes1.*checkRes2.*checkRes3;
             
             if(length(find(isPart))>1)
                 
@@ -954,9 +954,9 @@ classdef MPParticleMovie < Core.MPMovie
             end
             if testPlanes
                 %We check that there is no "Gap" in the plane configuration
-                %as it would not make sense.
-%                 testConsec = diff(planeConfig(~isnan(planeConfig)));
-%                 checkRes = length(testConsec==1)>=2;
+                % %as it would not make sense.
+                % testConsec = diff(planeConfig(~isnan(planeConfig)));
+                % checkRes = length(testConsec==1)>=2;
                 checkRes = true;
             else
                 
@@ -1015,7 +1015,7 @@ classdef MPParticleMovie < Core.MPMovie
 
         function [int,SNR, gaussian_particle_mask]  = getIntensityGauss(ROI,sig)
             % --- Step 1: Create a Gaussian-weighted mask ---
-            sz = 2*ceil(max(sig))+3;
+            sz = 2*ceil(max(sig))+1;
             [x, y] = meshgrid(-(sz(1)-1)/2:(sz(1)-1)/2, -(sz(1)-1)/2:(sz(1)-1)/2);
 
             gauss_mask = exp(-(x.^2 / (2*sig(1)^2) + y.^2 / (2*sig(2)^2)));
@@ -1059,6 +1059,7 @@ classdef MPParticleMovie < Core.MPMovie
             roi_corrected = ROI - background_mean;
 
             % --- Step 5: Compute particle intensity ---
+            gaussian_particle_mask(gaussian_particle_mask ~= 0) = 1;
             int = sum(roi_corrected .* gaussian_particle_mask, 'all');
             SNR = sum(ROI .* gaussian_particle_mask, 'all')./sum(background_mean*gaussian_particle_mask, 'all');
            
