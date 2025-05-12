@@ -138,6 +138,9 @@ classdef SRCalibration < handle
                 currMov = obj.SRCalMovies.(fieldsN{i});
                 %Molecule detection
                 currMov.findCandidatePos(detectParam);
+
+                %Calculate the channel difference
+                obj.C
                 
                  %SR fitting
                 currMov.SRLocalizeCandidate(detectParam);

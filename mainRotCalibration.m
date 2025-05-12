@@ -3,13 +3,13 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
-path2Cal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
@@ -47,7 +47,7 @@ AmplitudeI0 = [];
 totI = [];
 totI0 = [];
 for i = 1:size(subFolders, 2)
-    try
+    % try
         file.path = append(MainFolder, filesep, subFolders{i});
     
         %% create experiments
@@ -74,8 +74,8 @@ for i = 1:size(subFolders, 2)
         AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
         totI = [totI; trackingExp.traces3Dcommon.TotInt];
         totI0 = [totI0; trackingExp.traces3Dcommon.TotIntCorr];
-    catch
-    end
+    % catch
+    % end
 end
 AmplitudeI(isnan(AmplitudeI)) = [];
 AmplitudeI0(isnan(AmplitudeI0)) = [];

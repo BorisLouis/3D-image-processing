@@ -291,32 +291,32 @@ classdef MPMovie < Core.Movie
 
                     %%% For multimodal: zoom, translate and rotate the
                     %%% frames of ch2 so it fits exactly on ch1.
-                    if isprop(obj, "SRCal")
-                        if q == 2
-                            try
-                                CMa = obj.SRCal{1, 1}.rot.CMa{i,1} - obj.SRCal{2, 1}.rot.CMa{i,1};
-                            catch
-                                CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
-                            end
-                            Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
-                            Transformation.Translation = [Transformation.Translation(1)-CMa(1), Transformation.Translation(2)-CMa(1)];
-                            Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
-                                                sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
-                            Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
-                                                Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Scale*cosd(Transformation.RotationAngle) Transformation.Translation(2);
-                                                0 0 1];
-                            mov = imwarp(mov,Transformation, "OutputView",imref2d(size(mov)));
-                            
-                            if obj.info.rotational == 1
-                                [mov1] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx); 
-                                testmov = double(mov);
-                                testmov(testmov == 0) = NaN;
-                                testmov1 = double(mov1);
-                                testmov1(testmov1 == 0) = NaN;
-                                CorrFactor(i) = nanmean(testmov1, 'all')/nanmean(testmov, 'all');
-                            end
-                        end
-                    end
+                    % if isprop(obj, "SRCal")
+                        % if q == 2
+                        %     try
+                        %         CMa = obj.SRCal{1, 1}.rot.CMa{i,1} - obj.SRCal{2, 1}.rot.CMa{i,1};
+                        %     catch
+                        %         CMa = obj.SRCal{1, 1}.rot.CMa{i-1,1} - obj.SRCal{2, 1}.rot.CMa{i-1,1};
+                        %     end
+                        %     Transformation = obj.SRCal{2, 1}.Transformations{i, 1};
+                        %     Transformation.Translation = [Transformation.Translation(1)-CMa(1), Transformation.Translation(2)-CMa(1)];
+                        %     Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
+                        %                         sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
+                        %     Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
+                        %                         Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Scale*cosd(Transformation.RotationAngle) Transformation.Translation(2);
+                        %                         0 0 1];
+                        %     mov = imwarp(mov,Transformation, "OutputView",imref2d(size(mov)));
+                        % 
+                        %     if obj.info.rotational == 1
+                        %         [mov1] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx); 
+                        %         testmov = double(mov);
+                        %         testmov(testmov == 0) = NaN;
+                        %         testmov1 = double(mov1);
+                        %         testmov1(testmov1 == 0) = NaN;
+                        %         CorrFactor(i) = nanmean(testmov1, 'all')/nanmean(testmov, 'all');
+                        %     end
+                        % end
+                    % end
                     data(:,:,i) = double(mov);
                     
                 end

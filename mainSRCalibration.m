@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
+file.path = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_test';
 file.ext  = '.ome.tif';
-path2Cal  = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
+path2Cal  = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_test';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -19,6 +19,7 @@ info.detectionMethod = 'MaxLR';
 info.rotational = 0;
 info.PxSize = 95;
 info.rotationalCalib = 0;
+info.FWHM = 3;
 
 testSRCal = Core.SRCalibration(file,path2Cal,info);
 
@@ -40,6 +41,10 @@ trackParam.euDistPx = 6;
 testSRCal.retrieveSRCalData(detectParam,trackParam);
 
 % calibratewwwnBB
+
+%% calc channel translations
+testSRCal.CalcAccuracyChannels(refPlane);
+
 %% calc translation
 refPlane = 4;
 testSRCal.corrTranslation(refPlane);

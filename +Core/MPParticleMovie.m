@@ -103,19 +103,14 @@ classdef MPParticleMovie < Core.MPMovie
                 candidatePos{q,1} = candidate;
                 obj.candidatePos{q,1} = candidate;
                 
-
-                % if obj.info.rotationalCalib == 1
-                %     candidatePos{2,1} = candidatePos{1,1};
-                %     obj.candidatePos{2,1} = obj.candidatePos{1,1};
-                % end
             end
             obj.BgcorrectionCh1Ch2 = BgCorrFactor;
             %%% Only done when checking the parameters (only on 1 frame) : detect particles in the two
             %%% channels. If they are visible in both, only keep ch1.
             if size(frames, 2) == 1
-                threshold = 20;
+                threshold = 0.0010;
                 for frameIdx = 1:size(candidatePos{1,1}, 1)
-                    data1 = candidatePos{1,1}{frameIdx};
+                    data1 = candidatePos{1,1}{frameIdx};  
                     data2 = candidatePos{2,1}{frameIdx};
                     if ~isempty(data1)
                         data1.OriginChannel(:,1) = 1;
@@ -142,8 +137,48 @@ classdef MPParticleMovie < Core.MPMovie
                                 CombinedLoc = combined;
                                 CombinedLoc.OriginChannel(CombinedLoc.OriginChannel == q) = 0;
                                 CombinedLoc.OriginChannel(CombinedLoc.OriginChannel ~= 0) = 1;
+                                
+                                PassedPart = CombinedLoc(CombinedLoc.OriginChannel == 1, :);
+                                
+                                if q == 1
+                                    for i = 1:size(PassedPart,1)
+                                        try
+                                            CMa = obj.SRCal{1, 1}.rot.CMa{PassedPart.plane(i),1} - obj.SRCal{2, 1}.rot.CMa{PassedPart.plane(i),1};
+                                        catch
+                                            CMa = obj.SRCal{1, 1}.rot.CMa{PassedPart.plane(i)-1,1} - obj.SRCal{2, 1}.rot.CMa{PassedPart.plane(i)-1,1};
+                                        end
+                                        Transformation = obj.SRCal{2,1}.Transformations{PassedPart.plane(i), 1};
+                                        Transformation.Translation = [Transformation.Translation(1)-CMa(1), Transformation.Translation(2)-CMa(1)];
+                                        Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
+                                                            sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
+                                        Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
+                                                            Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Scale*cosd(Transformation.RotationAngle) Transformation.Translation(2);
+                                                            0 0 1];
+                                        [PassedPart.col(i), PassedPart.row(i)] = transformPointsForward(Transformation,...
+                                            PassedPart.col(i), PassedPart.row(i));
+                                    end
+                                elseif q == 2
+                                    for i = 1:size(PassedPart,1)
+                                        try
+                                            CMa = obj.SRCal{1, 1}.rot.CMa{PassedPart.plane(i),1} - obj.SRCal{2, 1}.rot.CMa{PassedPart.plane(i),1};
+                                        catch
+                                            CMa = obj.SRCal{1, 1}.rot.CMa{PassedPart.plane(i)-1,1} - obj.SRCal{2, 1}.rot.CMa{PassedPart.plane(i)-1,1};
+                                        end
+                                        Transformation = obj.SRCal{2,1}.Transformations{PassedPart.plane(i), 1};
+                                        Transformation.Translation = [Transformation.Translation(1)-CMa(1), Transformation.Translation(2)-CMa(1)];
+                                        Transformation.R = [cosd(Transformation.RotationAngle) -sind(Transformation.RotationAngle);
+                                                            sind(Transformation.RotationAngle) cosd(Transformation.RotationAngle)];
+                                        Transformation.A = [Transformation.Scale*cosd(Transformation.RotationAngle) -Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Translation(1);
+                                                            Transformation.Scale*sind(Transformation.RotationAngle) Transformation.Scale*cosd(Transformation.RotationAngle) Transformation.Translation(2);
+                                                            0 0 1];
+                                        [PassedPart.col(i), PassedPart.row(i)] = transformPointsInverse(Transformation,...
+                                            PassedPart.col(i), PassedPart.row(i));
+                                    end
+                                end
+                                CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
                                 candidatePos{q,1}{frameIdx} = array2table(CombinedLoc{~toRemove, :}, 'VariableNames',{'row', 'col', 'meanFAR', 'plane', 'ParticlePassed'});
                                
+      
                             end
                         end
                     end
