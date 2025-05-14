@@ -139,9 +139,6 @@ classdef SRCalibration < handle
                 %Molecule detection
                 currMov.findCandidatePos(detectParam);
 
-                %Calculate the channel difference
-                obj.C
-                
                  %SR fitting
                 currMov.SRLocalizeCandidate(detectParam);
                 
@@ -265,45 +262,111 @@ classdef SRCalibration < handle
 
                     PartCh1 = obj.calib.SRCorrData{1, 1}{p, 1};
                     PartCh2 = obj.calib.SRCorrData{2, 1}{p, 1};
-                    coords1 = [PartCh1.row, PartCh1.col];
-                    coords2 = [PartCh2.row, PartCh2.col];
 
-                    imsize = [obj.SRCalMovies.SRCal1.calibrated{1, 2}.Height, obj.SRCalMovies.SRCal1.calibrated{1, 2}.Width];
-                    Im1 = zeros(imsize);
-                    Im2 = zeros(imsize);
-                    Im1(sub2ind(imsize, round(coords1(:,1)), round(coords1(:,2)))) = 1;
-                    Im2(sub2ind(imsize, round(coords2(:,1)), round(coords2(:,2)))) = 1;
-                
-                    tform = imregcorr(Im2, Im1, "similarity");
-                    % if p == 1
-                    %     tform = Transformations{2,1};
-                    % elseif p == 8
-                    %     tform = Transformations{7,1};
-                    % end
-                    Im2Moved = imwarp(Im2,tform, "OutputView",imref2d(imsize));
-                    
-                    subplot(2, nPlanes, p)
-                    scatter(coords1(:,2), coords1(:,1))
-                    hold on 
-                    scatter(coords2(:,2), coords2(:,1))
-                    title(append('Plane ', num2str(p), ' raw'))
+                    idx = find((diff(PartCh2.partNum)) < 0);
+                    for z = 1:(size(idx, 1)+1)
+                        if z == 1
+                            Start = 1;
+                        else
+                            Start = idx(z-1)+1;
+                        end
 
-                    [coords2t(:,2),coords2t(:,1)] = transformPointsForward(tform,coords2(:,2),coords2(:,1));
-                    
-                    subplot(2, nPlanes, p+8)
-                    scatter(coords1(:,2), coords1(:,1))
-                    hold on 
-                    scatter(coords2t(:,2), coords2t(:,1))
-                    title(append('Plane ', num2str(p), ' transf'))
+                        if z == size(idx, 1)+1
+                            End = size(PartCh1, 1);
+                        else
+                            End = idx(z);
+                        end
+                        
+                        Part1Selected = PartCh1(Start:End, :);
+                        Part2Selected = PartCh2(Start:End, :);
 
-                    Transformations{p,1} = tform;
+                        coords1 = [Part1Selected.row, Part1Selected.col];
+                        coords1 = sortrows(coords1);
+                        coords2 = [Part2Selected.row, Part2Selected.col];
+                        coords2 = sortrows(coords2);
+
+                        D = pdist2(coords1, coords2);
+                        threshold = 30;
+                        [matches, costs] = matchpairs(D, threshold);
+                        matched_coords1 = coords1(matches(:,1), :);
+                        matched_coords2 = coords2(matches(:,2), :);
+                                           
+                        [~, ~, transform] = procrustes(matched_coords1, matched_coords2);
+                        
+                        coords2t = transform.b*matched_coords2*transform.T + transform.c;
+    
+                        subplot(2, nPlanes, p)
+                        scatter(coords1(:,2), coords1(:,1),"MarkerEdgeColor", "#0072BD")
+                        hold on 
+                        scatter(coords2(:,2), coords2(:,1),"MarkerEdgeColor", "#D95319")
+                        hold on
+                        title(append('Plane ', num2str(p), ' raw'))
+    
+                        subplot(2, nPlanes, p+8)
+                        scatter(matched_coords1(:,2), matched_coords1(:,1),"MarkerEdgeColor", "#0072BD")
+                        hold on 
+                        scatter(coords2t(:,2), coords2t(:,1),"MarkerEdgeColor", "#D95319")
+                        hold on
+                        title(append('Plane ', num2str(p), ' transf'))
+       
+                        Transformations{p,z} = transform;
+                    end
                     
                 end
-                Transformations{1,1} = Transformations{2,1};
-                Transformations{8,1} = Transformations{7,1};
                 sgtitle('Transformations Channel1 - Channel2')
 
-                obj.calib.corr{2,1}.Transformations = Transformations;
+                for p = 1:nPlanes
+                    for i = 1:z
+                        T(:,:, i) = Transformations{p, i}.T;
+                        b(i) = Transformations{p, i}.b;
+                        c(:,:,i) = Transformations{p, i}.c(1,:);
+                    end
+                    Transf{p,1}.T = mean(T,3);
+                    Transf{p,1}.b = mean(b);
+                    Transf{p,1}.c = mean(c, 3);
+
+                    Transf{p,2}.T = Transf{p,1}.T';
+                    Transf{p,2}.b = 1/(Transf{p,1}.b);
+                    Transf{p,2}.c = -(1 /Transf{p,1}.b) * Transf{p,1}.c * Transf{p,1}.T';
+                end
+
+                Transf = array2table(Transf, "VariableNames", {'Coords2toCoords1', 'Coords1toCoords2'});
+
+                figure()
+                for p = 1:nPlanes
+                    PartCh1 = [];
+                    PartCh2 = [];
+                    coords1s = [];
+                    coords2s = [];
+                    coords2t = [];
+
+                    PartCh1 = obj.calib.SRCorrData{1, 1}{p, 1};
+                    PartCh2 = obj.calib.SRCorrData{2, 1}{p, 1};
+
+                    coords1 = [PartCh1.row, PartCh1.col];
+                    coords1 = sortrows(coords1);
+                    coords2 = [PartCh2.row, PartCh2.col];
+                    coords2 = sortrows(coords2);
+                        
+                    coords2t = Transf.Coords2toCoords1{p}.b*coords2*Transf.Coords2toCoords1{p}.T + Transf.Coords2toCoords1{p}.c;
+    
+                    subplot(2, nPlanes, p)
+                    scatter(coords1(:,2), coords1(:,1),"MarkerEdgeColor", "#0072BD")
+                    hold on 
+                    scatter(coords2(:,2), coords2(:,1),"MarkerEdgeColor", "#D95319")
+                    hold on
+                    title(append('Plane ', num2str(p), ' raw'))
+    
+                    subplot(2, nPlanes, p+8)
+                    scatter(coords1(:,2), coords1(:,1),"MarkerEdgeColor", "#0072BD")
+                    hold on 
+                    scatter(coords2t(:,2), coords2t(:,1),"MarkerEdgeColor", "#D95319")
+                    hold on
+                    title(append('Plane ', num2str(p), ' transf'));                    
+                end
+
+
+                obj.calib.corr{2,1}.Transformations = Transf;
                 SRCal = obj.calib.corr{2,1};
                 fileName = sprintf('%s%sSRCalibration2.mat',obj.path,'\');
                 save(fileName,'SRCal');
@@ -312,6 +375,15 @@ classdef SRCalibration < handle
                 disp("No multimodal selected - no shift between channels to calculate")
             end
            
+        end
+
+        function applySRCal(obj, refPlane)
+            for i = 1:numel(obj.SRCalMovies)
+                currentMovie = obj.SRCalMovies.(append('SRCal', num2str(i)));
+                for q = 1:(obj.info.multiModal + 1)
+                    currentMovie.unCorrLocPos{q, 1}
+                end
+            end
         end
 
         

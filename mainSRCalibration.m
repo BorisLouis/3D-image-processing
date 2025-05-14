@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_test';
+file.path = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_test';
+path2Cal  = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -41,10 +41,6 @@ trackParam.euDistPx = 6;
 testSRCal.retrieveSRCalData(detectParam,trackParam);
 
 % calibratewwwnBB
-
-%% calc channel translations
-testSRCal.CalcAccuracyChannels(refPlane);
-
 %% calc translation
 refPlane = 4;
 testSRCal.corrTranslation(refPlane);
