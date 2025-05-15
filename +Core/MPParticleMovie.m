@@ -415,6 +415,13 @@ classdef MPParticleMovie < Core.MPMovie
                             k = idx(Idx);
                             CurrentPart2 = ParticlesCh2{k,1};
 
+                            Transformation = obj.SRCal{2, 1}.Transformations.Coords2toCoords1{PassedPart.plane(i), 1};
+                            Transformation.c = Transformation.c - [4,4];
+                            Coords = [PassedPart.row(i) PassedPart.col(i)];
+                            Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
+                            PassedPart.row(i) = Coordsnew(:,1);
+                            PassedPart.col(i) = Coordsnew(:,2);
+
                             euDist = nanmean(sqrt((CurrentPart1.row - CurrentPart2.row).^2 + (CurrentPart1.col - CurrentPart2.col).^2));
                             CommonPlanes = intersect(CurrentPart1.plane, CurrentPart2.plane);
 
@@ -1159,25 +1166,10 @@ classdef MPParticleMovie < Core.MPMovie
             h = waitbar(0,'detection of candidates...');
             
             if obj.info.rotationalCalib == 1
-                % AllFramesFile = append(obj.raw.movInfo.Path,filesep,'calibrated',num2str(q),filesep,'AllFrames.mat');
-                % if ~exist(AllFramesFile)
-                %     run = 1;
-                % else
-                %     run = 0;
-                % end
-
-                % if run == 1
-                    for i = 1:obj.raw.maxFrame(1)
-                        waitbar(i./obj.raw.maxFrame(1), h, 'Rotational: Averaging frames')
-                        AllFrames(:,:,:,i) = obj.getFrame(i,q);
-                    end
-                    % save(AllFramesFile, 'AllFrames', '-v7.3');
-                % else
-                %     waitbar(0.5, h, 'Rotational: loading meanImage')
-                %     AllFrames = load(AllFramesFile);
-                %     AllFrames = AllFrames.AllFrames;
-                % end
-
+                for i = 1:obj.raw.maxFrame(1)
+                    waitbar(i./obj.raw.maxFrame(1), h, 'Rotational: Averaging frames')
+                    AllFrames(:,:,:,i) = obj.getFrame(i,q);
+                end
                 MeanIm = mean(AllFrames, 4);
                 obj.calibrated{2,q} = MeanIm;
             end

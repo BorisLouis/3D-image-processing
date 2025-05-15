@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+file.path = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal  = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';

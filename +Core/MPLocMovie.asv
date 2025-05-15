@@ -169,17 +169,17 @@ classdef MPLocMovie < Core.MPParticleMovie
 
                             PassedPart = CombinedLoc(CombinedLoc.OriginChannel == 1, :);
 
-                            for i = 1:size(PassedPart,1)
-                                if q == 1
-                                    Transformation = obj.SRCal{2, 1}.Transformations.Coords2toCoords1{PassedPart.plane(i), 1};
-                                elseif q == 2
-                                    Transformation = obj.SRCal{2, 1}.Transformations.Coords1toCoords2{PassedPart.plane(i), 1};
-                                end
-                                Coords = [PassedPart.row(i) PassedPart.col(i)];
-                                Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
-                                PassedPart.row(i) = Coordsnew(:,1);
-                                PassedPart.col(i) = Coordsnew(:,2);
-                            end
+                            % for i = 1:size(PassedPart,1)
+                            %     if q == 1
+                            %         Transformation = obj.SRCal{2, 1}.Transformations.Coords2toCoords1{PassedPart.plane(i), 1};
+                            %     elseif q == 2
+                            %         Transformation = obj.SRCal{2, 1}.Transformations.Coords1toCoords2{PassedPart.plane(i), 1};
+                            %     end
+                            %     Coords = [PassedPart.row(i) PassedPart.col(i)];
+                            %     Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
+                            %     PassedPart.row(i) = Coordsnew(:,1);
+                            %     PassedPart.col(i) = Coordsnew(:,2);
+                            % end
 
                             CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
 
