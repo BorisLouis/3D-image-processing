@@ -191,7 +191,7 @@ classdef MPParticleMovie < Core.MPMovie
         
                             case 3
         
-                                [frames] = obj.checkFrame(frames,frames);
+                                [frames] = obj.checkFrame(frames,obj.calibrated{1,q}.nFrames);
         
                             otherwise
         
@@ -401,54 +401,104 @@ classdef MPParticleMovie < Core.MPMovie
 
             function PartChannelConsolidation(obj)
                 %%% loop through frames
+
+                Transformation = load(append(obj.calibrated{1, 2}.mainPath  , filesep, 'ChannelTransformations.mat'));
+                Transformation = Transformation.transformation;
                 f = waitbar(0, 'Initizalizing')
                 for i = 1:size(obj.particles{1, 1}.List, 2)
+                    D = [];
+                    matches = [];
                     waitbar(i./size(obj.particles{1, 1}.List, 2), f, 'Consolidating particles in both channels')
                     ParticlesCh1 = obj.particles{1, 1}.List{1,i};
                     ParticlesCh2 = obj.particles{2, 1}.List{1,i};
 
-                    %%% loop through channel 1 particles
+                    %%% Delete particles that are visible in both channels.
+                    %%% Those will not be passed to the other channel
+                    Coord1 = [];
+                    Coord2 = [];
                     for j = 1:size(ParticlesCh1,1)
-                        CurrentPart1 = ParticlesCh1{j,1};
-                        idx = find(~cellfun(@isempty, ParticlesCh2));
-                        for Idx = 1:size(idx, 1)
-                            k = idx(Idx);
-                            CurrentPart2 = ParticlesCh2{k,1};
+                        Coord1(j,:) = table2array(nanmean(ParticlesCh1{j, 1} (:,1:2), 1));
+                    end
+                    for j = 1:size(ParticlesCh2,1)
+                        Coord2(j,:) = table2array(nanmean(ParticlesCh2{j, 1} (:,1:2), 1));
+                    end
+                    Coord2 = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
 
-                            Transformation = obj.SRCal{2, 1}.Transformations.Coords2toCoords1{PassedPart.plane(i), 1};
-                            Transformation.c = Transformation.c - [4,4];
-                            Coords = [PassedPart.row(i) PassedPart.col(i)];
-                            Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
-                            PassedPart.row(i) = Coordsnew(:,1);
-                            PassedPart.col(i) = Coordsnew(:,2);
+                    D = pdist2(Coord1, Coord2);
+                    [matches, costs] = matchpairs(D, 10);
 
-                            euDist = nanmean(sqrt((CurrentPart1.row - CurrentPart2.row).^2 + (CurrentPart1.col - CurrentPart2.col).^2));
-                            CommonPlanes = intersect(CurrentPart1.plane, CurrentPart2.plane);
+                    %%%Check if the matched particles have at least 2
+                    %%%planes in common:
+                    for k = 1:size(matches, 1)
+                        CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
+                        if size(CommonPlanes, 1) >= 2
+                            PlaneCheck(k,1) = 1;
+                        else
+                            PlaneCheck(k,2) = 0;
+                        end
+                    end
 
-                            %%% To be same particle, particle needs to pass
-                            %%% euDist test and commonplanes
-                            if euDist < 20
-                                Check1 = 1;
+                    while any(PlaneCheck == 0)
+                        for l = 1:size(PlaneCheck, 1)
+                            if PlaneCheck(l) == 1
                             else
-                                Check1 = 0;
+                                %%% find match for ch1 candidate
+                                candidates1 = D(matches(l,1),:);
+                                candidates1(matches(l,2)) = Inf;
+                                [dist1, candidate1] = min(candidates1);
+                                if dist1 < 10
+                                    NewPair1 = [matches(l,1), candidate1];
+                                else
+                                    NewPair1 = [];
+                                end
+                               
+                                %%% find match for ch2 candidate
+                                candidates2 = D(:, matches(l,2));
+                                candidates2(matches(l,1)) = Inf;
+                                [dist2, candidate2] = min(candidates2);
+                                if dist2 < 10
+                                    NewPair2 = [candidate2, matches(l,2)];
+                                else
+                                    NewPair2 = [];
+                                end
+
+                                if ~isempty(NewPair1)
+                                    matches(l,:) = NewPair1;
+                                    D(matches(l,1), :) = candidates1;
+                                    if ~isempty(NewPair2)
+                                        matches = [matches, NewPair2];
+                                        D(:,matches(l,2)) = candidates2;
+                                    end
+                                else
+                                    if ~isempty(NewPair2)
+                                        matches(l,:) = NewPair2;
+                                        D(:,matches(l,2)) = candidates2;
+                                    else
+                                        matches(l,:) = nan(1,2);
+                                    end
+                                end                                
                             end
+                        end
+                        matches(isnan(matches)) = [];
+                        for k = 1:size(matches, 1)
+                            CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
                             if size(CommonPlanes, 1) >= 2
-                                Check2 = 1;
+                                PlaneCheck(k,1) = 1;
                             else
-                                Check2 = 0;
-                            end
-
-                            SamePart = Check1 * Check2;
-
-                            %%% If it is the same particles, delete it from
-                            %%% the list of particles
-                            if SamePart == 1
-                               ParticlesCh1{j,1} = {};
-                               ParticlesCh2{k,1} = {};
-                               break
+                                PlaneCheck(k,2) = 0;
                             end
                         end
                     end
+
+                    %%%Delete particles that have a partner from the lists
+                    ToRemove1 = zeros(size(ParticlesCh1, 1),1);
+                    ToRemove2 = zeros(size(ParticlesCh2, 1),1);
+                    for l = 1:size(matches, 1)
+                        ToRemove1(matches(l,1),1) = 1;
+                        ToRemove2(matches(l,2),1) = 1;
+                    end
+                    ParticlesCh1 = ParticlesCh1(ToRemove1 == 0);
+                    ParticlesCh2 = ParticlesCh2(ToRemove2 == 0);
 
                     %%% Pass particles from Ch1 to Ch2
                     ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
@@ -457,7 +507,11 @@ classdef MPParticleMovie < Core.MPMovie
                     sig = [obj.info.sigma_px obj.info.sigma_px];
                     for l = 1:size(ParticlesCh1, 1)
                         CurrentParticle = ParticlesCh1{l, 1};
+                        Coord = [CurrentParticle.row, CurrentParticle.col];
+                        Coord = Transformation.Coords1toCoords2.b*Coord*Transformation.Coords1toCoords2.T + Transformation.Coords1toCoords2.c;
                         NewParticle = CurrentParticle;
+                        NewParticle.row = Coord(:,1);
+                        NewParticle.col = Coord(:,2);
                         for m = 1:size(NewParticle, 1)
                             if ~isnan(NewParticle.plane(m))
                                 planeData = data(:,:, NewParticle.plane(m));
@@ -476,11 +530,17 @@ classdef MPParticleMovie < Core.MPMovie
                     sig = [obj.info.sigma_px obj.info.sigma_px];
                     for l = 1:size(ParticlesCh2, 1)
                         CurrentParticle = ParticlesCh2{l, 1};
+                        Coord = [CurrentParticle.row, CurrentParticle.col];
+                        Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
                         NewParticle = CurrentParticle;
+                        NewParticle.row = Coord(:,1);
+                        NewParticle.col = Coord(:,2);
                         for m = 1:size(NewParticle, 1)
                             if ~isnan(NewParticle.plane(m))
                                 planeData = data(:,:, NewParticle.plane(m));
-                                ROI = planeData(NewParticle.roiLims{3}(3):NewParticle.roiLims{3}(4), NewParticle.roiLims{3}(1):NewParticle.roiLims{3}(2));
+                                [NewParticle.roi_lims{m}] = EmitterSim.getROI(NewParticle.col(m), NewParticle.row(m),...
+                                                    obj.info.detectParam.delta, size(planeData,2), size(planeData,1));
+                                ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
                                 [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
                             end
                         end
@@ -1030,7 +1090,7 @@ classdef MPParticleMovie < Core.MPMovie
             roi_corrected = ROI - background_mean;
 
             % --- Step 5: Compute particle intensity ---
-            gaussian_particle_mask(gaussian_particle_mask ~= 0) = 1;
+
             int = sum(roi_corrected .* gaussian_particle_mask, 'all');
             SNR = sum(ROI .* gaussian_particle_mask, 'all')./sum(background_mean*gaussian_particle_mask, 'all');
            

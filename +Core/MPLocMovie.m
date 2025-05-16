@@ -148,48 +148,77 @@ classdef MPLocMovie < Core.MPParticleMovie
                     warning('SR Calibration not found, no correction was applied');
                 end
             end
+        end
 
-            test = data(~cellfun(@isempty, data));
-            %%% Only done when checking the parameters (only on 1 frame) : detect particles in the two
-            %%% channels. If they are visible in both, only keep ch1.
-            if size(test, 1) == 1
-                % threshold = 0.0010;
-                for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
-                    data1 = obj.unCorrLocPos{1,1}{frameIdx};  
-                    data2 = obj.unCorrLocPos{2,1}{frameIdx};
-                    if ~isempty(data1)
-                        data1.OriginChannel(:,1) = 1;
-                        data2.OriginChannel(:,1) = 2;
-                        combined = [data1; data2];
+        function CalcChannelTransition(obj, threshold)
 
-                        for q = 1:obj.info.multiModal + 1
-                            CombinedLoc = combined;
-                            CombinedLoc.OriginChannel(CombinedLoc.OriginChannel == q) = 0;
-                            CombinedLoc.OriginChannel(CombinedLoc.OriginChannel ~= 0) = 1;
+            matchedCoords1 = [];
+            matchedCoords2 = [];
 
-                            PassedPart = CombinedLoc(CombinedLoc.OriginChannel == 1, :);
+            for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
+                data1 = obj.corrLocPos{1,1}{frameIdx};  
+                data2 = obj.corrLocPos{2,1}{frameIdx};
+                if ~or(isempty(data1), isempty(data2)) 
+                    nPlanes = max(max(data1.plane), max(data2.plane));
+                    for i = 1:nPlanes
+                        PartPlane1 = table2array(data1(data1.plane == i,1:2));
+                        PartPlane2 = table2array(data2(data2.plane == i,1:2));
 
-                            for i = 1:size(PassedPart,1)
-                                if q == 1
-                                    Transformation = obj.SRCal{2, 1}.Transformations.Coords2toCoords1{PassedPart.plane(i), 1};
-                                elseif q == 2
-                                    Transformation = obj.SRCal{2, 1}.Transformations.Coords1toCoords2{PassedPart.plane(i), 1};
-                                end
-                                Coords = [PassedPart.row(i) PassedPart.col(i)];
-                                Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
-                                PassedPart.row(i) = Coordsnew(:,1);
-                                PassedPart.col(i) = Coordsnew(:,2);
-                            end
-
-                            CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
-
-                            obj.corrLocPos{q,1}{frameIdx,1} = CombinedLoc;%(~toRemove, :);
-                            obj.corrLocPos{q,1}{frameIdx,1}.Properties.VariableNames{'OriginChannel'} = 'ParticlePassed';
-                        end
-                        % end
+                        D = pdist2(PartPlane1, PartPlane2);
+                        [matches, costs] = matchpairs(D, threshold);
+                        matchedCoords1 = [matchedCoords1; PartPlane1(matches(:,1), :)];
+                        matchedCoords2 = [matchedCoords2; PartPlane2(matches(:,2), :)];
                     end
                 end
             end
+                    
+            [~, ~, transform] = procrustes(matchedCoords1, matchedCoords2);
+            transform.c = transform.c(1,:);
+            transform2.T = transform.T';
+            transform2.b = 1/(transform.b);
+            transform2.c = -(1 /transform.b) * transform.c * transform.T';
+
+            for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
+                data1 = obj.corrLocPos{1,1}{frameIdx};  
+                data2 = obj.corrLocPos{2,1}{frameIdx};
+                if ~or(isempty(data1), isempty(data2)) 
+
+                    data1.OriginChannel(:,1) = 1;
+                    data2.OriginChannel(:,1) = 2;
+                    combined = [data1; data2];
+    
+                    for q = 1:obj.info.multiModal + 1
+                        CombinedLoc = combined;
+                        CombinedLoc.OriginChannel(CombinedLoc.OriginChannel == q) = 0;
+                        CombinedLoc.OriginChannel(CombinedLoc.OriginChannel ~= 0) = 1;
+    
+                        PassedPart = CombinedLoc(CombinedLoc.OriginChannel == 1, :);
+    
+                        for i = 1:size(PassedPart,1)
+                            if q == 1
+                                Transformation = transform;
+                            elseif q == 2
+                                Transformation = transform2;
+                            end
+                            Coords = [PassedPart.row(i) PassedPart.col(i)];
+                            Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
+                            PassedPart.row(i) = Coordsnew(:,1);
+                            PassedPart.col(i) = Coordsnew(:,2);
+                        end
+    
+                        CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
+    
+                        obj.corrLocPos{q,1}{frameIdx,1} = CombinedLoc;%(~toRemove, :);
+                        obj.corrLocPos{q,1}{frameIdx,1}.Properties.VariableNames{'OriginChannel'} = 'ParticlePassed';
+                    end
+                end
+            end
+
+            transformation.Coords2toCoords1 = transform;
+            transformation.Coords1toCoords2 = transform2;
+
+            Filename = append(obj.calibrated{1, 2}.mainPath, filesep, 'ChannelTransformations.mat');
+            save(Filename, "transformation");
         end
         
         function applyZCal(obj)

@@ -348,7 +348,7 @@ classdef SRCalibration < handle
                     coords2 = [PartCh2.row, PartCh2.col];
                     coords2 = sortrows(coords2);
                         
-                    coords2t = Transf.Coords2toCoords1{p}.b*coords2*Transf.Coords2toCoords1{p}.T + Transf.Coords2toCoords1{p}.c;
+                    coords2t = Transf.Coords2toCoords1{1}.b*coords2*Transf.Coords2toCoords1{1}.T + Transf.Coords2toCoords1{1}.c;
     
                     subplot(2, nPlanes, p)
                     scatter(coords1(:,2), coords1(:,1),"MarkerEdgeColor", "#0072BD")

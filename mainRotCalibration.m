@@ -7,21 +7,21 @@ path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
 MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
-subFolders = {'sample_5', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
+subFolders = {'sample_1', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
 path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
-detectParam{1}.delta = 14;
-detectParam{1}.chi2  = 40;
+detectParam{1}.delta = 6;
+detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 4;
-detectParam{2}.delta = 14; 
-detectParam{2}.chi2  = 40;
+detectParam{2}.delta = 6; 
+detectParam{2}.chi2  = 30;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
-trackParam.radius  = 1000;%nm
+trackParam.radius  = 350;%nm
 trackParam.memory  = 3;
 
 %% Storing info about the file
@@ -58,12 +58,12 @@ for i = 1:size(subFolders, 2)
         
         %% test detection parameters
         testMov = trackingExp.trackMovies.mov1;
-        testMov.findCandidatePos(detectParam,1);
-        testMov.SRLocalizeCandidate(detectParam,1);
+        testMov.findCandidatePos(detectParam,1:100);
+        testMov.SRLocalizeCandidate(detectParam,1:100);
         testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
+        testMov.CalcChannelTransition(15);
         testMov.getROIs;
         testMov.showCandidate(1);
-        close all
 
         %% get TrackingData
         val2Use = 'bestFocus';
