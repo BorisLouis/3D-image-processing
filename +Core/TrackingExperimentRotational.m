@@ -230,10 +230,10 @@ classdef TrackingExperimentRotational < handle
                 currentTrackMov = obj.trackMovies.(fieldsN{i});
                 
                 %Molecule detection
-                if currentTrackMov.info.rotationalCalib == 0
+                % if currentTrackMov.info.rotationalCalib == 0
                     currentTrackMov.findCandidatePos(detectParam);
-                else
-                end
+                % else
+                % end
                 
                 %SR fitting
                 currentTrackMov.SRLocalizeCandidate(detectParam);

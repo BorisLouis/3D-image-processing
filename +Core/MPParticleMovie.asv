@@ -845,8 +845,8 @@ classdef MPParticleMovie < Core.MPMovie
             if(length(find(isPart))>1)
                 if size(PossCand, 1) == 2
                     D = sqrt((next.row(PossCand(1)) - next.row(PossCand(2))).^2 + (next.col(PossCand(1)) - next.col(PossCand(2))).^2);
-                    if D < consThresh
-                        isPart(PossCand(2)) = 0;
+                    if D < (consThresh/2)
+                        
                     else
                         warning('Could not choose which particle was the partner of the requested particle, killed them both');
                         isPart(isPart==1) = 0;
