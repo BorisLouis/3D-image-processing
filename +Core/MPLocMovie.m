@@ -217,7 +217,7 @@ classdef MPLocMovie < Core.MPParticleMovie
             transformation.Coords2toCoords1 = transform;
             transformation.Coords1toCoords2 = transform2;
 
-            Filename = append(obj.calibrated{1, 2}.mainPath, filesep, 'ChannelTransformations.mat');
+            Filename = append(obj.raw.movInfo.Path, filesep, 'ChannelTransformations.mat');
             save(Filename, "transformation");
         end
         

@@ -402,7 +402,7 @@ classdef MPParticleMovie < Core.MPMovie
             function PartChannelConsolidation(obj)
                 %%% loop through frames
 
-                Transformation = load(append(obj.calibrated{1, 2}.mainPath  , filesep, 'ChannelTransformations.mat'));
+                Transformation = load(append(obj.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
                 Transformation = Transformation.transformation;
                 f = waitbar(0, 'Initizalizing')
                 for i = 1:size(obj.particles{1, 1}.List, 2)
