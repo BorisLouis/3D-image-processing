@@ -1064,8 +1064,22 @@ classdef MPParticleMovie < Core.MPMovie
 
             % --- Step 2: Cross-correlation to find particle center ---
             response = conv2(ROI, gauss_mask, 'same');
-            [maxVal, linearIdx] = max(response(:));
-            [row, col] = ind2sub(size(response), linearIdx);
+            [rows, cols] = size(response);
+            % if rows <= 5 && cols <= 5
+            %     M = response; % Keep as is
+            % else
+            %     M = zeros(size(response));
+            %     row_center = floor(rows/2) + 1;
+            %     col_center = floor(cols/2) + 1;
+            %     row_start = max(1, row_center - 2);
+            %     row_end   = min(rows, row_center + 2);
+            %     col_start = max(1, col_center - 2);
+            %     col_end   = min(cols, col_center + 2);
+            %     M(row_start:row_end, col_start:col_end) = response(row_start:row_end, col_start:col_end);
+            % end
+            M = response;
+            [maxVal, linearIdx] = max(M(:));
+            [row, col] = ind2sub(size(M), linearIdx);
 
             % --- Step 3: Create shifted Gaussian mask at detected position ---
             half_sz = floor(sz/2);

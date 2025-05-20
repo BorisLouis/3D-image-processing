@@ -109,7 +109,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
     
                 %%%%% TRACK DATA RECURSIVELY
                 radius = trackParam.radius;
-                MaximumTimeMem = trackParam.memory;
+                MaximumTimeMem = trackParam.memory*obj.info.expTime*1000;
                 totlengthFinal = 0;
                 h = waitbar(0,'Tracking particles...');
                 while ~isempty(ToTrack) 
