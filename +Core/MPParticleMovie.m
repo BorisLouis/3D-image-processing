@@ -422,73 +422,22 @@ classdef MPParticleMovie < Core.MPMovie
                     for j = 1:size(ParticlesCh2,1)
                         Coord2(j,:) = table2array(nanmean(ParticlesCh2{j, 1} (:,1:2), 1));
                     end
-                    Coord2 = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
+                    Coord2New = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
 
-                    D = pdist2(Coord1, Coord2);
+                    D = pdist2(Coord1, Coord2New);
                     [matches, costs] = matchpairs(D, 10);
 
-                    %%%Check if the matched particles have at least 2
-                    %%%planes in common:
+                    PlaneCheck = [];
+                    %%%Check if the matched particles have at least a plane in common & if the distance is small:
                     for k = 1:size(matches, 1)
                         CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
-                        if size(CommonPlanes, 1) >= 2
+                        if numel(CommonPlanes) >= 1
                             PlaneCheck(k,1) = 1;
                         else
-                            PlaneCheck(k,2) = 0;
+                            PlaneCheck(k,1) = 0;
                         end
                     end
-
-                    while any(PlaneCheck == 0)
-                        for l = 1:size(PlaneCheck, 1)
-                            if PlaneCheck(l) == 1
-                            else
-                                %%% find match for ch1 candidate
-                                candidates1 = D(matches(l,1),:);
-                                candidates1(matches(l,2)) = Inf;
-                                [dist1, candidate1] = min(candidates1);
-                                if dist1 < 10
-                                    NewPair1 = [matches(l,1), candidate1];
-                                else
-                                    NewPair1 = [];
-                                end
-                               
-                                %%% find match for ch2 candidate
-                                candidates2 = D(:, matches(l,2));
-                                candidates2(matches(l,1)) = Inf;
-                                [dist2, candidate2] = min(candidates2);
-                                if dist2 < 10
-                                    NewPair2 = [candidate2, matches(l,2)];
-                                else
-                                    NewPair2 = [];
-                                end
-
-                                if ~isempty(NewPair1)
-                                    matches(l,:) = NewPair1;
-                                    D(matches(l,1), :) = candidates1;
-                                    if ~isempty(NewPair2)
-                                        matches = [matches, NewPair2];
-                                        D(:,matches(l,2)) = candidates2;
-                                    end
-                                else
-                                    if ~isempty(NewPair2)
-                                        matches(l,:) = NewPair2;
-                                        D(:,matches(l,2)) = candidates2;
-                                    else
-                                        matches(l,:) = nan(1,2);
-                                    end
-                                end                                
-                            end
-                        end
-                        matches(isnan(matches)) = [];
-                        for k = 1:size(matches, 1)
-                            CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
-                            if size(CommonPlanes, 1) >= 2
-                                PlaneCheck(k,1) = 1;
-                            else
-                                PlaneCheck(k,2) = 0;
-                            end
-                        end
-                    end
+                    matches(PlaneCheck == 0, :) = [];
 
                     %%%Delete particles that have a partner from the lists
                     ToRemove1 = zeros(size(ParticlesCh1, 1),1);

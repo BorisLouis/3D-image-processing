@@ -3,26 +3,26 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2SRCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
-path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
-detectParam{1}.delta = 6;
+detectParam{1}.delta = 10;
 detectParam{1}.chi2  = 30;
-detectParam{1}.consThresh = 4;
-detectParam{2}.delta = 6; 
+detectParam{1}.consThresh = 10;
+detectParam{2}.delta = 10; 
 detectParam{2}.chi2  = 30;
-detectParam{2}.consThresh = 4;
+detectParam{2}.consThresh = 10;
 
 %tracking parameter
-trackParam.radius  = 350;%nm
-trackParam.memory  = 50; %in frames!!
+trackParam.radius  = 1500;%nm
+trackParam.memory  = 400; %in frames!!
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
@@ -58,12 +58,12 @@ for i = 1:size(subFolders, 2)
         
         %% test detection parameters
         testMov = trackingExp.trackMovies.mov1;
-        testMov.findCandidatePos(detectParam,1:200);
-        testMov.SRLocalizeCandidate(detectParam,1:200);
+        testMov.findCandidatePos(detectParam,1:100);
+        testMov.SRLocalizeCandidate(detectParam,1:100);
         testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
         testMov.CalcChannelTransition(15);
         testMov.getROIs;
-        testMov.showCandidate(151);
+        testMov.showCandidate(75);
 
         %% get TrackingData
         val2Use = 'bestFocus';
