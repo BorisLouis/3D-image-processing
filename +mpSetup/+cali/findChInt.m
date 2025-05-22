@@ -4,7 +4,7 @@ function [ totCor, Icor ] = findChInt( cam1, cam2, inFocus, doFigure )
 
 switch nargin
     case 3
-        doFigure = false;
+        doFigure = true;
 end
 
 % number of frames
@@ -45,6 +45,8 @@ for i = 2:length(focus)
     % mean intensity values
     I1 = I(idx1,F);
     I2 = I(idx2,F);
+    Icor(i,5) = I1;
+    Icor(i,6) = I2;
     % now we store all values
     Icor(i,1) = idx1;
     Icor(i,2) = idx2;
@@ -76,6 +78,9 @@ if doFigure
     end
     hold off
     xlim([1, N])
+    title('Before correction')
+    xlabel('Frame')
+    ylabel('Mean intensity of frame')
 
     subplot(1,2,2)
     plot(1:N,Itest(1,:))
@@ -85,6 +90,11 @@ if doFigure
     end
     hold off
     xlim([1,N])
+    title('Corrected intensities')
+    xlabel('Frame')
+    ylabel('Mean intensity of frame')
+
+    sgtitle('Corrected to plane 1')
 
 end
 
