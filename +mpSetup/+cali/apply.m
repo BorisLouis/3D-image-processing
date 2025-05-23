@@ -58,14 +58,14 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
         end
       
         % correct int
-        waitbar(.5,h,'Doing some simple math...')
+        waitbar(.5,h,'Correcting plane intensities...')
         for i = 1:size(chC1,3)
-            data1(:,:,i,:) = chC1(:,:,i,:)./C(i);
+            data1(:,:,i,:) = chC1(:,:,i,:).*C(i);
         end
         
-        waitbar(.7,h,'Doing some simple math...')
+        waitbar(.7,h,'Correcting plane intensities...')
         for i = 1:size(chC1,3)
-            data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:)./C(i+size(chC1,3));
+            data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*C(i+size(chC1,3));
         end
         
         waitbar(.9,h,'Reordering...')
@@ -116,14 +116,14 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             end
           
             % correct int
-            waitbar(.5,h,'Channel2: Doing some simple math...')
+            waitbar(.5,h,'Correcting plane intensities...')
             for i = 1:size(chC3,3)
-                data2(:,:,i,:) = chC3(:,:,i,:)./C2(i);
+                data2(:,:,i,:) = chC3(:,:,i,:).*C2(i);
             end
             
-            waitbar(.7,h,'Channel2: Doing some simple math...')
+            waitbar(.7,h,'Correcting plane intensities...')
             for i = 1:size(chC3,3)
-                data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:)./C2(i+size(chC3,3));
+                data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*C2(i+size(chC3,3));
             end
             
             waitbar(.9,h,'Channel2: Reordering...')

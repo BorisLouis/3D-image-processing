@@ -171,8 +171,8 @@ if cal.correctInt
     if multiModal == true
         [ chData3c, chData4c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam, cal.imShifts2);
         [cal.Icorrf2, IntCh2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
-        [cal.Icorrf2] = mpSetup.cali.findChIntChannels(cal.Icorrf1, cal.Icorrf2, IntCh1, IntCh2);
         cal.Icorrf2 = cal.Icorrf2/(cal.Icorrf2(4));
+        [cal.Icorrf2] = mpSetup.cali.findChIntChannels(cal.Icorrf1, cal.Icorrf2, IntCh1, IntCh2);
         % maxInt2 = max(cal.fit2(:, 2:2:end),)( [],1);
         % cal.Icorrf2 = maxInt2./max(maxInt2);
         % [ MagnificationFactors ] = mpSetup.cali.GetMagnificationScale(chData1c, chData2c, chData3c, chData4c, cal.inFocus1, cal.inFocus2);

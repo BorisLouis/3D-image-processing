@@ -29,3 +29,4 @@ calib.calcCombinedCal;
 calib.showCal(1)
 calib.offTarget;
 calib.save;
+close all
