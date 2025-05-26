@@ -46,7 +46,7 @@ AmplitudeI = [];
 AmplitudeI0 = [];
 totI = [];
 totI0 = [];
-for i = 1:size(subFolders, 2)
+for i = 1%:size(subFolders, 2)
     % try
         file.path = append(MainFolder, filesep, subFolders{i});
     
@@ -70,12 +70,12 @@ for i = 1:size(subFolders, 2)
         trackingExp.retrieveTrackData(detectParam,trackParam);
         traces = trackingExp.getTraces3D;
         trackingExp.ConsolidateChannels3;
-        %trackingExp.RotationalCalibration;
+        trackingExp.RotationalCalibration;
 
         AmplitudeI = [AmplitudeI; trackingExp.traces3Dcommon.I];
         AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
         totI = [totI; trackingExp.traces3Dcommon.TotInt];
-        totI0 = [totI0; trackingExp.traces3Dcommon.TotIntCorr];
+        totI0 = [totI0; trackingExp.traces3Dcommon.TotIntCorrrected];
     % catch
     % end
 end

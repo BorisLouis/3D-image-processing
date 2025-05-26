@@ -584,7 +584,7 @@ classdef TrackingExperimentRotational < handle
                     title('Channel difference plotted to a*cos(4*x + phi)) + bg')
                     ylim([-1.2 1.2])
                     saveas(fig, append(obj.path, filesep, 'DiffTraces', filesep, 'TraceDiff', num2str(i), '.png'));
-                    obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.TotInt{i,1}/CorrFactor;
+                    obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.IntTot{i,1}/CorrFactor;
                 else
                 end      
             end

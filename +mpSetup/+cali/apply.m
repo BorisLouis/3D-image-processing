@@ -67,6 +67,11 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
         for i = 1:size(chC1,3)
             data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*C(i+size(chC1,3));
         end
+
+        [cal.Icorrf1NoFluo, IntCh1] = mpSetup.cali.findChIntNoFluo(data1, cal.inFocus1,1);
+        for i = 1:size(chC1,3)
+            data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*cal.Icorrf1NoFluo(i+size(chC1,3));
+        end
         
         waitbar(.9,h,'Reordering...')
         % reorder planes
@@ -116,14 +121,20 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             end
           
             % correct int
-            waitbar(.5,h,'Correcting plane intensities...')
+            waitbar(.5,h,'Channel 2: Correcting plane intensities...')
             for i = 1:size(chC3,3)
                 data2(:,:,i,:) = chC3(:,:,i,:).*C2(i);
             end
             
-            waitbar(.7,h,'Correcting plane intensities...')
+            waitbar(.7,h,'Channel2: Correcting plane intensities...')
             for i = 1:size(chC3,3)
                 data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*C2(i+size(chC3,3));
+            end
+
+            [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1);
+            [cal.Icorrf2NoFluo] = mpSetup.cali.findChIntChannels(cal.Icorrf1NoFluo, cal.Icorrf2NoFluo, IntCh1, IntCh2);
+            for i = 1:size(chC1,3)
+                data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*cal.Icorrf1NoFluo(i+size(chC1,3));
             end
             
             waitbar(.9,h,'Channel2: Reordering...')

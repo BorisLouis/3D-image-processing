@@ -7,11 +7,7 @@ path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_r
 %file info
 MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-<<<<<<< HEAD
-ExpTime = 0.100; % in sec
-=======
 ExpTime = 0.010; % in sec
->>>>>>> 03264620cd2cf17a5d02370b6dae27d8bc22c5e4
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -82,11 +78,7 @@ for a = 1:size(subFolders, 2)
 
             tau = Traces.Time(q,:);
 
-<<<<<<< HEAD
-            [msadTheta] = MSD.Rotational.calc(RandomTheta, tau, ExpTime);
-=======
             [msadTheta] = MSD.Rotational.calc(Theta, tau, ExpTime);
->>>>>>> 03264620cd2cf17a5d02370b6dae27d8bc22c5e4
             % figure()
             % plot(msadTheta(2,:), msadTheta(1,:))
             % xlabel('Time (s)')
