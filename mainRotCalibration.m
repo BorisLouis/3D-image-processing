@@ -13,10 +13,10 @@ path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
-detectParam{1}.delta = 10;
+detectParam{1}.delta = 5;
 detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 10;
-detectParam{2}.delta = 10; 
+detectParam{2}.delta = 5; 
 detectParam{2}.chi2  = 30;
 detectParam{2}.consThresh = 10;
 

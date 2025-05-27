@@ -437,6 +437,7 @@ classdef MPSRCalMovie < Core.MPCalMovie
                 data2Corr = [];
                 currentPlane = data.plane(1);
                 corrData = data;
+                oldCoord = corrData;
                 %act depending on whether the current plane is smaller or
                 %bigger than the user-selected reference plane
                 if currentPlane < refPlane
@@ -488,15 +489,15 @@ classdef MPSRCalMovie < Core.MPCalMovie
                     
                     corrData.row = data2Corr(:,1);
                     corrData.col = data2Corr(:,2);
+                    corrData.rowNotCorr = oldCoord.row;
+                    corrData.colNotCorr = oldCoord.col;
                     
                 else
                     corrData = data;
+                    corrData.rowNotCorr = oldCoord.row;
+                    corrData.colNotCorr = oldCoord.col;
                     
                 end
-                
-                
-            
-            
         end
         
     end

@@ -1116,10 +1116,14 @@ classdef MPParticleMovie < Core.MPMovie
 
             % --- Step 4: Background subtraction ---
             background_mask = gaussian_particle_mask == 0;
-            background_mean = mean(ROI(background_mask));
-            int = int - background_mean;
+            SNR = sum(ROI .* gaussian_particle_mask, 'all')./sum(background_mean*gaussian_particle_mask, 'all');
 
-            SNR = int./background_mean;        
+            % --- Step 4: Background subtraction ---
+            background_mask = gaussian_particle_mask == 0;
+            background_mean = mean(ROI(background_mask));
+            roi_corrected = ROI - background_mean;
+
+           
            
         end
        

@@ -133,7 +133,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                                              [corrData] = Core.MPSRCalMovie.applyTrans(data2Corr,corrMat,refPlane);                    
                                         end
 
-                                        obj.corrLocPos{q,1}{i}(currData.plane==currentPlane,{'row','col','plane'}) = corrData;        
+                                        obj.corrLocPos{q,1}{i}(currData.plane==currentPlane,{'row','col','plane', 'rowNotCorr', 'colNotCorr'}) = corrData;        
                                     end
                                 end
 
@@ -151,9 +151,13 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
 
         function CalcChannelTransition(obj, threshold)
-
+            %%% Calculate transformation 2 times: Once on the coordinates
+            %%% that are not corrected => to get intensity, once on the
+            %%% coordinates that are SR corrected => for tracking
             matchedCoords1 = [];
             matchedCoords2 = [];
+            matchedCoords1NotCorr = [];
+            matchedCoords2NotCorr = [];
 
             for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
                 data1 = obj.corrLocPos{1,1}{frameIdx};  
@@ -161,13 +165,19 @@ classdef MPLocMovie < Core.MPParticleMovie
                 if ~or(isempty(data1), isempty(data2)) 
                     nPlanes = max(max(data1.plane), max(data2.plane));
                     for i = 1:nPlanes
-                        PartPlane1 = table2array(data1(data1.plane == i,1:2));
-                        PartPlane2 = table2array(data2(data2.plane == i,1:2));
-
+                        PartPlane1 = table2array(data1(data1.plane == i,{'row', 'col'}));
+                        PartPlane2 = table2array(data2(data2.plane == i,{'row', 'col'}));
                         D = pdist2(PartPlane1, PartPlane2);
                         [matches, costs] = matchpairs(D, threshold);
                         matchedCoords1 = [matchedCoords1; PartPlane1(matches(:,1), :)];
                         matchedCoords2 = [matchedCoords2; PartPlane2(matches(:,2), :)];
+
+                        PartPlane1NotCorr = table2array(data1(data1.plane == i,{'rowNotCorr', 'colNotCorr'}));
+                        PartPlane2NotCorr = table2array(data2(data2.plane == i,{'rowNotCorr', 'colNotCorr'}));
+                        DNotCorr = pdist2(PartPlane1NotCorr, PartPlane2NotCorr);
+                        [matchesNotCorr, costsNotCorr] = matchpairs(DNotCorr, threshold);
+                        matchedCoords1NotCorr = [matchedCoords1NotCorr; PartPlane1(matchesNotCorr(:,1), :)];
+                        matchedCoords2NotCorr = [matchedCoords2NotCorr; PartPlane2(matchesNotCorr(:,2), :)];
                     end
                 end
             end
@@ -177,6 +187,12 @@ classdef MPLocMovie < Core.MPParticleMovie
             transform2.T = transform.T';
             transform2.b = 1/(transform.b);
             transform2.c = -(1 /transform.b) * transform.c * transform.T';
+
+            [~, ~, transformNotCorr] = procrustes(matchedCoords1NotCorr, matchedCoords2NotCorr);
+            transformNotCorr.c = transformNotCorr.c(1,:);
+            transformNotCorr2.T = transformNotCorr.T';
+            transformNotCorr2.b = 1/(transformNotCorr.b);
+            transformNotCorr2.c = -(1 /transformNotCorr.b) * transformNotCorr.c * transformNotCorr.T';
 
             for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
                 data1 = obj.corrLocPos{1,1}{frameIdx};  
@@ -197,13 +213,22 @@ classdef MPLocMovie < Core.MPParticleMovie
                         for i = 1:size(PassedPart,1)
                             if q == 1
                                 Transformation = transform;
+                                TransformationNotCorr = transformNotCorr;
                             elseif q == 2
                                 Transformation = transform2;
+                                TransformationNotCorr = transformNotCorr2;
                             end
+
                             Coords = [PassedPart.row(i) PassedPart.col(i)];
                             Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
                             PassedPart.row(i) = Coordsnew(:,1);
                             PassedPart.col(i) = Coordsnew(:,2);
+
+                            CoordsNotCorr = [PassedPart.rowNotCorr(i) PassedPart.colNotCorr(i)];
+                            CoordsnewNotCorr = TransformationNotCorr.b*CoordsNotCorr*TransformationNotCorr.T + TransformationNotCorr.c;
+                            PassedPart.rowNotCorr(i) = CoordsnewNotCorr(:,1);
+                            PassedPart.colNotCorr(i) = CoordsnewNotCorr(:,2);
+                           
                         end
     
                         CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
@@ -216,6 +241,8 @@ classdef MPLocMovie < Core.MPParticleMovie
 
             transformation.Coords2toCoords1 = transform;
             transformation.Coords1toCoords2 = transform2;
+            transformation.Coords2toCoords1NotCorr = transformNotCorr;
+            transformation.Coords1toCoords2NotCorr = transformNotCorr2;
 
             Filename = append(obj.raw.movInfo.Path, filesep, 'ChannelTransformations.mat');
             save(Filename, "transformation");
