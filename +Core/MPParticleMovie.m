@@ -1062,54 +1062,56 @@ classdef MPParticleMovie < Core.MPMovie
             % gauss_mask = exp(-(x.^2 / (2*sig(1)^2) + y.^2 / (2*sig(2)^2)));
             % gauss_mask = gauss_mask / sum(gauss_mask(:)); 
             gauss_mask = ones(sz, sz)./(sz*sz);
-            startIdx = (size(ROI, 1) - sz)/2+1;
-            gaussian_particle_mask = zeros(size(ROI));
-            gaussian_particle_mask(startIdx: startIdx+sz-1, startIdx:startIdx+sz-1) = gauss_mask;
-            % --- Step 2: Cross-correlation to find particle center ---
-            % response = conv2(ROI, gauss_mask, 'same');
-            % [rows, cols] = size(response);
-            % if rows <= 5 && cols <= 5
-            %     M = response; % Keep as is
-            % else
-            %     M = zeros(size(response));
-            %     row_center = floor(rows/2) + 1;
-            %     col_center = floor(cols/2) + 1;
-            %     row_start = max(1, row_center - 2);
-            %     row_end   = min(rows, row_center + 2);
-            %     col_start = max(1, col_center - 2);
-            %     col_end   = min(cols, col_center + 2);
-            %     M(row_start:row_end, col_start:col_end) = response(row_start:row_end, col_start:col_end);
-            % end
-            % M = response;
-            % [maxVal, linearIdx] = max(M(:));
-            % [row, col] = ind2sub(size(M), linearIdx);
+            if size(ROI, 1) == size(ROI, 2)
+                startIdx = (size(ROI, 1) - sz)/2+1;
+                gaussian_particle_mask = zeros(size(ROI));
+                gaussian_particle_mask(startIdx: startIdx+sz-1, startIdx:startIdx+sz-1) = gauss_mask;
+            else
+                response = conv2(ROI, gauss_mask, 'same');
+                [rows, cols] = size(response);
+                if rows <= 5 && cols <= 5
+                    M = response; % Keep as is
+                else
+                    M = zeros(size(response));
+                    row_center = floor(rows/2) + 1;
+                    col_center = floor(cols/2) + 1;
+                    row_start = max(1, row_center - 2);
+                    row_end   = min(rows, row_center + 2);
+                    col_start = max(1, col_center - 2);
+                    col_end   = min(cols, col_center + 2);
+                    M(row_start:row_end, col_start:col_end) = response(row_start:row_end, col_start:col_end);
+                end
+                M = response;
+                [maxVal, linearIdx] = max(M(:));
+                [row, col] = ind2sub(size(M), linearIdx);
 
-            % --- Step 3: Create shifted Gaussian mask at detected position ---
-            % half_sz = floor(sz/2);
-            % [x_full, y_full] = meshgrid(1:size(ROI,2), 1:size(ROI,1));
-            % gaussian_particle_mask = zeros(size(ROI));
-            % 
-            % % Calculate bounds for placing the mask
-            % r_min = max(row - half_sz, 1);
-            % r_max = min(row + half_sz, size(ROI,1));
-            % c_min = max(col - half_sz, 1);
-            % c_max = min(col + half_sz, size(ROI,2));
-            % 
-            % % Corresponding indices in the Gaussian mask
-            % gm_r_min = 1 + (r_min - (row - half_sz));
-            % gm_r_max = sz - ((row + half_sz) - r_max);
-            % gm_c_min = 1 + (c_min - (col - half_sz));
-            % gm_c_max = sz - ((col + half_sz) - c_max);
-            % 
-            % % Ensure all indices are integers and scalars
-            % r_min = round(r_min); r_max = round(r_max);
-            % c_min = round(c_min); c_max = round(c_max);
-            % gm_r_min = round(gm_r_min); gm_r_max = round(gm_r_max);
-            % gm_c_min = round(gm_c_min); gm_c_max = round(gm_c_max);
-
-            % Place the Gaussian mask inside the ROI
-            % gaussian_particle_mask(r_min:r_max, c_min:c_max) = ...
-            %     gauss_mask(gm_r_min:gm_r_max, gm_c_min:gm_c_max);
+                %--- Step 3: Create shifted Gaussian mask at detected position ---
+                half_sz = floor(sz/2);
+                [x_full, y_full] = meshgrid(1:size(ROI,2), 1:size(ROI,1));
+                gaussian_particle_mask = zeros(size(ROI));
+    
+                % Calculate bounds for placing the mask
+                r_min = max(row - half_sz, 1);
+                r_max = min(row + half_sz, size(ROI,1));
+                c_min = max(col - half_sz, 1);
+                c_max = min(col + half_sz, size(ROI,2));
+    
+                % Corresponding indices in the Gaussian mask
+                gm_r_min = 1 + (r_min - (row - half_sz));
+                gm_r_max = sz - ((row + half_sz) - r_max);
+                gm_c_min = 1 + (c_min - (col - half_sz));
+                gm_c_max = sz - ((col + half_sz) - c_max);
+    
+                % Ensure all indices are integers and scalars
+                r_min = round(r_min); r_max = round(r_max);
+                c_min = round(c_min); c_max = round(c_max);
+                gm_r_min = round(gm_r_min); gm_r_max = round(gm_r_max);
+                gm_c_min = round(gm_c_min); gm_c_max = round(gm_c_max);
+    
+                %Place the Gaussian mask inside the ROI
+                gaussian_particle_mask(r_min:r_max, c_min:c_max) = ...
+                    gauss_mask(gm_r_min:gm_r_max, gm_c_min:gm_c_max);
+            end
 
              % --- Step 5: Compute particle intensity ---
             int = sum(ROI .* gaussian_particle_mask, 'all');
