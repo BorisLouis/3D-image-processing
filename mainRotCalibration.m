@@ -6,8 +6,8 @@ path2ZCal = [];
 path2SRCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
-subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8', 'sample_9', 'sample_10'};
+MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
 path2Cal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
@@ -37,8 +37,8 @@ info.rotational = 1; %Rotational tracking
 info.rotationalCalib = 1;
 info.Bipyramid = [184, 92]; %Long axis, short axis in nm
 info.euDist = 100;
-info.expTime = 0.010; %in sec
-info.RadTime = 25; %in degrees per second (speed of rotating waveplate)
+info.expTime = 0.10; %in sec
+info.RadTime = 5; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
 info.FWHM = 3;
 
@@ -46,8 +46,8 @@ AmplitudeI = [];
 AmplitudeI0 = [];
 totI = [];
 totI0 = [];
-for i = 1%:size(subFolders, 2)
-    % try
+for i = 1:size(subFolders, 2)
+    try
         file.path = append(MainFolder, filesep, subFolders{i});
     
         %% create experiments
@@ -76,8 +76,8 @@ for i = 1%:size(subFolders, 2)
         AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
         totI = [totI; trackingExp.traces3Dcommon.IntTot];
         totI0 = [totI0; trackingExp.traces3Dcommon.TotIntCorrrected];
-    % catch
-    % end
+    catch
+    end
 end
 
 ToKeep = ~cellfun('isempty', AmplitudeI);

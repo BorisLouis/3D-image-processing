@@ -525,36 +525,39 @@ classdef TrackingExperimentRotational < handle
                 obj.traces3Dcommon.IntTot{i,1} = IntTot;
 
                 %%% for trace 1
-                [f, gof] = fit(Angle, traceCh1, Model);
-                FitRSquare(i,1) = gof.rsquare;
-                coeff = coeffvalues(f);
-                phase(i,1) = coeff(2);
-                Amp(i,1) = coeff(1);
-                subplot(1,2,1)
-                plot(f, Angle, traceCh1)
-                xlabel('Angle (rad)');
-                ylabel('Normalized Intensity')
-                ylim([0 1.2])
-                title('Channel1')
+                try
+                    [f, gof] = fit(Angle, traceCh1, Model);
+                    FitRSquare(i,1) = gof.rsquare;
+                    coeff = coeffvalues(f);
+                    phase(i,1) = coeff(2);
+                    Amp(i,1) = coeff(1);
+                    subplot(1,2,1)
+                    plot(f, Angle, traceCh1)
+                    xlabel('Angle (rad)');
+                    ylabel('Normalized Intensity')
+                    ylim([0 1.2])
+                    title('Channel1')
 
-                %%% for trace 2
-                Lower = [-Inf, phase(i,1)+pi./4-0.0001];
-                Upper = [Inf, phase(i,1)+pi./4+0.0001];
-                [f, gof] = fit(Angle, traceCh2, Model, 'Lower', Lower, 'Upper', Upper);
-                FitRSquare(i,2) = gof.rsquare;
-                coeff = coeffvalues(f);
-                Amp(i,2) = coeff(2);
-                subplot(1,2,2)
-                plot(f, Angle, traceCh2)
-                xlabel('Angle (rad)');
-                ylabel('Normalized Intensity')
-                ylim([0 1.2])
-                title('Channel2')
-
-                %%% calculate difference trace
-                DifferenceTrace = traceCh1 - traceCh2;
-                obj.traces3Dcommon.DiffTrace{i,1} = DifferenceTrace;
-                saveas(fig, append(obj.path, filesep, 'ChannelTraces', filesep, 'Trace', num2str(i), '.png'));
+                    %%% for trace 2
+                    Lower = [-Inf, phase(i,1)+pi./4-0.0001];
+                    Upper = [Inf, phase(i,1)+pi./4+0.0001];
+                    [f, gof] = fit(Angle, traceCh2, Model, 'Lower', Lower, 'Upper', Upper);
+                    FitRSquare(i,2) = gof.rsquare;
+                    coeff = coeffvalues(f);
+                    Amp(i,2) = coeff(2);
+                    subplot(1,2,2)
+                    plot(f, Angle, traceCh2)
+                    xlabel('Angle (rad)');
+                    ylabel('Normalized Intensity')
+                    ylim([0 1.2])
+                    title('Channel2')
+    
+                    %%% calculate difference trace
+                    DifferenceTrace = traceCh1 - traceCh2;
+                    obj.traces3Dcommon.DiffTrace{i,1} = DifferenceTrace;
+                    saveas(fig, append(obj.path, filesep, 'ChannelTraces', filesep, 'Trace', num2str(i), '.png'));
+                catch 
+                end
             end
 
             %%%calculate tilt angle and ratio to get I0
@@ -565,28 +568,31 @@ classdef TrackingExperimentRotational < handle
             mkdir(append(obj.path, filesep, 'DiffTraces'));
             for i = 1:size(obj.traces3Dcommon,1)
                 waitbar((size(obj.traces3Dcommon,1)+i)./(size(obj.traces3Dcommon,1)*2),h,'Getting amplitude and I0');
-                if ~any(FitRSquare(i,:) < 0.65)
-                    fig = figure();
-                    Time = obj.traces3Dcommon.Time{i,1};
-                    Angle = (Time*obj.info.RadTime*pi./180)'; %in radians
-                    DiffTrace = obj.traces3Dcommon.DiffTrace{i,1};
-    
-                    Lower = [-Inf, phase(i,1)-0.0001, -Inf];
-                    Upper = [Inf, phase(i,1)+0.0001, Inf];
-                    Start = [max(DiffTrace) - min(DiffTrace), phase(i,1), 0];
-                    [f, gof] = fit(Angle, DiffTrace, Model, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
-                    coeff = coeffvalues(f);
-                    obj.traces3Dcommon.I{i,1} = abs(coeff(1));
-                    obj.traces3Dcommon.I0{i,1} = abs(coeff(1))./CorrFactor;
-                    plot(f, Angle, DiffTrace)
-                    xlabel('Angle (rad)');
-                    ylabel('Difference channel')
-                    title('Channel difference plotted to a*cos(4*x + phi)) + bg')
-                    ylim([-1.2 1.2])
-                    saveas(fig, append(obj.path, filesep, 'DiffTraces', filesep, 'TraceDiff', num2str(i), '.png'));
-                    obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.IntTot{i,1}/CorrFactor;
-                else
-                end      
+                try
+                    if ~any(FitRSquare(i,:) < 0.65)
+                        fig = figure();
+                        Time = obj.traces3Dcommon.Time{i,1};
+                        Angle = (Time*obj.info.RadTime*pi./180)'; %in radians
+                        DiffTrace = obj.traces3Dcommon.DiffTrace{i,1};
+        
+                        Lower = [-Inf, phase(i,1)-0.0001, -Inf];
+                        Upper = [Inf, phase(i,1)+0.0001, Inf];
+                        Start = [max(DiffTrace) - min(DiffTrace), phase(i,1), 0];
+                        [f, gof] = fit(Angle, DiffTrace, Model, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
+                        coeff = coeffvalues(f);
+                        obj.traces3Dcommon.I{i,1} = abs(coeff(1));
+                        obj.traces3Dcommon.I0{i,1} = abs(coeff(1))./CorrFactor;
+                        plot(f, Angle, DiffTrace)
+                        xlabel('Angle (rad)');
+                        ylabel('Difference channel')
+                        title('Channel difference plotted to a*cos(4*x + phi)) + bg')
+                        ylim([-1.2 1.2])
+                        saveas(fig, append(obj.path, filesep, 'DiffTraces', filesep, 'TraceDiff', num2str(i), '.png'));
+                        obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.IntTot{i,1}/CorrFactor;
+                    else
+                    end  
+                catch
+                end
             end
             close all
 

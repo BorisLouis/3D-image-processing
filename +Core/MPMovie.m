@@ -398,7 +398,7 @@ classdef MPMovie < Core.Movie
             frameInfo = obj.raw.frameInfo;
             movInfo   = obj.raw.movInfo;
             maxFrame = obj.raw.movInfo.maxFrame(1);
-            step = 800;
+            step = 100;
             frame2Load = obj.info.frame2Load;
             if ischar(frame2Load)
                 frame2Load = 1:maxFrame;

@@ -2,12 +2,12 @@ clc
 clear 
 close all;
 %calibration info
-path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 
 %file info
-MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
-subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
-ExpTime = 0.010; % in sec
+MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+subFolders = {'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6'};
+ExpTime = 0.100; % in sec
 
 %% Get RotCalibration info
 RotCalib = open(append(path2RotCal, filesep, 'RotCalib.mat'));
@@ -26,83 +26,86 @@ f = waitbar(0, 'initializing');
 for a = 1:size(subFolders, 2)
     Traces = open(append(MainFolder, filesep, subFolders{a}, filesep, "CommonTraces.mat"));
     Traces = Traces.CommonTraces;
-
     angular_speed = [];
     AngSpeed1 = [];
     AngSpeed2 = [];
     AngSpeed3 = [];
     AngSpeed4 = [];
+  
+    % figure()
     for q = 1:size(Traces, 1)
         waitbar(q./size(Traces, 1), f, append('Calculating: sample ', num2str(a), ' out of ', num2str(size(subFolders, 2))))
         Diff = [];
         time = [];
         tau_values = [];
         deltas = [];
-        if isnan(Traces.I(q))
+        if isempty(Traces.I{q})
             angular_speed(q, 1) = NaN;
         else
-            Diff = Traces.Diff{q};
-            r = fit(Traces.Time(q, :)', Traces.Diff{q}, ['0.3*cos(0.*x)+c']);
-            figure()
-            plot(r, Traces.Time(q, :)', Traces.Diff{q})
-            coeff = coeffvalues(r);
-            Diff = Diff - coeff(3);
-            time = Traces.Diff{q};
+            if size(Traces.DiffTrace{q},1) > 150
+                Diff = Traces.DiffTrace{q};
 
-            %%% Check1
-            Diffsmooth = medfilt1(Diff, 90);
-            [pks1,locs1,w,p] = findpeaks(Diffsmooth);
-            [pks,locs2,w,p] = findpeaks(-Diffsmooth);
-            Int1 = [diff(locs1); diff(locs2)];
-            AngSpeed1 = [AngSpeed1; 360./(Int1 * ExpTime)/4];
-
-            %%% Check2
-            Theta = 0.25*real(acos(Diff./coeff(1)));
-            Thetasmooth = medfilt1(Theta, 90);
-            [pks,locs1,w,p] = findpeaks(Thetasmooth);
-            [pks,locs2,w,p] = findpeaks(-Thetasmooth);
-            peaks = sort([locs1; locs2]);
-            for w = 1:size(peaks, 1)-1
+                %subplot(floor(size(Traces, 1)./4)+ceil(mod(size(Traces, 1),4)./4),4,q)
+                % subplot(3,4,q)
+                % plot(Traces.Time{q,1}', Diff)
+                % title(append('Int diff - Trace ', num2str(q)));
+                % xlabel('TimeLag (s)')
+                % ylabel('Int (I_1-I_2)/(I_1+I_2)')
+                % sgtitle('(I_1-I_2)/(I_1+I_2)')
+    
+                %%% Check1
+                Diffsmooth = medfilt1(Diff, 90);
+                [pks1,locs1,w,p] = findpeaks(Diffsmooth);
+                [pks,locs2,w,p] = findpeaks(-Diffsmooth);
+                Int1 = [diff(locs1); diff(locs2)];
+                AngSpeed1 = [AngSpeed1; 360./(Int1 * ExpTime)/4];
+    
+                %%% Check2
+                %Amplitude = Traces.I{q};
+                Theta = 0.25*real(acos(Diff./Amplitude));
+                Thetasmooth = medfilt1(Theta, 90);
+                [pks,locs1,w,p] = findpeaks(Thetasmooth);
+                [pks,locs2,w,p] = findpeaks(-Thetasmooth);
+                peaks = sort([locs1; locs2]);
+                for w = 1:size(peaks, 1)-1
+                    try
+                        segment = Theta(peaks(w)+50:peaks(w+1)-10, 1);
+                        timelag = [1:size(segment, 1)]'*ExpTime;
+                        g = fit(timelag, segment, 'a*x +b');
+                        coeff = coeffvalues(g);
+                        % figure()
+                        % plot(f, timelag, segment)
+                        AngSpeed2 = [AngSpeed2; abs(coeff(1))*180/pi];
+                    catch
+                        AngSpeed2 = [AngSpeed2; NaN];
+                    end
+                end
+    
+                tau = Traces.Time{q,1};
+    
+                [msadTheta] = MSD.Rotational.calc(Theta, tau, ExpTime);
+    
+                %%% Check 3
+                % [pksTop,locs1,w,p] = findpeaks(medfilt1(msadTheta(1,:), 50));
+                StartPoint = [0.16 0.18];
+                msadTheta(:, isnan(msadTheta(1,:))) = [];
+                msadTheta(:, isnan(msadTheta(2,:))) = [];
                 try
-                    segment = Theta(peaks(w)+50:peaks(w+1)-10, 1);
-                    timelag = [1:size(segment, 1)]'*ExpTime;
-                    g = fit(timelag, segment, 'a*x +b');
-                    coeff = coeffvalues(g);
-                    % figure()
-                    % plot(f, timelag, segment)
-                    AngSpeed2 = [AngSpeed2; abs(coeff(1))*180/pi];
+                    Test = fit(msadTheta(2,:)', msadTheta(1,:)', 'a*(sin(b*x))^2', 'StartPoint', StartPoint);
+                    % subplot(floor(size(Traces, 1)./4)+ceil(mod(size(Traces, 1),4)./4),4,q)
+                    % plot(Test, msadTheta(2,:)', msadTheta(1,:)')
+                    % title(append('fitting MSAD - Trace ', num2str(q)));
+                    % xlabel('TimeLag (s)')
+                    % ylabel('MSAD (rad/s)')
+                    % sgtitle('a few MSADs fitted - average amplitude for calculation')
+                    coeff = coeffvalues(Test);
+                    AngSpeed3 = [AngSpeed3; coeff(2)*180/pi/2];
+        
+                    %%% save peaks
+                    MSADPeaks = [MSADPeaks; [Traces.I{q}, coeff(1)]];
                 catch
-                    AngSpeed2 = [AngSpeed2; NaN];
                 end
             end
-
-            tau = Traces.Time(q,:);
-
-            [msadTheta] = MSD.Rotational.calc(Theta, tau, ExpTime);
-            % figure()
-            % plot(msadTheta(2,:), msadTheta(1,:))
-            % xlabel('Time (s)')
-            % ylabel('MSAD (rad^2)')
-
-            %%% Check 3
-            [pksTop,locs1,w,p] = findpeaks(medfilt1(msadTheta(1,:), 50));
-            [pks,locs2,w,p] = findpeaks(medfilt1(-msadTheta(1,:), 50));
-            Interval = [diff(locs1), diff(locs2)]';
-            AngSpeed3 = [AngSpeed3; 360./(Interval*ExpTime)/4];
-
-            %%% save peaks
-            MSADPeaks{q, 1} = Diff;
-            MSADPeaks{q, 2} = mean(pksTop);
-
-            %%% Try to get diff coeff
-            StartPoint = [mean(pksTop)/2, mean(Interval)/180*pi*ExpTime];
-            [bier, gov] = fit(msadTheta(2, 1:500)', msadTheta(1, 1:500)', 'a*(1-cos(b*x))', 'StartPoint', StartPoint);
-            % figure()
-            % plot(bier, msadTheta(2, :), msadTheta(1, :))
-            coeff = coeffvalues(bier);
-            AngSpeed4 = [AngSpeed4; coeff(2)*180/pi/4];
-
-
         end
     end
 
@@ -134,4 +137,7 @@ AngularSpeed.Check1 = CheckSpeed1;
 AngularSpeed.Check2 = CheckSpeed2;
 AngularSpeed.Check3 = CheckSpeed3;
 AngularSpeed.Check4 = CheckSpeed4;
+AngularSpeed.MSADPeaks = MSADPeaks;
 save(append(path2RotCal, filesep, 'AngularSpeeds.mat'), 'AngularSpeed')
+
+disp('=== Backcalculation done ===')

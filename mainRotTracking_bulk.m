@@ -14,15 +14,15 @@ dimension = '3D';
 MainFolder = 'E:\Rotational Tracking';
 SubFolders = {'20250407_AuBPs_184s92_glycerol'};
 SubsubFolders = {'Glycerol'};
-SubsubsubFolders = {'glycerol 95', 'glycerol 100'}; %, 'glycerol_85', , 
+SubsubsubFolders = {'glycerol 80', 'glycerol 85', 'glycerol 90', 'glycerol 95', 'glycerol 100'}; %, 'glycerol_85', , 
 SubsubsubsubFolders = {'sample1','sample2', 'sample3', 'sample4','sample5'}; %, 'sample1', 'sample2', 'sample3','sample5'
 
 %detection parameter
 detectParam{1}.delta = 6;
-detectParam{1}.chi2  = 40;
+detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 4;
 detectParam{2}.delta = 6; %High for rotational tracking
-detectParam{2}.chi2  = 40;
+detectParam{2}.chi2  = 30;
 detectParam{2}.consThresh = 4;
 
 %tracking parameter
@@ -44,6 +44,7 @@ info.euDist = 1000;
 info.expTime = 0.010; %in sec
 info.RadTime = []; %in degrees per second (speed of rotating waveplate)
 info.PxSize = 95;
+info.FWHM = 3;
 
 for t = 1:numel(SubFolders)
     for r = 1:numel(SubsubFolders)
@@ -59,12 +60,15 @@ for t = 1:numel(SubFolders)
                     trackingExp.retrieveMovies;
                     
                     %% test detection parameters
-                    frame = 211;
+                    frame = 75;
                     testMov = trackingExp.trackMovies.mov1;
-                    testMov.findCandidatePos(detectParam,frame);
+                    testMov.findCandidatePos(detectParam,1:200);
+                    testMov.SRLocalizeCandidate(detectParam,1:200);
+                    testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
+                    testMov.CalcChannelTransition(15);
                     testMov.getROIs;
                     testMov.showCandidate(frame);
-                    
+                                
                     %% get TrackingData
                     val2Use = 'bestFocus';
                     trackingExp.retrieveTrackData(detectParam,trackParam);
