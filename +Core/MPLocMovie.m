@@ -168,14 +168,16 @@ classdef MPLocMovie < Core.MPParticleMovie
                         PartPlane1 = table2array(data1(data1.plane == i,{'row', 'col'}));
                         PartPlane2 = table2array(data2(data2.plane == i,{'row', 'col'}));
                         D = pdist2(PartPlane1, PartPlane2);
-                        [matches, costs] = matchpairs(D, threshold);
+                        D(D > threshold) = Inf;
+                        [matches, costs] = matchpairs(D, 15);
                         matchedCoords1 = [matchedCoords1; PartPlane1(matches(:,1), :)];
                         matchedCoords2 = [matchedCoords2; PartPlane2(matches(:,2), :)];
 
                         PartPlane1NotCorr = table2array(data1(data1.plane == i,{'rowNotCorr', 'colNotCorr'}));
                         PartPlane2NotCorr = table2array(data2(data2.plane == i,{'rowNotCorr', 'colNotCorr'}));
                         DNotCorr = pdist2(PartPlane1NotCorr, PartPlane2NotCorr);
-                        [matchesNotCorr, costsNotCorr] = matchpairs(DNotCorr, threshold);
+                        DNotCorr(DNotCorr > threshold) = Inf;
+                        [matchesNotCorr, costsNotCorr] = matchpairs(DNotCorr, 15);
                         matchedCoords1NotCorr = [matchedCoords1NotCorr; PartPlane1(matchesNotCorr(:,1), :)];
                         matchedCoords2NotCorr = [matchedCoords2NotCorr; PartPlane2(matchesNotCorr(:,2), :)];
                     end

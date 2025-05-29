@@ -15,13 +15,13 @@ MainFolder = 'E:\Rotational Tracking';
 SubFolders = {'20250407_AuBPs_184s92_glycerol'};
 SubsubFolders = {'Glycerol'};
 SubsubsubFolders = {'glycerol 80', 'glycerol 85', 'glycerol 90', 'glycerol 95', 'glycerol 100'}; %, 'glycerol_85', , 
-SubsubsubsubFolders = {'sample1','sample2', 'sample3', 'sample4','sample5'}; %, 'sample1', 'sample2', 'sample3','sample5'
+SubsubsubsubFolders = {'sample1', 'sample2', 'sample3', 'sample4','sample5'}; %, 'sample1', 'sample2', 'sample3','sample5'
 
 %detection parameter
-detectParam{1}.delta = 6;
+detectParam{1}.delta = 8;
 detectParam{1}.chi2  = 30;
 detectParam{1}.consThresh = 4;
-detectParam{2}.delta = 6; %High for rotational tracking
+detectParam{2}.delta = 8; %High for rotational tracking
 detectParam{2}.chi2  = 30;
 detectParam{2}.consThresh = 4;
 
@@ -39,7 +39,7 @@ info.detectionMethod = 'MaxLR'; %'Intensity'; %MaxLR (for maximum likehood ratio
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 
-info.rotationalCalib = 0;
+info.rotationalCalib = 1;
 info.euDist = 1000;
 info.expTime = 0.010; %in sec
 info.RadTime = []; %in degrees per second (speed of rotating waveplate)
@@ -67,7 +67,7 @@ for t = 1:numel(SubFolders)
                     testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
                     testMov.CalcChannelTransition(15);
                     testMov.getROIs;
-                    testMov.showCandidate(frame);
+                    testMov.showCandidate(100);
                                 
                     %% get TrackingData
                     val2Use = 'bestFocus';

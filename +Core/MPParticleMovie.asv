@@ -1063,11 +1063,11 @@ classdef MPParticleMovie < Core.MPMovie
             % gauss_mask = exp(-(x.^2 / (2*sig(1)^2) + y.^2 / (2*sig(2)^2)));
             % gauss_mask = gauss_mask / sum(gauss_mask(:)); 
             gauss_mask = ones(sz, sz)./(sz*sz);
-            % if size(ROI, 1) == size(ROI, 2)
-            %     startIdx = (size(ROI, 1) - sz)/2+1;
-            %     gaussian_particle_mask = zeros(size(ROI));
-            %     gaussian_particle_mask(startIdx: startIdx+sz-1, startIdx:startIdx+sz-1) = gauss_mask;
-            % else
+            if size(ROI, 1) == size(ROI, 2)
+                startIdx = (size(ROI, 1) - sz)/2+1;
+                gaussian_particle_mask = zeros(size(ROI));
+                gaussian_particle_mask(startIdx: startIdx+sz-1, startIdx:startIdx+sz-1) = gauss_mask;
+            else
                 response = conv2(ROI, gauss_mask, 'same');
                 [rows, cols] = size(response);
                 if rows <= 5 && cols <= 5
@@ -1112,7 +1112,7 @@ classdef MPParticleMovie < Core.MPMovie
                 %Place the Gaussian mask inside the ROI
                 gaussian_particle_mask(r_min:r_max, c_min:c_max) = ...
                     gauss_mask(gm_r_min:gm_r_max, gm_c_min:gm_c_max);
-            % end
+            end
 
              % --- Step 5: Compute particle intensity ---
             int = sum(ROI .* gaussian_particle_mask, 'all');
