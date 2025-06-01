@@ -47,7 +47,7 @@ AmplitudeI0 = [];
 totI = [];
 totI0 = [];
 for i = 1:size(subFolders, 2)
-    try
+    % try
         file.path = append(MainFolder, filesep, subFolders{i});
     
         %% create experiments
@@ -58,12 +58,12 @@ for i = 1:size(subFolders, 2)
         
         %% test detection parameters
         testMov = trackingExp.trackMovies.mov1;
-        testMov.findCandidatePos(detectParam,1:200);
-        testMov.SRLocalizeCandidate(detectParam,1:200);
+        testMov.findCandidatePos(detectParam,1:50);
+        testMov.SRLocalizeCandidate(detectParam,1:50);
         testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
         testMov.CalcChannelTransition(15);
         testMov.getROIs;
-        testMov.showCandidate(75);
+        testMov.showCandidate(25);
 
         %% get TrackingData
         val2Use = 'bestFocus';
@@ -76,8 +76,8 @@ for i = 1:size(subFolders, 2)
         AmplitudeI0 = [AmplitudeI0; trackingExp.traces3Dcommon.I0];
         totI = [totI; trackingExp.traces3Dcommon.IntTot];
         totI0 = [totI0; trackingExp.traces3Dcommon.TotIntCorrrected];
-    catch
-    end
+    % catch
+    % end
 end
 
 ToKeep = ~cellfun('isempty', AmplitudeI);

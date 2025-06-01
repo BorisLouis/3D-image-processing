@@ -39,7 +39,7 @@ info.detectionMethod = 'MaxLR'; %'Intensity'; %MaxLR (for maximum likehood ratio
 info.calibrate = false; %true to recalibrate;
 info.multiModal = 1; %multiModal (1) or not (0)
 info.rotational = 1; %Rotational tracking 
-info.rotationalCalib = 1;
+info.rotationalCalib = 0;
 info.euDist = 1000;
 info.expTime = 0.010; %in sec
 info.RadTime = []; %in degrees per second (speed of rotating waveplate)
@@ -52,7 +52,7 @@ for t = 1:numel(SubFolders)
             for c = 1:numel(SubsubsubsubFolders)
                 file.path = append(MainFolder, filesep, SubFolders{t}, filesep, SubsubFolders{r},...
                     filesep, SubsubsubFolders{a}, filesep, SubsubsubsubFolders{c});
-                try
+                % try
                     %% create experiments
                     trackingExp = Core.TrackingExperimentRotational(file,path2Cal,info,path2SRCal,path2ZCal);
                     
@@ -62,12 +62,12 @@ for t = 1:numel(SubFolders)
                     %% test detection parameters
                     frame = 75;
                     testMov = trackingExp.trackMovies.mov1;
-                    testMov.findCandidatePos(detectParam,1:200);
-                    testMov.SRLocalizeCandidate(detectParam,1:200);
+                    testMov.findCandidatePos(detectParam,1:50);
+                    testMov.SRLocalizeCandidate(detectParam,1:50);
                     testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
-                    testMov.CalcChannelTransition(15);
+                    testMov.CalcChannelTransition(50);
                     testMov.getROIs;
-                    testMov.showCandidate(100);
+                    testMov.showCandidate(25);
                                 
                     %% get TrackingData
                     val2Use = 'bestFocus';
@@ -77,8 +77,8 @@ for t = 1:numel(SubFolders)
                     
                     %% save Data
                     trackingExp.saveData;
-                catch
-                end
+                % catch
+                % end
             end
         end
     end

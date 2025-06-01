@@ -154,10 +154,12 @@ classdef MPLocMovie < Core.MPParticleMovie
             %%% Calculate transformation 2 times: Once on the coordinates
             %%% that are not corrected => to get intensity, once on the
             %%% coordinates that are SR corrected => for tracking
+
             matchedCoords1 = [];
             matchedCoords2 = [];
             matchedCoords1NotCorr = [];
             matchedCoords2NotCorr = [];
+
 
             for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
                 data1 = obj.corrLocPos{1,1}{frameIdx};  
@@ -230,7 +232,6 @@ classdef MPLocMovie < Core.MPParticleMovie
                             CoordsnewNotCorr = TransformationNotCorr.b*CoordsNotCorr*TransformationNotCorr.T + TransformationNotCorr.c;
                             PassedPart.rowNotCorr(i) = CoordsnewNotCorr(:,1);
                             PassedPart.colNotCorr(i) = CoordsnewNotCorr(:,2);
-                           
                         end
     
                         CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
