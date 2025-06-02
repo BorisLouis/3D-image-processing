@@ -184,7 +184,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                         matchedCoords2NotCorr = [matchedCoords2NotCorr; PartPlane2(matchesNotCorr(:,2), :)];
                     end
 
-                    tform = fitgeotform2d(matchedCoords2, matchedCoords1, "pwl");
+                    tform = fitgeotform2d(matchedCoords2, matchedCoords1, "projective");
                     newcoord = transformPointsForward(tform, matchedCoords2);
 
                     figure()
@@ -193,7 +193,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                     hold on
                     scatter(matchedCoords2(:,1), matchedCoords2(:,2));
 
-                    subplot(1,2,1)
+                    subplot(1,2,2)
                     scatter(matchedCoords1(:,1), matchedCoords1(:,2));
                     hold on
                     scatter(newcoord(:,1), newcoord(:,2));
