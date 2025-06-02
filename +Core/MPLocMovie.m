@@ -166,7 +166,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 data2 = obj.corrLocPos{2,1}{frameIdx};
                 if ~or(isempty(data1), isempty(data2)) 
                     nPlanes = max(max(data1.plane), max(data2.plane));
-                    for i = 1:nPlanes
+                    for i = 4
                         PartPlane1 = table2array(data1(data1.plane == i,{'row', 'col'}));
                         PartPlane2 = table2array(data2(data2.plane == i,{'row', 'col'}));
                         D = pdist2(PartPlane1, PartPlane2);
@@ -184,7 +184,46 @@ classdef MPLocMovie < Core.MPParticleMovie
                         matchedCoords2NotCorr = [matchedCoords2NotCorr; PartPlane2(matchesNotCorr(:,2), :)];
                     end
 
-                    tform = fitgeotform2d(matchedCoords2, matchedCoords1, "projective");
+                    
+                    Bg = zeros([obj.calibrated{1, 1}.Height, obj.calibrated{1, 1}.Width]);
+                    Image1 = Bg;
+                    for z = 1:size(PartPlane1,1)
+                        Image1(round(PartPlane1(z,1))-1:round(PartPlane1(z,1))+1,...
+                            round(PartPlane1(z,2))-1:round(PartPlane1(z,2))+1) = [25 50 25; 50 100 50; 25 50 25];
+                    end
+                    Image2 = Bg;
+                    for z = 1:size(PartPlane2,1)
+                        Image2(round(PartPlane2(z,1))-1:round(PartPlane2(z,1))+1,...
+                            round(PartPlane2(z,2))-1:round(PartPlane2(z,2))+1) = [25 50 25; 50 100 50; 25 50 25];
+                    end
+
+                    [optimizer,metric] = imregconfig("monomodal");
+                    tform = imregcorr(Image2, Image1, "rigid");
+                    Image2New = imwarp(Image2, tform, "OutputView",imref2d(size(Image2)));
+
+
+                    figure()
+                    subplot(1,2,1)
+                    imshowpair(Image1, Image2)
+                    subplot(1,2,2)
+                    imshowpair(Image1, Image2New)
+
+
+
+
+                    figure()
+                    subplot(1,2,1)
+                    scatter(PartPlane1(:,1), PartPlane1(:,2));
+                    hold on
+                    scatter(PartPlane2(:,1), PartPlane2(:,2));
+
+                    subplot(1,2,2)
+                    scatter(matchedCoords1(:,1), matchedCoords1(:,2));
+                    hold on
+                    scatter(matchedCoords2(:,1), matchedCoords2(:,2));
+
+
+                    tform = fitgeotform2d(matchedCoords2, matchedCoords1, "rigid");
                     newcoord = transformPointsForward(tform, matchedCoords2);
 
                     figure()

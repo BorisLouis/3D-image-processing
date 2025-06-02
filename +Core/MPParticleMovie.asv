@@ -69,7 +69,19 @@ classdef MPParticleMovie < Core.MPMovie
                 end
                 if run
                    
-                   
+                    f = waitbar(0,'Please wait...');
+                    for i = frames
+                        waitbar(i./max(frames),f, append('averaging frame ', num2str(i), '/', num2str(max(frames))));
+                        allFrames1(:,:,:,i) = obj.getFrame(i, 1);
+                        allFrames2(:,:,:,i) = obj.getFrame(i, 2);
+                    end
+                    MeanImage1 = mean(allFrames1, 4);
+                    MeanImage2 = mean(allFrames2, 4);
+                    figure()
+                    subplot(1,2,1)
+                    imagesc(MeanImage1)
+                    subplot(1,2,2)
+                    imagesc(MeanImage2)
                     %Localization occurs here
                     assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                     assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
