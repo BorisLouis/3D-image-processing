@@ -3,13 +3,13 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2SRCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 
 %file info
-MainFolder = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
+MainFolder = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\100ms_exp';
 subFolders = {'sample_1', 'sample_2', 'sample_3', 'sample_4', 'sample_5', 'sample_6', 'sample_7', 'sample_8'};
 file.ext   = '.ome.tif';
-path2Cal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
+path2Cal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal';
 dimension = '3D';
 
 %detection parameter
@@ -61,7 +61,7 @@ for i = 1:size(subFolders, 2)
         testMov.findCandidatePos(detectParam,1:50);
         testMov.SRLocalizeCandidate(detectParam,1:50);
         testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
-        testMov.CalcChannelTransition(15);
+        testMov.CalcChannelTransition(50);
         testMov.getROIs;
         testMov.showCandidate(25);
 
