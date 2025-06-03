@@ -61,10 +61,33 @@ for t = 1:numel(SubFolders)
                     
                     %% test detection parameters
                     frame = 75;
+
                     testMov = trackingExp.trackMovies.mov1;
-                    testMov.getTransformation(detectParam, frame);
+
+                    f = waitbar(0,'Please wait...');
+                    frames = 1:800;
+                    for i = frames
+                        waitbar(i./max(frames),f, append('averaging frame ', num2str(i), '/', num2str(max(frames))));
+                        allFrames1(:,:,:,i) = testMov.getFrame(i, 1);
+                        allFrames2(:,:,:,i) = testMov.getFrame(i, 2);
+                    end
+                    MeanImage1 = mean(allFrames1, 4);
+                    MeanImage2 = mean(allFrames2, 4);
+    
+                    tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "similarity");
+                    MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
+                    figure()
+                    subplot(1,2,1)
+                    imshowpair(MeanImage1(:,:,4), MeanImage2(:,:,4))
+                    subplot(1,2,2)
+                    imshowpair(MeanImage1(:,:,4), MeanImage2New)
+                    
+                    testMov.findCandidatePos(detectParam,1:50);
+                    testMov.SRLocalizeCandidate(detectParam,1:50);
+                    testMov.applySRCal(1,round(testMov.calibrated{1,1}.nPlanes/2));
+                    testMov.CalcChannelTransition(50, tform);
                     testMov.getROIs;
-                    testMov.showCandidate(frame);
+                    testMov.showCandidate(50);
                                 
                     %% get TrackingData
                     val2Use = 'bestFocus';

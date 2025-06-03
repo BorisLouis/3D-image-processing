@@ -470,8 +470,8 @@ classdef MPParticleMovie < Core.MPMovie
                             if ~isnan(NewParticle.plane(m))
                                 planeData = data(:,:, NewParticle.plane(m));
                                 %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
-                                AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
-                                [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
+                                AdjCoord = transformPointsInverse(tform, Coord)
+                                [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(2), AdjCoord(1),...
                                                     obj.info.detectParam.delta, size(planeData,2), size(planeData,1));
                                 ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
                                 [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
@@ -488,17 +488,16 @@ classdef MPParticleMovie < Core.MPMovie
                     sig = [obj.info.sigma_px obj.info.sigma_px];
                     for l = 1:size(ParticlesCh2, 1)
                         CurrentParticle = ParticlesCh2{l, 1};
-                        Coord = [CurrentParticle.col, CurrentParticle.row];
-                        %Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
-                        Coord = transformPointsForward(tform, Coord);
+                        Coord = [CurrentParticle.row, CurrentParticle.col];
+                        Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
                         NewParticle = CurrentParticle;
-                        NewParticle.row = Coord(:,2);
-                        NewParticle.col = Coord(:,1);
+                        NewParticle.row = Coord(:,1);
+                        NewParticle.col = Coord(:,2);
                         for m = 1:size(NewParticle, 1)
                             if ~isnan(NewParticle.plane(m))
                                 planeData = data(:,:, NewParticle.plane(m));
-                                AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
-                                [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
+                                AdjCoord = Transformation.Coords2toCoords1NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords2toCoords1NotCorr.T + Transformation.Coords2toCoords1NotCorr.c;
+                                [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(2), AdjCoord(1),...
                                                     obj.info.detectParam.delta, size(planeData,2), size(planeData,1));
                                 ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
                                 [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);

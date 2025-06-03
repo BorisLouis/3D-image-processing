@@ -21,6 +21,26 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 traces{q,1} = obj.traces3D{q,1};
             end
         end
+
+        function getTransformation(obj, detectParam, frame)
+                f = waitbar(0,'Please wait...');
+                frames = 1:obj.raw.maxFrame(1);
+                for i = frames
+                    waitbar(i./max(frames),f, append('averaging frame ', num2str(i), '/', num2str(max(frames))));
+                    allFrames1(:,:,:,i) = obj.getFrame(i, 1);
+                    allFrames2(:,:,:,i) = obj.getFrame(i, 2);
+                end
+                MeanImage1 = mean(allFrames1, 4);
+                MeanImage2 = mean(allFrames2, 4);
+
+                tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "similarity");
+                MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
+                
+                obj.findCandidatePos(detectParam,frame);
+                obj.SRLocalizeCandidate(detectParam,frame);
+                obj.applySRCal(1,round(obj.calibrated{1,1}.nPlanes/2));
+                obj.CalcChannelTransition(tform, frame);
+        end
         
         function trackParticle(obj,trackParam)
             for q = 1:obj.info.multiModal+1
@@ -75,23 +95,8 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 Initialized = [ToTrack{1},(1:size(ToTrack{1},1))'];
     
                 ToTrack(1) = [];
-
-                % %%% Track particles for rotational 
-                % if obj.info.rotational == 1
-                %     for i = 1:size(ToTrack{1,1},2)
-                %     Trace(1,:) = ToTrack{1,1}(i,:);
-                %     for j = 2:size(ToTrack,1)
-                %     NextCoord = ToTrack{j,1};
-                %     Distances = sqrt((Trace(1,1)-NextCoord(:,1)).^2 + (Trace(1,2)-NextCoord(:,2)).^2);
-                %     [~, Idx] = min(Distances);
-                %     Trace(j,:) = ToTrack{j,1}(Idx, :);
-                %     end
-                %     Traces{i} = Trace;
-                %     end
-                % end
     
                 %%%%% INITIALIZE FOR TRACKING DATA
-                % TrackedData = Tracked;
                 if count >0
                     TrackedData_data = cell(1,count);
                     TrackedData_data = [TrackedData_data,{Initialized}];

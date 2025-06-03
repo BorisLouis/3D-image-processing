@@ -150,125 +150,55 @@ classdef MPLocMovie < Core.MPParticleMovie
             end
         end
 
-        function CalcChannelTransition(obj, threshold)
+        function CalcChannelTransition(obj, tform, frame)
             %%% Calculate transformation 2 times: Once on the coordinates
             %%% that are not corrected => to get intensity, once on the
             %%% coordinates that are SR corrected => for tracking
 
-            matchedCoords1 = [];
-            matchedCoords2 = [];
-            matchedCoords1NotCorr = [];
-            matchedCoords2NotCorr = [];
+            % matchedCoords1 = [];
+            % matchedCoords2 = [];
+            % matchedCoords1NotCorr = [];
+            % matchedCoords2NotCorr = [];
+            % 
+            % 
+            % for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
+            %     data1 = obj.corrLocPos{1,1}{frameIdx};  
+            %     data2 = obj.corrLocPos{2,1}{frameIdx};
+            %     if ~or(isempty(data1), isempty(data2)) 
+            %         nPlanes = max(max(data1.plane), max(data2.plane));
+            %         for i = 4
+            %             PartPlane1 = table2array(data1(data1.plane == i,{'row', 'col'}));
+            %             PartPlane2 = table2array(data2(data2.plane == i,{'row', 'col'}));
+            %             D = pdist2(PartPlane1, PartPlane2);
+            %             D(D > threshold) = Inf;
+            %             [matches, costs] = matchpairs(D, 15);
+            %             matchedCoords1 = [matchedCoords1; PartPlane1(matches(:,1), :)];
+            %             matchedCoords2 = [matchedCoords2; PartPlane2(matches(:,2), :)];
+            % 
+            %             PartPlane1NotCorr = table2array(data1(data1.plane == i,{'rowNotCorr', 'colNotCorr'}));
+            %             PartPlane2NotCorr = table2array(data2(data2.plane == i,{'rowNotCorr', 'colNotCorr'}));
+            %             DNotCorr = pdist2(PartPlane1NotCorr, PartPlane2NotCorr);
+            %             DNotCorr(DNotCorr > threshold) = Inf;
+            %             [matchesNotCorr, costsNotCorr] = matchpairs(DNotCorr, 15);
+            %             matchedCoords1NotCorr = [matchedCoords1NotCorr; PartPlane1(matchesNotCorr(:,1), :)];
+            %             matchedCoords2NotCorr = [matchedCoords2NotCorr; PartPlane2(matchesNotCorr(:,2), :)];
+            %         end
+            %     end
+            % end
+            % 
+            % [~, ~, transform] = procrustes(matchedCoords1, matchedCoords2);
+            % transform.c = transform.c(1,:);
+            % transform2.T = transform.T';
+            % transform2.b = 1/(transform.b);
+            % transform2.c = -(1 /transform.b) * transform.c * transform.T';
+            % 
+            % [~, ~, transformNotCorr] = procrustes(matchedCoords1NotCorr, matchedCoords2NotCorr);
+            % transformNotCorr.c = transformNotCorr.c(1,:);
+            % transformNotCorr2.T = transformNotCorr.T';
+            % transformNotCorr2.b = 1/(transformNotCorr.b);
+            % transformNotCorr2.c = -(1 /transformNotCorr.b) * transformNotCorr.c * transformNotCorr.T';
 
-
-            for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
-                data1 = obj.corrLocPos{1,1}{frameIdx};  
-                data2 = obj.corrLocPos{2,1}{frameIdx};
-                if ~or(isempty(data1), isempty(data2)) 
-                    nPlanes = max(max(data1.plane), max(data2.plane));
-                    for i = 4
-                        PartPlane1 = table2array(data1(data1.plane == i,{'row', 'col'}));
-                        PartPlane2 = table2array(data2(data2.plane == i,{'row', 'col'}));
-                        D = pdist2(PartPlane1, PartPlane2);
-                        D(D > threshold) = Inf;
-                        [matches, costs] = matchpairs(D, 15);
-                        matchedCoords1 = [matchedCoords1; PartPlane1(matches(:,1), :)];
-                        matchedCoords2 = [matchedCoords2; PartPlane2(matches(:,2), :)];
-
-                        PartPlane1NotCorr = table2array(data1(data1.plane == i,{'rowNotCorr', 'colNotCorr'}));
-                        PartPlane2NotCorr = table2array(data2(data2.plane == i,{'rowNotCorr', 'colNotCorr'}));
-                        DNotCorr = pdist2(PartPlane1NotCorr, PartPlane2NotCorr);
-                        DNotCorr(DNotCorr > threshold) = Inf;
-                        [matchesNotCorr, costsNotCorr] = matchpairs(DNotCorr, 15);
-                        matchedCoords1NotCorr = [matchedCoords1NotCorr; PartPlane1(matchesNotCorr(:,1), :)];
-                        matchedCoords2NotCorr = [matchedCoords2NotCorr; PartPlane2(matchesNotCorr(:,2), :)];
-                    end
-
-                    
-                    Bg = zeros([obj.calibrated{1, 1}.Height, obj.calibrated{1, 1}.Width]);
-                    Image1 = Bg;
-                    for z = 1:size(PartPlane1,1)
-                        Image1(round(PartPlane1(z,1))-1:round(PartPlane1(z,1))+1,...
-                            round(PartPlane1(z,2))-1:round(PartPlane1(z,2))+1) = [25 50 25; 50 100 50; 25 50 25];
-                    end
-                    Image2 = Bg;
-                    for z = 1:size(PartPlane2,1)
-                        Image2(round(PartPlane2(z,1))-1:round(PartPlane2(z,1))+1,...
-                            round(PartPlane2(z,2))-1:round(PartPlane2(z,2))+1) = [25 50 25; 50 100 50; 25 50 25];
-                    end
-
-                    [optimizer,metric] = imregconfig("monomodal");
-                    tform = imregcorr(Image2, Image1, "rigid");
-                    Image2New = imwarp(Image2, tform, "OutputView",imref2d(size(Image2)));
-
-
-                    figure()
-                    subplot(1,2,1)
-                    imshowpair(Image1, Image2)
-                    subplot(1,2,2)
-                    imshowpair(Image1, Image2New)
-
-
-
-
-                    figure()
-                    subplot(1,2,1)
-                    scatter(PartPlane1(:,1), PartPlane1(:,2));
-                    hold on
-                    scatter(PartPlane2(:,1), PartPlane2(:,2));
-
-                    subplot(1,2,2)
-                    scatter(matchedCoords1(:,1), matchedCoords1(:,2));
-                    hold on
-                    scatter(matchedCoords2(:,1), matchedCoords2(:,2));
-
-
-                    tform = fitgeotform2d(matchedCoords2, matchedCoords1, "rigid");
-                    newcoord = transformPointsForward(tform, matchedCoords2);
-
-                    figure()
-                    subplot(1,2,1)
-                    scatter(matchedCoords1(:,1), matchedCoords1(:,2));
-                    hold on
-                    scatter(matchedCoords2(:,1), matchedCoords2(:,2));
-
-                    subplot(1,2,2)
-                    scatter(matchedCoords1(:,1), matchedCoords1(:,2));
-                    hold on
-                    scatter(newcoord(:,1), newcoord(:,2));
-                    % [~, ~, transform] = procrustes(matchedCoords1, matchedCoords2);
-                    % 
-                    % Tmatrix(:,:,frameIdx) = transform.T;
-                    % bmatrix(frameIdx) = transform.b;
-                    % cmatrix(frameIdx, :) = transform.c(1,:);
-                    % 
-                    % [~, ~, transformNotCorr] = procrustes(matchedCoords1NotCorr, matchedCoords2NotCorr);
-                    % 
-                    % TmatrixNotCorr(:,:,frameIdx) = transformNotCorr.T;
-                    % bmatrixNotCorr(frameIdx) = transformNotCorr.b;
-                    % cmatrixNotCorr(frameIdx, :) = transformNotCorr.c(1,:);
-                end
-            end
-
-            transform.T = mean(Tmatrix, 3);
-            transform.b = mean(bmatrix, 2);
-            transform.c = mean(cmatrix, 1);
-                    
-            transform.c = transform.c(1,:);
-            transform2.T = transform.T';
-            transform2.b = 1/(transform.b);
-            transform2.c = -(1 /transform.b) * transform.c * transform.T';
-
-            transformNotCorr.T = mean(TmatrixNotCorr, 3);
-            transformNotCorr.b = mean(bmatrixNotCorr, 2);
-            transformNotCorr.c = mean(cmatrixNotCorr, 1);
-            
-            transformNotCorr.c = transformNotCorr.c(1,:);
-            transformNotCorr2.T = transformNotCorr.T';
-            transformNotCorr2.b = 1/(transformNotCorr.b);
-            transformNotCorr2.c = -(1 /transformNotCorr.b) * transformNotCorr.c * transformNotCorr.T';
-
-            for frameIdx = 1:size(obj.unCorrLocPos{1,1}, 1)
+            for frameIdx = 1:frame
                 data1 = obj.corrLocPos{1,1}{frameIdx};  
                 data2 = obj.corrLocPos{2,1}{frameIdx};
                 if ~or(isempty(data1), isempty(data2)) 
@@ -285,23 +215,23 @@ classdef MPLocMovie < Core.MPParticleMovie
                         PassedPart = CombinedLoc(CombinedLoc.OriginChannel == 1, :);
     
                         for i = 1:size(PassedPart,1)
+                            Coords = [PassedPart.col(i) PassedPart.row(i)];
+                            CoordsNotCorr = [PassedPart.colNotCorr(i) PassedPart.rowNotCorr(i)];
+
                             if q == 1
-                                Transformation = transform;
-                                TransformationNotCorr = transformNotCorr;
+                                Coordsnew = transformPointsForward(tform, Coords);
+                                CoordsnewNotCorr = transformPointsForward(tform, CoordsNotCorr);
+   
                             elseif q == 2
-                                Transformation = transform2;
-                                TransformationNotCorr = transformNotCorr2;
+                                Coordsnew = transformPointsInverse(tform, Coords);
+                                CoordsnewNotCorr = transformPointsInverse(tform, CoordsNotCorr);
+
                             end
+                            PassedPart.col(i) = Coordsnew(:,1);
+                            PassedPart.row(i) = Coordsnew(:,2);
 
-                            Coords = [PassedPart.row(i) PassedPart.col(i)];
-                            Coordsnew = Transformation.b*Coords*Transformation.T + Transformation.c;
-                            PassedPart.row(i) = Coordsnew(:,1);
-                            PassedPart.col(i) = Coordsnew(:,2);
-
-                            CoordsNotCorr = [PassedPart.rowNotCorr(i) PassedPart.colNotCorr(i)];
-                            CoordsnewNotCorr = TransformationNotCorr.b*CoordsNotCorr*TransformationNotCorr.T + TransformationNotCorr.c;
-                            PassedPart.rowNotCorr(i) = CoordsnewNotCorr(:,1);
-                            PassedPart.colNotCorr(i) = CoordsnewNotCorr(:,2);
+                            PassedPart.colNotCorr(i) = CoordsnewNotCorr(:,1);
+                            PassedPart.rowNotCorr(i) = CoordsnewNotCorr(:,2);
                         end
     
                         CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
@@ -312,10 +242,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                 end
             end
 
-            transformation.Coords2toCoords1 = transform;
-            transformation.Coords1toCoords2 = transform2;
-            transformation.Coords2toCoords1NotCorr = transformNotCorr;
-            transformation.Coords1toCoords2NotCorr = transformNotCorr2;
+            transformation = tform;
 
             Filename = append(obj.raw.movInfo.Path, filesep, 'ChannelTransformations.mat');
             save(Filename, "transformation");
