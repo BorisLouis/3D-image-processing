@@ -11,53 +11,18 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
             error('Unknown dim, dim needs to be provided as 1D 2D or 3D')
     end
 
-    % assert(min(size(msad))==1,'MSD needs to be provided as a vector')
-    % assert(and(fitRange<=1,isnumeric(fitRange)),'fit Range needs to be numerical between 0 and 1');
-    
-    tofit = msad(1, 1:fitRange);
-    tau   = msad(2, 1:fitRange);
-
-    % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-c*x))');
     try
-        % Lower = [0, 0];
-        % Upper = [sqrt(msad(1,1)/(2*max(msad(1,:)))), 100];
-        % if div == 4
-            % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-(1.6*c*x)^0.95))', 'Lower', Lower, 'Upper', Upper);
-            % [f, gov]    = fit(msad(2,:)',msad(1,:)','0.025*(1-(1-a^2)*exp(-(4*b*x)))', 'Lower', Lower, 'Upper', Upper);
-        % elseif div == 2
-            % [f, gov]    = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp(-(4*b*x)))');%, 'Lower', Lower, 'Upper', Upper);
-            % [f, gov]    = fit(msad(2,1:4)',msad(1,1:4)','a*x');%, 'Lower', Lower, 'Upper', Upper);
-        % end
-<<<<<<< HEAD
-        msad(1,:) = msad(1,:)./mean(msad(1,:))*0.1;
-        % Lower = [0, 0];
-        % Upper = [(2*max(msad(1,:))), 100];
-        [f, gov] = fit(msad(2,1:4)',msad(1,1:4)','2*a*x + b');
-=======
-        Lower = [(0.5*max(msad(1,:))), sqrt(msad(1,1)/(2*max(msad(1,:)))), 0];
-        Upper = [(1.5*max(msad(1,:))),sqrt(msad(1,1)/(0.5*max(msad(1,:)))), 100];
-        [f, gov] = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp((-2*c*x)./a))', 'Lower', Lower, 'Upper', Upper);
-        coeff = coeffvalues(f);
-        Corrected = msad(1,:);
-        [f, gov] = fit(msad(2,1:10)',msad(1,1:10)','2*a*x+b');
->>>>>>> 03264620cd2cf17a5d02370b6dae27d8bc22c5e4
-        figure()
-        plot(f, msad(2,:)',msad(1,:)');
-        % % % 
-        % 
+        % [f, gov] = fit(msad(2,:)',msad(1,:)','a*(1-(1-b^2)*exp((-1.6*c*x)^0.95))');
+        [f, gov] = fit(tau(1,1:fitRange)',msad(1,1:fitRange)','a*x');
+        % figure()
+        % plot(f, tau(1,:)', msad(1,:)');
+
         if gov.rsquare > 0.03
             g = coeffvalues(f);
-<<<<<<< HEAD
-            Dr = g(1)*180/pi;
-        % else
-        %     Dr = NaN;
-        % end
-=======
-            Dr = g(1)*4*180/pi;
+            Dr = g(1)/div;
         else
             Dr = NaN;
         end
->>>>>>> 03264620cd2cf17a5d02370b6dae27d8bc22c5e4
     catch
         Dr = NaN;
     end

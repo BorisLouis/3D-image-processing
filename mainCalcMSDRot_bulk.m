@@ -7,13 +7,13 @@ expTime = 0.010; %in sec
 Temp = 296.15; %temperature in Kelvin
 ParticleType = 'Bipyramid'; %Bipyramid, ellipsoid, rod, cilinder,...
 R = [184, 92]; %Long axis, short axis in nm
-fitRDiff = 4; %in number of data
-minSize = 20; %frames
+fitRDiff = 3; %in number of data
+minSize = 10; %frames
 ext = '.mat';
-path2RotCal = 'S:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
+path2RotCal = 'E:\Rotational Tracking\20250228_AuBPs_184x92_calib\2DCal_184x91_rotational\10ms_exp';
 
 %% Path info
-MainFolder = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
+MainFolder = 'E:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol';
 SubFolder = {'glycerol 80', 'glycerol 85', 'glycerol 90', 'glycerol 95', 'glycerol 100'}; % 'glycerol_80', 'glycerol_85', 'glycerol_90','glycerol_95', 
 SubsubFolder = {'sample1', 'sample2', 'sample3','sample4', 'sample5'}; %
 
@@ -24,7 +24,7 @@ DiffTotMatrix = [];
 for r = 1:numel(SubFolder)
     Visc = [];
     for o = 1:numel(SubsubFolder)
-        % try
+        try
             path = append(MainFolder, filesep, SubFolder{r}, filesep, SubsubFolder{o});
     
             %% Loading
@@ -72,55 +72,21 @@ for r = 1:numel(SubFolder)
 
                     % For Theta
                     tau = Time;
-                    [msadTheta] = MSD.Rotational.calc2(coord(:,1), tau, expTime);
-                    allmsadTheta(i,1:length(msadTheta)) = msadTheta(1,:);
+                    [msadTheta, tau] = MSD.Rotational.calc2(coord(:,1), tau, expTime);
                     DTheta   = MSD.Rotational.getDiffCoeff(msadTheta,tau,fitRDiff,'2D');
                     nTheta   = MSD.Rotational.getViscosity(DTheta,R,ParticleType, Temp);
-                    vTheta   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
+                    vTheta   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi;
 
-                    % %For Phi
-                    % tau = Time;
-                    % msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
-                    % tau = (1:length(msadPhi))'*expTime;
-                    % allmsadPhi(i,1:length(msadPhi)) = msadPhi(1,:);
-                    % DPhi   = MSD.Rotational.getDiffCoeff(msadPhi,tau,fitRDiff,'2D');
-                    % nPhi   = MSD.Rotational.getViscosity(DPhi,R,ParticleType, Temp);
-                    % vPhi   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
-                    % 
-                    % %For both
-                    % tau = Time;
-                    % msadr = MSD.Rotational.calc(coord, tau, expTime);%convert to um;
-                    % allMSDR(i,1:length(msadr)) = msadr(1,:);
-                    % DR   = MSD.Rotational.getDiffCoeff(msadr,tau,fitRDiff,'3D');
-                    % nR   = MSD.Rotational.getViscosity(DR,R,ParticleType,Temp);
-                    % dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
-                    % vR = dR/10^3/(length(coord)*expTime); %rad/s
-
-
-                    % DiffTotmean = msadPhi(1,1);
                     DiffImean = msadTheta(1,1);
 
 
                     allRes(i).msadTheta = msadTheta;% in rad^2 
-                    % allRes(i).msadPhi = msadPhi;
-                    % allRes(i).msadr = msadr;
                     allRes(i).tau = tau; % in sec
 
                     allRes(i).DTheta   = DTheta;% in rad^2 /sec
-                    % allRes(i).DPhi   = DPhi;% in rad^2 /sec
-                    % allRes(i).Dr  = DR;% in rad^2 /sec
-
                     allRes(i).nTheta   = nTheta;
-                    % allRes(i).nPhi   = nPhi;
-                    % allRes(i).nr   = nR;
-
                     allRes(i).vTheta   = vTheta;
-                    % allRes(i).vPhi   = vPhi;
-                    % allRes(i).vr   = vR;
-
                     allRes(i).num  = length(msadTheta);
-
-                    % allRes(i).diffTot = DiffTotmean;
                     allRes(i).diffI = DiffImean;
                     Visc(end+1, 1) = abs(nTheta);
 
@@ -135,13 +101,13 @@ for r = 1:numel(SubFolder)
 
             DResultsTheta(o, r) = nanmedian([allRes.DTheta]);
             nResultsTheta(o, r) = nanmedian([allRes.nTheta]);
-        % catch
-        %     DResultsTheta(o, r) = nan;
-        %     nResultsTheta(o, r) = nan;
-        % end
+        catch
+            DResultsTheta(o, r) = nan;
+            nResultsTheta(o, r) = nan;
+        end
     end
   
-    disp(append('The viscosity is ', num2str(nanmean(Visc)), ' cP'))
+    disp(append('The viscosity is ', num2str(nanmedian(Visc)), ' cP'))
     disp(append('number of traces is ', num2str(numel(Visc))))
 end
- close(f)
+close(f)

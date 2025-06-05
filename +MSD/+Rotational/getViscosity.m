@@ -12,9 +12,7 @@ function [nr] = getViscosity(D,r, partType, T)
     L = r(1)*10^-9;
     switch partType
         case 'Bipyramid'
-             W = ((2/3)*pi*D*L^3*((p^4 -1)/(p^4)))/((((2*p^2 - 1)*log(p + sqrt(p^2 -1)))/(p*sqrt(p^2 -1)))-1);
-             % W = (2/3)*pi*D*L^3;
-             %W = 6*pi*D*L^3;
+             W = ((p^4 -1)/(p^4))/((((2*p^2 - 1)*log(p + sqrt(p^2 -1)))/(p*sqrt(p^2 -1)))-1);
         case 'Rod'
              a = [13.04468, -62.6084, 174.0921, -218.8365, 140.26992, -33.27076];
              for i = 1:6
@@ -26,5 +24,5 @@ function [nr] = getViscosity(D,r, partType, T)
             error('Unknown dim, dim needs to be provided as 1D 2D or 3D')
     end
 
-    nr = (1.380649*10^(-23)*T)/(W)*1000;%in cp
+    nr = (1.380649*10^(-23)*T)/((2/3)*pi*D*L^3*W)*1000;%in cp
 end

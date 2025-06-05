@@ -1,4 +1,4 @@
-function [MSD] = calc2(coord, tau, expTime)
+function [MSAD, TimeLag] = calc2(coord, tau, expTime)
 
     dim = size(coord,2);
     
@@ -14,49 +14,37 @@ function [MSD] = calc2(coord, tau, expTime)
     %Calculate mean-square-displacement
     maxIdx = round((max(tau)-min(tau))/expTime);
     AngDisp = [];
+
+    Theta = coord(:,1).';
+    Phi = coord(:,2).';
+
+    AngDisp = cell(round((tau(end) - tau(1))./expTime), 1);
+
     for dt = 1:size(coord,1)-1
-        
-        cnt =  1;
-        
-        while cnt<=dt && cnt+dt<=size(coord,1)
-            
-            idx = cnt:dt:size(coord,1);
-            SelectTheta = coord(idx,1).';
-            SelectPhi = coord(idx,2).';
-            TimeLagcorr = abs(diff(tau(idx)) - dt*expTime) < 0.002;
+        for z = 1:size(Theta, 2)-dt
+            TimeLagCurr = round((tau(z+dt) - tau(z))./expTime);
 
-            for z = 1:size(SelectTheta, 2)-1
-                if TimeLagcorr(z) == 1
-                    theta1 = SelectTheta(z);
-                    phi1 = SelectPhi(z);
-                    r1 = [cos(theta1)*cos(phi1) cos(theta1)*sin(phi1) sin(theta1)];
-    
-                    theta2 = SelectTheta(z+1);
-                    phi2 = SelectPhi(z+1);
-                    r2 = [cos(theta2)*cos(phi2) cos(theta2)*sin(phi2) sin(theta2)];
+            theta1 = Theta(z);
+            phi1 = Phi(z);
+            r1 = [cos(theta1)*cos(phi1) cos(theta1)*sin(phi1) sin(theta1)];
 
-                    AngDisp= [AngDisp; real(acos(dot(r1, r2)))];
-                else
-                    continue
-                end
-            end
-            cnt = cnt + 1;
+            theta2 = Theta(z+dt);
+            phi2 = Phi(z+dt);
+            r2 = [cos(theta2)*cos(phi2) cos(theta2)*sin(phi2) sin(theta2)];
+
+            AngDisp{TimeLagCurr, 1} = [AngDisp{TimeLagCurr, 1}; real(acos(dot(r1, r2)))];
         end
-
-        if ~isempty(AngDisp)
-            Dr = AngDisp(~isnan(AngDisp));
-            Dr(Dr == 0) = [];
-            
-            if ~isempty(Dr)
-                MSAD(dt) = mean(Dr.^2);
-            else
-                MSAD(dt) = NaN;
-            end
-        else
-            MSAD(dt) = NaN;
-        end
-        TimeLag(dt) = dt*expTime;
     end
 
-    MSD = [MSAD'; TimeLag];
+    MSAD = [];
+    TimeLag = [];
+    for dt = 1:size(AngDisp,1)
+        Dr = AngDisp{dt, 1};
+        Dr(isnan(Dr)) = [];
+        Dr(Dr == 0) = [];
+        if ~isempty(Dr)
+            MSAD = [MSAD, mean(Dr.^2)];
+            TimeLag = [TimeLag, dt*expTime];
+        end
+    end
 end

@@ -27,7 +27,7 @@ detectParam{2}.consThresh = 4;
 
 %tracking parameter
 trackParam.radius  = 3500;%nm
-trackParam.memory  = 10;
+trackParam.memory  = 5;
 
 %% Storing info about the file
 info.type = 'normal'; %normal or transmission
