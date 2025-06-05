@@ -25,13 +25,23 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         function getTransformation(obj, detectParam, frame)
                 f = waitbar(0,'Please wait...');
                 frames = 1:obj.raw.maxFrame(1);
+                MeanImage1 = 0;
+                MeanImage2 = 0;
+
                 for i = frames
                     waitbar(i./max(frames),f, append('averaging frame ', num2str(i), '/', num2str(max(frames))));
-                    allFrames1(:,:,:,i) = obj.getFrame(i, 1);
-                    allFrames2(:,:,:,i) = obj.getFrame(i, 2);
+                    % allFrames1(:,:,:,i) = obj.getFrame(i, 1);
+                    % allFrames2(:,:,:,i) = obj.getFrame(i, 2);
+                    frame1 = double(obj.getFrame(i, 1));
+                    frame2 = double(obj.getFrame(i, 2));
+
+                    MeanImage1 = MeanImage1 + frame1;
+                    MeanImage2 = MeanImage2 + frame2;
                 end
-                MeanImage1 = mean(allFrames1, 4);
-                MeanImage2 = mean(allFrames2, 4);
+
+                close(f);
+                MeanImage1 = MeanImage1 / max(frames);
+                MeanImage2 = MeanImage2 / max(frames);
 
                 tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "similarity");
                 MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
