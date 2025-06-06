@@ -4,7 +4,7 @@ function [MSAD, TimeLag] = calc2(coord, tau, expTime)
     
     switch dim
         case 1
-            coord(:,2) = 0;
+            coord(:,2) = 0.46;
         case 2        
         otherwise
             error('unexpected dimension for the vector')
