@@ -17,14 +17,19 @@ classdef TrackingExperimentRotational < handle
     end
 
      methods
-         function obj = TrackingExperimentRotational(folder2Data,cal2D,info,SRCalPath,zCalPath)
+         function obj = TrackingExperimentRotational(folder2Data,cal2D,info,SRCalPath,zCalPath, q, infoChannel)
             %TrackingExperiment Construct an instance of this class
             %   Detailed explanation goes here
             obj.path = folder2Data.path;
             obj.ext  = folder2Data.ext;
             obj.cal2D = cal2D;
             obj.info = info;
+            if ~isempty(infoChannel)
+                obj.info = cell2struct([struct2cell(info); struct2cell(infoChannel)], ...
+                         [fieldnames(info); fieldnames(infoChannel)], 1);
+            end
             obj.ZCal = zCalPath;
+            SRCalPath = {SRCalPath, q};
             obj.SRCal = SRCalPath; 
             % obj.SRCal2 = SRCalPath;
         end
@@ -48,6 +53,8 @@ classdef TrackingExperimentRotational < handle
         function set.cal2D(obj,cal2D)
             if isempty(cal2D)
                 obj.cal2D = [];
+            elseif isstruct(cal2D)
+                obj.cal2D = cal2D;
             else
                 assert(ischar(cal2D), 'Path should be given as a string');
                 assert(isfolder(cal2D), 'The path given is not a folder, ZCalibration expect a folder. In the folder it is expected to find separate folder for each zCalMovie.')
@@ -75,12 +82,12 @@ classdef TrackingExperimentRotational < handle
                 obj.SRCal.cal = SRCal;
                 obj.SRCal.path = SRCal;
             else
-                assert(isfolder(SRCal), 'The given path is not a folder');
+                assert(isfolder(SRCal{1}), 'The given path is not a folder');
                
 
-                for q = 1:obj.info.multiModal + 1
+                q = SRCal{2};
                     %Check Given path
-                    [file2Analyze] = Core.Movie.getFileInPath(SRCal,append('SRCalibration', num2str(q), '.mat'));
+                    [file2Analyze] = Core.Movie.getFileInPath(SRCal{1},append('SRCalibration', num2str(q), '.mat'));
     
                     if isempty(file2Analyze)
                         error('No SR calibration file found in the given folder');
@@ -92,48 +99,12 @@ classdef TrackingExperimentRotational < handle
                         assert(and(isstruct(cal), and(isfield(cal,'trans'),isfield(cal,'rot'))),...
                             'SR calibration is supposed to be a struct with 2 fields');
     
-                        obj.SRCal{q,1}.cal = cal;
-                        obj.SRCal{q,1}.path = SRCal;
+                        obj.SRCal.cal = cal;
+                        obj.SRCal.path = SRCal{1};
                     end
-                end
             end
             
         end
-
-        % function set.SRCal2(obj,SRCal)
-        %     if isempty(SRCal)
-        %         obj.SRCal2.cal = SRCal;
-        %         obj.SRCal2.path = SRCal;
-        %     else
-        %         assert(isfolder(SRCal), 'The given path is not a folder');
-        % 
-        %         if isfield(obj.info, 'multiModal')
-        %             if obj.info.multiModal == true
-        %                 MultiModal = 1;
-        %             end
-        %         elseif isfield(obj.info, 'multiTracking')
-        %             MultiModal = 1;
-        %         end
-        % 
-        %         if MultiModal == true
-        %              [file2Analyze] = Core.Movie.getFileInPath(SRCal,'SRCalibration2.mat');
-        % 
-        %             if isempty(file2Analyze)
-        %                 error('No SR calibration file found in the given folder');
-        %             else
-        %                 fileName = [file2Analyze.folder filesep file2Analyze.name];
-        %                 cal = load(fileName);
-        %                 field = fieldnames(cal);
-        %                 cal = cal.(field{1});
-        %                 assert(and(isstruct(cal), and(isfield(cal,'trans'),isfield(cal,'rot'))),...
-        %                     'SR calibration is supposed to be a struct with 2 fields');
-        % 
-        %                 obj.SRCal2.cal = cal;
-        %                 obj.SRCal2.path = SRCal;
-        %             end
-        %         end
-        %     end
-        % end
 
          function set.ZCal(obj,zCal)
             if isempty(zCal)
@@ -214,9 +185,9 @@ classdef TrackingExperimentRotational < handle
             disp('=======> DONE ! <========')
         end
 
-        function retrieveTrackData(obj,detectParam, trackParam)
+        function retrieveTrackData(obj,detectParam, trackParam, q)
             %Checking user input
-            assert(nargin==3, 'retrieveZCalData expects 2 inputs, 1)detection Parameters, tracking parameter');
+            assert(nargin==4, 'retrieveZCalData expects 2 inputs, 1)detection Parameters, tracking parameter and q');
             %assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
             assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
                 'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
@@ -231,12 +202,12 @@ classdef TrackingExperimentRotational < handle
                 
                 %Molecule detection
                 % if currentTrackMov.info.rotationalCalib == 0
-                    currentTrackMov.findCandidatePos(detectParam);
+                    currentTrackMov.findCandidatePos(detectParam, q);
                 % else
                 % end
                 
                 %SR fitting
-                currentTrackMov.SRLocalizeCandidate(detectParam);
+                currentTrackMov.SRLocalizeCandidate(detectParam, q);
                 refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                 rot = true;
                 %apply SRCal
@@ -247,7 +218,7 @@ classdef TrackingExperimentRotational < handle
                 
                 %Plane consolidation
                 frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
-                currentTrackMov.consolidatePlanes(frames,detectParam)
+                currentTrackMov.consolidatePlanes(frames,detectParam,q)
                 
                 %superResolve
                 currentTrackMov.superResolve;

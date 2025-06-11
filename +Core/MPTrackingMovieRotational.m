@@ -5,13 +5,14 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         ROI
         ParticlesROI
         CandidateROI
+        infoChannel
     end
     
     methods
-        function obj = MPTrackingMovieRotational(raw, MPCal, info, SRCal, zCal)
+        function obj = MPTrackingMovieRotational(raw, MPCal, info, SRCal, zCal, q)
             %trackingMovie Construct an instance of this class
             %Detailed explanation goes here
-             obj  = obj@Core.MPLocMovie(raw,MPCal,info,SRCal,zCal);
+             obj  = obj@Core.MPLocMovie(raw,MPCal,info,SRCal,zCal, q);
              
         end
         
@@ -22,7 +23,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
             end
         end
 
-        function getTransformation(obj, detectParam, frame)
+        function getTransformation(obj, obj2, frame)
                 f = waitbar(0,'Please wait...');
                 frames = 1:obj.raw.maxFrame(1);
                 MeanImage1 = 0;
@@ -33,7 +34,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                     % allFrames1(:,:,:,i) = obj.getFrame(i, 1);
                     % allFrames2(:,:,:,i) = obj.getFrame(i, 2);
                     frame1 = double(obj.getFrame(i, 1));
-                    frame2 = double(obj.getFrame(i, 2));
+                    frame2 = double(obj2.getFrame(i, 1));
 
                     MeanImage1 = MeanImage1 + frame1;
                     MeanImage2 = MeanImage2 + frame2;
@@ -46,10 +47,23 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "similarity");
                 MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
                 
-                obj.findCandidatePos(detectParam,frame);
-                obj.SRLocalizeCandidate(detectParam,frame);
+                figure()
+                subplot(1,2,1)
+                imshowpair(MeanImage1(:,:,4), MeanImage2(:,:,4))
+                title('Overlay meanImage before corr')
+                subplot(1,2,2)
+                imshowpair(MeanImage1(:,:,4), MeanImage2New)
+                title('Overlay meanImage after corr')
+
+
+
+                obj.findCandidatePos(obj.info.detectParam,1,frame);
+                obj2.findCandidatePos(obj2.info.detectParam,2,frame);
+                obj.SRLocalizeCandidate(obj.info.detectParam,1,frame);
+                obj2.SRLocalizeCandidate(obj2.info.detectParam,2,frame);
                 obj.applySRCal(1,round(obj.calibrated{1,1}.nPlanes/2));
-                obj.CalcChannelTransition(tform, frame);
+                obj2.applySRCal(1,round(obj2.calibrated{1,1}.nPlanes/2));
+                obj.CalcChannelTransition(obj2, tform, frame);
         end
         
         function trackParticle(obj,trackParam)

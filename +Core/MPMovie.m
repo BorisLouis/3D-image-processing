@@ -4,7 +4,7 @@ classdef MPMovie < Core.Movie
     %Extension will be centered around localization but SOFI movie could
     %also inherit from this object
     
-    properties (SetAccess = 'protected')
+    properties 
         cal2D %calibration data
         calibrated %Path to calibrated data and Info
     end
@@ -271,7 +271,7 @@ classdef MPMovie < Core.Movie
             end
         end
         
-        function [data, CorrFactor] = getFrame(obj,idx, q)
+        function [data] = getFrame(obj,idx, q)
             %Allow the user to extract data from a specific frame, behavior
             %depends on the calibration
             assert(length(idx)==1,'Only one frame at a time');
@@ -282,21 +282,15 @@ classdef MPMovie < Core.Movie
                 
                 [data] = getFrame@Core.Movie(obj,idx);
                 
-            elseif isstruct(obj.calibrated{1,q})
-                fieldsN = fieldnames(obj.calibrated{1,q}.filePath);                
+            elseif isstruct(obj.calibrated{1,1})
+                fieldsN = fieldnames(obj.calibrated{1,1}.filePath);                
                 %data = zeros(obj.calibrated{1,q}.Height,obj.calibrated{1,q}.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
-                    [mov] = Load.Movie.tif.getframes(obj.calibrated{1,q}.filePath.(fieldsN{i}),idx);
+                    [mov] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
                     bg = double(imgaussfilt(mov, 15));
                     mov = double(mov) - bg;
                     data(:,:,i) = mov;
-                    if q == 2
-                        [mov1] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
-                        bg1 = double(imgaussfilt(mov1, 15));
-                        Corr = mean(bg1./bg, 'all');
-                        mov = mov.*Corr;
-                    end
                 end
             end
         end
