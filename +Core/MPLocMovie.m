@@ -388,13 +388,13 @@ classdef MPLocMovie < Core.MPParticleMovie
              %Extract the position of the candidate of a given frame
              if isnan(z)
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-                locPos = obj.corrLocPos{q,1}{idx};
+                locPos = obj.corrLocPos{idx};
              elseif isnumeric(z)
                  [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-                locPos = obj.corrLocPos{q,1}{z,1}{idx};
+                locPos = obj.corrLocPos{z,1}{idx};
              else
                  [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-                locPos = obj.corrLocPos{q,1}{idx};
+                locPos = obj.corrLocPos{idx};
              end
             
             if isempty(locPos)
@@ -404,8 +404,8 @@ classdef MPLocMovie < Core.MPParticleMovie
             end
         end
                 
-        function superResolve(obj)
-            for q = 1:obj.info.multiModal+1
+        function superResolve(obj,q)
+
                 disp('super resolving positions ... ');
                
                 %Check if some particle were super resolved already:
@@ -420,9 +420,9 @@ classdef MPLocMovie < Core.MPParticleMovie
 
                 if run
                     
-                    data2Resolve = obj.particles{q,1}.List;
-                    nPlanes = obj.calibrated{1,q}.nPlanes;
-                    nParticles = sum(obj.particles{q,1}.nParticles);
+                    data2Resolve = obj.particles.List;
+                    nPlanes = obj.calibrated{1,1}.nPlanes;
+                    nParticles = sum(obj.particles.nParticles);
                     pxSize = obj.info.pxSize;
                     SRList = table(zeros(nParticles,1),...
                             zeros(nParticles,1), zeros(nParticles,1), zeros(nParticles,1),...
@@ -430,7 +430,12 @@ classdef MPLocMovie < Core.MPParticleMovie
                             zeros(nParticles,1), zeros(nParticles,1),zeros(nParticles,1),...
                             'VariableNames',...
                             {'row','col','z','rowM','colM','zM','adjR','intensity','SNR','t'});
-                    nFrames = length(data2Resolve);
+                    if strcmp(obj.info.frame2Load, 'all')
+                        nFrames = length(data2Resolve);
+                    elseif isa(obj.info.frame2Load, 'double')
+                        nFrames = max(obj.info.frame2Load);
+                    end
+                 
                     h = waitbar(0,'SuperResolving position...');
     
                     for i = 1:nFrames
@@ -459,7 +464,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                             fDataAll{1} = obj.getFrame(i, 1);
                             fDataAll{2} = obj.getFrame(i, 2);
  
-                            for j = 1:length(frameData)
+                            for j = 1:size(frameData,1)
                                 partData = frameData{j,1};
                                 if obj.info.rotational == 1
                                     if isempty(frameData{j, 2})
@@ -524,16 +529,16 @@ classdef MPLocMovie < Core.MPParticleMovie
                     close(h);
                     %clean up the list
                     SRList(isnan(SRList.row),:) = [];
-                    obj.particles{q,1}.SRList = SRList;
-                    particle = obj.particles{q,1};
+                    obj.particles.SRList = SRList;
+                    particle = obj.particles;
                     
                 else
-                    if ~isfield(obj.particles{q,1}, 'SRList')
-                        for z = 1:size(obj.particles{q,1}, 1)
-                            obj.particles{q,1}{z,1} = SRList;
+                    if ~isfield(obj.particles, 'SRList')
+                        for z = 1:size(obj.particles, 1)
+                            obj.particles{z,1} = SRList;
                         end
                     else
-                        obj.particles{q,1}.SRList = SRList;
+                        obj.particles.SRList = SRList;
                     end                
                     particle = obj.particles;
                 end
@@ -545,7 +550,6 @@ classdef MPLocMovie < Core.MPParticleMovie
                 profile('off')
                 save(fileName,'particle');
                 disp('========> DONE ! <=========');
-            end
         end
                    
         function showCorrLoc(obj,frames)
@@ -790,7 +794,7 @@ classdef MPLocMovie < Core.MPParticleMovie
           
             [~, bestFocusIdx] = nanmax(partData.fMetric);
             bf = partData.plane(bestFocusIdx);
-            planePos = obj.calibrated{1,q}.oRelZPos;
+            planePos = obj.calibrated{1,1}.oRelZPos;
             %partVolIm(partVolIm == 0) = NaN;
             %Get ROI XZ, YZ scaled to same pixel size
             [Mag] = Core.MPLocMovie.getZPhasorMag(partVolIm);

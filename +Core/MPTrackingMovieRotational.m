@@ -17,15 +17,17 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         end
         
         function [traces] = getTraces(obj)
-            for q = 1: obj.info.multiModal+1
-                assert(~isempty(obj.traces3D{q,1}),'please run the tracking before getting the traces');
-                traces{q,1} = obj.traces3D{q,1};
-            end
+                assert(~isempty(obj.traces3D),'please run the tracking before getting the traces');
+                traces = obj.traces3D;
         end
 
         function getTransformation(obj, obj2, frame)
                 f = waitbar(0,'Please wait...');
-                frames = 1:obj.raw.maxFrame(1);
+                if strcmp(obj.info.frame2Load, 'all')
+                    frames = 1:obj.raw.maxFrame(1);
+                else
+                    frames = obj.info.frame2Load;
+                end
                 MeanImage1 = 0;
                 MeanImage2 = 0;
 
@@ -66,12 +68,11 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 obj.CalcChannelTransition(obj2, tform, frame);
         end
         
-        function trackParticle(obj,trackParam)
-            for q = 1:obj.info.multiModal+1
+        function trackParticle(obj,trackParam,q)
                  %track the particle in the Z direction (3rd dimension here)
-                assert(~isempty(obj.calibrated{1,q}),'Data should be calibrated to do ZzCalibrationration');
-                assert(~isempty(obj.candidatePos{q,1}), 'No candidate found, please run findCandidatePos before zzCalibrationration');
-                assert(~isempty(obj.particles{q,1}), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
+                assert(~isempty(obj.calibrated{1,1}),'Data should be calibrated to do ZzCalibrationration');
+                assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before zzCalibrationration');
+                assert(~isempty(obj.particles), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
                 assert(~isempty(obj.corrected),'Data needs to be corrected before tracking');
                 
                 if or(~and(obj.corrected.XY,obj.corrected.Z),isempty(obj.SRCal))
@@ -81,10 +82,10 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 end
                 
                 switch nargin
-                    case 1
+                    case 2
                         trackParam.radius = 300; %in nm
                         trackParam.memory = 3;
-                    case 2
+                    case 3
                         
                     otherwise
                         error('too many input arguments')
@@ -93,7 +94,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
                     'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
                
-                DataToTrack = obj.particles{q,1}.SRList;
+                DataToTrack = obj.particles.SRList;
                 ImMax = max(DataToTrack.t);
                 % get the timing of each frame
                 if ~isfield(obj.raw.movInfo,'timing')
@@ -138,7 +139,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
     
                 %%%%% TRACK DATA RECURSIVELY
                 radius = trackParam.radius;
-                MaximumTimeMem = trackParam.memory*obj.info.expTime*1000;
+                MaximumTimeMem = trackParam.memory*obj.raw.movInfo.expT*1000;
                 totlengthFinal = 0;
                 h = waitbar(0,'Tracking particles...');
                 while ~isempty(ToTrack) 
@@ -208,12 +209,12 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 
                 TrackedData = Core.trackingMethod.ConvertFinalOutput( TrackedData_data,AllParticles,AllField);
                 
-                obj.particles{q,1}.traces = TrackedData;
-                obj.particles{q,1}.nTraces = length(TrackedData);
+                obj.particles.traces = TrackedData;
+                obj.particles.nTraces = length(TrackedData);
                 
                 %[trace3D] = obj.get3DTraces;
                 
-                obj.traces3D{q,1} = TrackedData;
+                obj.traces3D = TrackedData;
                 
                 folder = append('calibrated', num2str(q));
 
@@ -221,8 +222,6 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 filename =[path 'Traces3D.mat'];
                 
                 save(filename,'TrackedData');
-                
-            end
         end
         
         function showTraces(obj)

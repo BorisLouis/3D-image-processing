@@ -1,0 +1,204 @@
+function [info, info1, info2] = infoGUI()
+    % Default outputs
+    info = struct();
+    info1 = struct();
+    info2 = struct();
+
+    % Create the UI figure
+    fig = uifigure('Name', 'Experiment Setup', 'Position', [100, 100, 1000, 650]);
+    gl = uigridlayout(fig, [2, 3]);
+    gl.RowHeight = {'9x', '1x'};
+    gl.ColumnWidth = {'1x', '1x', '1x'};
+
+    state = struct();
+
+    %% Column 1 – General Parameters
+    col1 = uigridlayout(gl, [14, 2]);
+
+    state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
+    state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
+    state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
+    state.multiModal = addDropdown(col1, 'multiModal:', {'1', '0'}, '1');
+    state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
+
+    ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
+        {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
+        'Rotational Tracking');
+    ch2Dropdown = addDropdown(col1, 'Channel 2:', ...
+        {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
+        'Rotational Tracking');
+
+    state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
+    state.Rotational = addDropdown(col1, 'Rotational:', {'1', '0'}, '1');
+
+    state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'1', '0'}, '0');
+    state.TestFrame = addLabelField(col1, 'Test Frame:', '1');
+
+    state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
+    state.Bipyramid = addLabelField(col1, 'Bipyramid (nm):', '[184 92]');
+
+    %% Channel Panels
+    channel1Panel = uipanel(gl, 'Title', 'Channel 1 Setup');
+    channel1Layout = uigridlayout(channel1Panel, [10, 2]);
+    state.channel1Controls = [];
+
+    channel2Panel = uipanel(gl, 'Title', 'Channel 2 Setup');
+    channel2Layout = uigridlayout(channel2Panel, [10, 2]);
+    state.channel2Controls = [];
+
+    %% OK Button
+    btn = uibutton(gl, 'Text', 'OK', ...
+        'ButtonPushedFcn', @(btn, event) onOK());
+    btn.Layout.Row = 2;
+    btn.Layout.Column = [1 3];
+
+    %% Setup logic
+    ch1Dropdown.ValueChangedFcn = @(src, event) updateChannel(1, src.Value);
+    ch2Dropdown.ValueChangedFcn = @(src, event) updateChannel(2, src.Value);
+    state.RotationalCalib.ValueChangedFcn = @(src, event) toggleRadTime();
+
+    % Initial setup
+    updateChannel(1, ch1Dropdown.Value);
+    updateChannel(2, ch2Dropdown.Value);
+    toggleRadTime();
+    toggleBipyramid();
+
+    % Wait for user to press OK
+    uiwait(fig);
+
+    %% --- Nested functions ---
+
+    function updateChannel(channelNum, mode)
+        if channelNum == 1
+            delete(channel1Layout.Children);
+            state.channel1Controls = addChannelControls(channel1Layout, mode);
+        else
+            delete(channel2Layout.Children);
+            state.channel2Controls = addChannelControls(channel2Layout, mode);
+        end
+        toggleBipyramid();
+    end
+
+    function toggleBipyramid()
+        ch1 = ch1Dropdown.Value;
+        ch2 = ch2Dropdown.Value;
+        if strcmp(ch1, 'Rotational Tracking') && strcmp(ch2, 'Rotational Tracking')
+            state.Bipyramid.Enable = 'on';
+        else
+            state.Bipyramid.Enable = 'off';
+        end
+    end
+
+    function toggleRadTime()
+        if strcmp(state.RotationalCalib.Value, '1')
+            state.RadTime.Enable = 'on';
+        else
+            state.RadTime.Enable = 'off';
+        end
+    end
+
+    function onOK()
+        % Collect info structure
+        info.PxSize = str2double(state.PxSize.Value);
+        info.type = state.Type.Value;
+        info.runMethod = state.RunMethod.Value;
+        info.multiModal = str2double(state.multiModal.Value);
+        if strcmp(state.Frame2Load.Value, 'all')
+            info.frame2Load = state.Frame2Load.Value;
+        else
+            info.frame2Load = evalin('base', state.Frame2Load.Value);  %#ok<EVLC>
+        end
+        info.Channel1 = ch1Dropdown.Value;
+        info.Channel2 = ch2Dropdown.Value;
+        info.FWHM = str2double(state.FWHM.Value);
+        info.rotational = str2double(state.Rotational.Value);
+        info.rotationalCalib = str2double(state.RotationalCalib.Value);
+        info.TestFrame = str2double(state.TestFrame.Value);
+        info.RadTime = str2double(state.RadTime.Value);
+        info.Bipyramid = str2num(state.Bipyramid.Value); %#ok<ST2NM>
+
+        % Substructures
+        info1 = readControls(state.channel1Controls);
+        info2 = readControls(state.channel2Controls);
+
+        if contains(info.Channel1, 'Tracking')
+            info1.detectParam.delta = info1.delta;
+            info1.detectParam.chi2 = info1.chi2;
+            info1.detectParam.consThresh = info1.consThresh;
+            info1.trackParam.radius = info1.track_radius;
+            info1.trackParam.memory = info1.track_memory;
+
+            info1 = rmfield(info1, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
+        end
+
+        if contains(info.Channel1, 'Tracking')
+            info2.detectParam.delta = info2.delta;
+            info2.detectParam.chi2 = info2.chi2;
+            info2.detectParam.consThresh = info2.consThresh;
+            info2.trackParam.radius = info2.track_radius;
+            info2.trackParam.memory = info2.track_memory;
+
+            info2 = rmfield(info2, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
+        end
+
+
+        % Resume and close
+        uiresume(fig);
+        delete(fig);
+    end
+end
+
+%% === UI Helper Functions ===
+
+function field = addLabelField(layout, label, defaultValue)
+    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right');
+    field = uieditfield(layout, 'text', 'Value', defaultValue);
+end
+
+function dd = addDropdown(layout, label, items, defaultValue)
+    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right');
+    dd = uidropdown(layout, 'Items', items, 'Value', defaultValue);
+end
+
+function controls = addChannelControls(layout, type)
+    controls = struct();
+    switch type
+        case {'Translational Tracking', 'Rotational Tracking'}
+            controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
+            controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
+            controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
+            controls.calibrate = addDropdown(layout, 'calibrate', {'true', 'false'}, 'false');
+            controls.euDist = addLabelField(layout, 'euDist (nm)', '1000');
+            controls.delta = addLabelField(layout, 'delta', '6');
+            controls.chi2 = addLabelField(layout, 'chi2', '50');
+            controls.consThresh = addLabelField(layout, 'consThresh', '4');
+            controls.track_radius = addLabelField(layout, 'track.radius (nm)', '2500');
+            controls.track_memory = addLabelField(layout, 'track.memory (frames)', '3');
+
+        case 'Segmentation'
+            controls.threshold = addLabelField(layout, 'Threshold:', '50');
+
+        case 'Phase'
+            controls.alpha = addLabelField(layout, 'Alpha:', '0.5');
+    end
+end
+
+function s = readControls(controls)
+    s = struct();
+    fields = fieldnames(controls);
+    for i = 1:length(fields)
+        f = fields{i};
+        val = controls.(f);
+        if isa(val, 'uidropdown')
+            s.(f) = val.Value;
+        else
+            valStr = val.Value;
+            valNum = str2num(valStr); %#ok<ST2NM>
+            if isempty(valNum)
+                s.(f) = valStr;
+            else
+                s.(f) = valNum;
+            end
+        end
+    end
+end

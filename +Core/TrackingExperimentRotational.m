@@ -185,7 +185,7 @@ classdef TrackingExperimentRotational < handle
             disp('=======> DONE ! <========')
         end
 
-        function retrieveTrackData(obj,detectParam, trackParam, q)
+        function retrieveTrackDataPart1(obj,detectParam, trackParam, q)
             %Checking user input
             assert(nargin==4, 'retrieveZCalData expects 2 inputs, 1)detection Parameters, tracking parameter and q');
             %assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
@@ -217,44 +217,63 @@ classdef TrackingExperimentRotational < handle
                 currentTrackMov.applyZCal;
                 
                 %Plane consolidation
-                frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
+                if strcmp(obj.info.frame2Load, 'all')
+                    frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
+                elseif isa(obj.info.frame2Load, 'double')
+                    frames = obj.info.frame2Load;
+                end
                 currentTrackMov.consolidatePlanes(frames,detectParam,q)
+            end
+        end
+
+        function retrieveTrackDataPart2(obj,trackParam, q)
+            %Checking user input
+            assert(nargin==3, 'retrieveZCalData expects 2 inputs, 1)tracking parameter and q');
+            %assert(and(isstruct(detectParam),and(isfield(detectParam,'chi2'),isfield(detectParam,'delta'))),'Detection parameter is expected to be a struct with 2 fields : "chi2"(~threshold for detection) and "delta"(size of window for test)');
+            assert(and(isfield(trackParam,'radius'),isfield(trackParam,'memory')),...
+                'Tracking parameter is expected to be a struct with two field "radius" and "memory"')
+            fieldsN = fieldnames(obj.trackMovies);
+            %Extraction of Data
+            nfields = numel(fieldsN);
+            allTraces = [];
+            for i = 1: nfields
+
+                disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
+                currentTrackMov = obj.trackMovies.(fieldsN{i});
                 
                 %superResolve
-                currentTrackMov.superResolve;
+                currentTrackMov.superResolve(q);
                 
                 %tracking occurs here
-                currentTrackMov.trackParticle(trackParam);
+                currentTrackMov.trackParticle(trackParam,q);
                 
                 [traces] = currentTrackMov.getTraces;
-                for q = 1:length(traces)
-                    allTraces = [];
-                    fileN = cell(length(traces{q,1}),1);
-                    fileN(:,1) = {i};
-               
-                    [xStep,xMotor] = currentTrackMov.getXPosMotor;
-                    [yStep,yMotor] = currentTrackMov.getYPosMotor;
-                    [zSt,zMotor]   = currentTrackMov.getZPosMotor;
-    
-                    colMot = cell(length(traces{q,1}),1);
-                    colMot(:,1) = {xMotor};
-                    colStep = cell(length(traces{q,1}),1);
-                    colStep(:,1) = {xStep};
-    
-                    rowMot = cell(length(traces{q,1}),1);
-                    rowMot(:,1) = {yMotor};
-                    rowStep = cell(length(traces{q,1}),1);
-                    rowStep(:,1) = {yStep};
-    
-                    zMot = cell(length(traces{q,1}),1);
-                    zMot(:,1) = {zMotor};
-                    zStep = cell(length(traces{q,1}),1);
-                    zStep(:,1) = {zSt};
-    
-                    allTraces = [allTraces; traces{q,1}(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
-                    obj.traces3D{q,1} = allTraces;
-                    obj.traces3D{q,2} = q; 
-                end
+
+                allTraces = [];
+                fileN = cell(length(traces),1);
+                fileN(:,1) = {i};
+           
+                [xStep,xMotor] = currentTrackMov.getXPosMotor;
+                [yStep,yMotor] = currentTrackMov.getYPosMotor;
+                [zSt,zMotor]   = currentTrackMov.getZPosMotor;
+
+                colMot = cell(length(traces),1);
+                colMot(:,1) = {xMotor};
+                colStep = cell(length(traces),1);
+                colStep(:,1) = {xStep};
+
+                rowMot = cell(length(traces),1);
+                rowMot(:,1) = {yMotor};
+                rowStep = cell(length(traces),1);
+                rowStep(:,1) = {yStep};
+
+                zMot = cell(length(traces),1);
+                zMot(:,1) = {zMotor};
+                zStep = cell(length(traces),1);
+                zStep(:,1) = {zSt};
+
+                allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
+                obj.traces3D = allTraces;
             end
             
             
@@ -264,158 +283,7 @@ classdef TrackingExperimentRotational < handle
             
             disp('=================> DONE <===================');
         end
-        
-       
-        % Select particles only when visible at the same time in both
-        % channels:
-       
 
-        function ConsolidateChannels3(obj)
-            channel1 = obj.traces3D{1,1};
-            idx = cellfun(@(x) height(x) >= 10, channel1(:,1));
-            channel1 = channel1(idx, :);
-            % channel1 = obj.cleanTraces(channel1, 1000, 1);
-            channel2 = obj.traces3D{2,1};
-            idx = cellfun(@(x) height(x) >= 10, channel2(:,1));
-            channel2 = channel2(idx, :);
-            %Transform channel2 coordinates to channel1
-
-
-            % channel2 = obj.cleanTraces(channel2, 1000, 2);
-            numTraces1 = size(channel1, 1);
-            numTraces2 = size(channel2, 1);
-        
-            distances = zeros(numTraces1, numTraces2);
-
-            Transformation = load(append(obj.trackMovies.mov1.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
-            Transformation = Transformation.transformation;
-
-            f = waitbar(0,'Constructing distance matrix');
-            for i = 1:numTraces1
-                waitbar(i./numTraces1,f,'Constructing distance matrix');
-                trace1 = channel1{i,1};
-                for j = 1:numTraces2
-                    trace2 = channel2{j,1}; 
-                    if obj.info.rotationalCalib == 1
-                        trace1.z = zeros(size(trace1.z));
-                        trace2.z = zeros(size(trace2.z));
-                    end
-                             
-                    coords1 = table2array(trace1(:, 1:2)); 
-                    time1 = table2array(trace1(:, 10));   
-                    coords2 = [trace2.col, trace2.row];
-                    time2 = table2array(trace2(:, 10)); 
-
-                    coords2New = transformPointsForward(Transformation, coords2);
-                    coords2 = [coords2New(:,2), coords2New(:,1)];
-
-                    common_time = intersect(time1, time2);
-                    if ~isempty(common_time)
-                        coords1_common = [];
-                        coords2_common = [];
-                        coords1_common = coords1(ismember(time1, common_time), :);
-                        coords2_common = coords2(ismember(time2, common_time), :);
-                    
-                        distance = sqrt(sum((coords1_common - coords2_common).^2, 2));
-                        distances(i, j) = mean(distance);
-                    else 
-                        distances(i, j) = Inf;
-                    end
-                end
-            end
-            close(f)
-            distances(isnan(distances)) = Inf;
-            Threshold = obj.trackMovies.mov1.info.detectParam.delta^2*obj.trackMovies.mov1.info.PxSize;
-            Threshold2 = sqrt(2* obj.trackMovies.mov1.info.detectParam.delta^2)*obj.trackMovies.mov1.info.PxSize;
-            distances(distances > Threshold) = Inf;
-
-            [closest_indices, ~] = matchpairs(distances, Threshold2);
-            row = closest_indices(:,2);
-            col = closest_indices(:,1);
-
-            connectedtraces = cell(size(col,1), 2);
-            IsUsed1 = zeros(max(col),1);
-            IsUsed2 = zeros(max(row),1);
-            for i = 1:size(col, 1)
-                idx1 = col(i);
-                idx2 = row(i);
-
-                if IsUsed1(idx1, 1) == 0
-                    if IsUsed2(idx2,1) == 1
-                        for j = 1:size(connectedtraces, 1)
-                            if ismember(idx2, connectedtraces{j, 2})
-                                connectedtraces{j,1} = [connectedtraces{j,1}, idx1];
-                            end
-                        end
-                    else
-                        connectedtraces{i,1} = idx1;
-                        connectedtraces{i,2} = idx2;
-                    end
-                else
-                    for j = 1:size(connectedtraces, 1)
-                        if ismember(idx1, connectedtraces{j, 1})
-                            connectedtraces{j,2} = [connectedtraces{j,2}, idx2];
-                        end
-                    end
-                end
-                IsUsed2(idx2) = 1;
-                IsUsed1(idx1) = 1;
-            end
-   
-            connectedtraces(cellfun(@isempty,connectedtraces(:,1)), :)=[];
-            
-            traces3Dcommon = struct([]);
-            for i = 1:size(connectedtraces, 1)
-                trace2 = [];
-                for j = 1:size(connectedtraces{i, 2}, 2)
-                    idx = connectedtraces{i,2}(j);
-                    ToAdd = table2array(channel2{idx,1});
-                    if j ~= 1
-                        double = ismember(ToAdd(:, 10), trace2(:,10));
-                        ToAdd(double, :) = [];
-                    end
-                    trace2 = [trace2; ToAdd];
-                end
-
-                trace1 = [];
-                for j = 1:size(connectedtraces{i, 1}, 2)
-                    idx = connectedtraces{i,1}(j);
-                    ToAdd = table2array(channel1{idx,1});
-                    if j ~= 1
-                        double = ismember(ToAdd(:, 10), trace1(:,10));
-                        ToAdd(double, :) = [];
-                    end
-                    trace1 = [trace1; ToAdd];
-                end
-
-                if ~isempty(trace1)
-                    Int1 = trace1(:,8);
-                    time1 = trace1(:,10);
-                    Int2 = trace2(:,8);
-                    time2 = trace2(:,10);
-                
-                    common_time = intersect(time1, time2);
-                    
-                    Int1 = Int1(ismember(time1, common_time), :);
-                    Int2 = Int2(ismember(time2, common_time), :);
-                    time1 = time1(ismember(time1, common_time), :);
-                    time2 = time2(ismember(time2, common_time), :);
-                    coords1 = trace1(ismember(trace1(:,10),time1), 1:2);
-                    coords2 = trace2(ismember(trace2(:,10),time2), 1:2);
-    
-                    traces3Dcommon{end+1,1} = coords1;
-                    traces3Dcommon{end,2} = coords2;
-    
-                    Time = common_time*obj.info.expTime;
-    
-                    traces3Dcommon{end,3} = Int1;
-                    traces3Dcommon{end,4} = Int2; 
-                    traces3Dcommon{end,5} = Time.';
-                end
-            end
-            traces3Dcommon = cell2table(traces3Dcommon,  "VariableNames",["Coord1" "Coord2" "Int1" "Int2" "Time"]);
-            obj.traces3Dcommon = traces3Dcommon;
-        end
 
         function cleanedChannel = cleanTraces(obj, channel, threshold, ch)
             numTraces = size(channel, 1);
@@ -476,108 +344,7 @@ classdef TrackingExperimentRotational < handle
             end
             close(h)
         end
-        
-        function RotationalCalibration(obj)
-            
-            %%% first correct the intensities of the traces (if bg is
-            %%% slightly up)
-            h = waitbar(0,'RotationalCalibration');
 
-            Model = 'a.*(cos(2*(x + b))).^2 + c';
-            mkdir(append(obj.path, filesep, 'ChannelTraces'));
-            for i = 1:size(obj.traces3Dcommon,1)
-                fig = figure();
-                waitbar(i./(size(obj.traces3Dcommon,1)*2),h,'Taking diff intensity');
-                Time = obj.traces3Dcommon.Time{i,1};
-                Angle = (Time*obj.info.RadTime*pi./180)'; %in radians
-                traceCh1 = obj.traces3Dcommon.Int1{i,1};
-                traceCh2 = obj.traces3Dcommon.Int2{i,1};
-                TotInt = traceCh1 + traceCh2;
-                traceCh1 = traceCh1./TotInt;
-                traceCh2 = traceCh2./TotInt;
-                IntTot = mean(TotInt); 
-                obj.traces3Dcommon.TotInt{i,1} = TotInt;
-                obj.traces3Dcommon.IntTot{i,1} = IntTot;
-
-                %%% for trace 1
-                try
-                    [f, gof] = fit(Angle, traceCh1, Model);
-                    FitRSquare(i,1) = gof.rsquare;
-                    coeff = coeffvalues(f);
-                    phase(i,1) = coeff(2);
-                    Amp(i,1) = coeff(1);
-                    subplot(1,2,1)
-                    plot(f, Angle, traceCh1)
-                    xlabel('Angle (rad)');
-                    ylabel('Normalized Intensity')
-                    ylim([0 1.2])
-                    title('Channel1')
-
-                    %%% for trace 2
-                    Lower = [-Inf, phase(i,1)+pi./4-0.0001];
-                    Upper = [Inf, phase(i,1)+pi./4+0.0001];
-                    [f, gof] = fit(Angle, traceCh2, Model, 'Lower', Lower, 'Upper', Upper);
-                    FitRSquare(i,2) = gof.rsquare;
-                    coeff = coeffvalues(f);
-                    Amp(i,2) = coeff(2);
-                    subplot(1,2,2)
-                    plot(f, Angle, traceCh2)
-                    xlabel('Angle (rad)');
-                    ylabel('Normalized Intensity')
-                    ylim([0 1.2])
-                    title('Channel2')
-    
-                    %%% calculate difference trace
-                    DifferenceTrace = traceCh1 - traceCh2;
-                    obj.traces3Dcommon.DiffTrace{i,1} = DifferenceTrace;
-                    saveas(fig, append(obj.path, filesep, 'ChannelTraces', filesep, 'Trace', num2str(i), '.png'));
-                catch 
-                end
-            end
-
-            %%%calculate tilt angle and ratio to get I0
-            TiltAngle = atan((obj.info.Bipyramid(2)/2)/(obj.info.Bipyramid(1)/2)); %in radians
-            CorrFactor = (cos(TiltAngle)).^2;
-
-            Model = 'a*cos(4*(x + b))+c';
-            mkdir(append(obj.path, filesep, 'DiffTraces'));
-            for i = 1:size(obj.traces3Dcommon,1)
-                waitbar((size(obj.traces3Dcommon,1)+i)./(size(obj.traces3Dcommon,1)*2),h,'Getting amplitude and I0');
-                try
-                    if ~any(FitRSquare(i,:) < 0.65)
-                        fig = figure();
-                        Time = obj.traces3Dcommon.Time{i,1};
-                        Angle = (Time*obj.info.RadTime*pi./180)'; %in radians
-                        DiffTrace = obj.traces3Dcommon.DiffTrace{i,1};
-        
-                        Lower = [-Inf, phase(i,1)-0.0001, -Inf];
-                        Upper = [Inf, phase(i,1)+0.0001, Inf];
-                        Start = [max(DiffTrace) - min(DiffTrace), phase(i,1), 0];
-                        [f, gof] = fit(Angle, DiffTrace, Model, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
-                        coeff = coeffvalues(f);
-                        obj.traces3Dcommon.I{i,1} = abs(coeff(1));
-                        obj.traces3Dcommon.I0{i,1} = abs(coeff(1))./CorrFactor;
-                        plot(f, Angle, DiffTrace)
-                        xlabel('Angle (rad)');
-                        ylabel('Difference channel')
-                        title('Channel difference plotted to a*cos(4*x + phi)) + bg')
-                        ylim([-1.2 1.2])
-                        saveas(fig, append(obj.path, filesep, 'DiffTraces', filesep, 'TraceDiff', num2str(i), '.png'));
-                        obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.IntTot{i,1}/CorrFactor;
-                    else
-                    end  
-                catch
-                end
-            end
-            close all
-
-            % obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
-            %     'Int1Norm', 'Int2Norm', 'Time', 'Diff', 'I', 'I0', 'TotIntTrace', 'TotInt', 'TotIntCorr'});
-            CommonTraces = obj.traces3Dcommon;
-
-            Filename = append(obj.path, filesep, 'CommonTraces.mat');
-            save(Filename, 'CommonTraces');
-        end
 
          %Plotting for individual movies
         function showLoc(obj,idx)
@@ -714,45 +481,20 @@ classdef TrackingExperimentRotational < handle
             
         end
         
-        function saveData(obj)
+        function saveData(obj,q)
             
             trackRes = struct; 
             disp('Saving Data');
-            
-            if ~isempty(obj.traces3Dcommon)
-                
-                trackData = obj.traces3Dcommon;
-                MSDs = obj.MSD;
-                    
-                if ~isempty(MSDs)
-                    trackRes.MSD = MSDs;
-                end
-                
+
+            if ~isempty(obj.traces3D)
+                trackData = obj.traces3D;
                 trackRes.traces = trackData; 
                 trackRes.info = obj.info;
                 trackRes.path = obj.path;
-                filename = [obj.path filesep 'trackResultsCommonCh.mat'];
+                name = append('trackResults',num2str(q),'.mat');
+                filename = [obj.path filesep name];
                 save(filename,'trackRes');
-                disp('Common channeldata was succesfully saved');
-            end
-
-            if ~isempty(obj.traces3D)
-                for i = 1:length(obj.traces3D)
-                    trackData = obj.traces3D{i,1};
-                    % MSDs = obj.MSD;
-                    % 
-                    % if ~isempty(MSDs)
-                    %     trackRes.MSD = MSDs;
-                    % end
-                    
-                    trackRes.traces = trackData; 
-                    trackRes.info = obj.info;
-                    trackRes.path = obj.path;
-                    name = append('trackResults',num2str(i),'.mat');
-                    filename = [obj.path filesep name];
-                    save(filename,'trackRes');
-                    disp('Data were succesfully saved');
-                end    
+                disp(append('Data of channel ', num2str(q), ' succesfully saved'));  
             else
                 
                 warning('No Data was saved because no traces or MSD could be found, please make sure you ran the analysis first');     

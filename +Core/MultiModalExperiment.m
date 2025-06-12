@@ -33,6 +33,7 @@ classdef MultiModalExperiment < handle
             obj.SRCal = SRCalPath; 
 
             if strcmp(obj.info.Channel1, 'Translational Tracking')
+                obj.MoviesCh1 = Core.TrackingExperimentRotational(folder2Data, obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path, 1, obj.info1);
             elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
                 obj.MoviesCh1 = Core.TrackingExperimentRotational(folder2Data, obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path, 1, obj.info1);
             elseif strcmp(obj.info.Channel1, 'Phase')
@@ -40,6 +41,7 @@ classdef MultiModalExperiment < handle
             end
 
             if strcmp(obj.info.Channel2, 'Translational Tracking')
+                obj.MoviesCh2 = Core.TrackingExperimentRotational(folder2Data, obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path, 2, obj.info2);
             elseif strcmp(obj.info.Channel2, 'Rotational Tracking')
                 obj.MoviesCh2 = Core.TrackingExperimentRotational(folder2Data, obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path, 2, obj.info2);
             elseif strcmp(obj.info.Channel2, 'Phase')
@@ -189,6 +191,14 @@ classdef MultiModalExperiment < handle
                         end
                         obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
                     elseif strcmp(obj.info.Channel1, 'Translational Tracking')
+                        Movie1 = Core.MPTrackingMovieRotational(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info, obj.MoviesCh1.SRCal.path, obj.MoviesCh1.ZCal.path, 1);
+                        Movie1.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie1.giveInfo;
+                        else
+                            Movie1.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
                     elseif strcmp(obj.info.Channel1, 'Phase')
                     elseif strcmp(obj.info.Channel1, 'Segmentation')
                     end
@@ -203,6 +213,14 @@ classdef MultiModalExperiment < handle
                         end
                         obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
                     elseif strcmp(obj.info.Channel2, 'Translational Tracking')
+                        Movie2 = Core.MPTrackingMovieRotational(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info, obj.MoviesCh2.SRCal.path, obj.MoviesCh2.ZCal.path, 1);
+                        Movie2.calibrated = tmp.calibrated{1,2};
+                        if count == 1
+                            Movie2.giveInfo;
+                        else
+                            Movie2.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
                     elseif strcmp(obj.info.Channel2, 'Phase')
                     elseif strcmp(obj.info.Channel2, 'Segmentation')
                     end
@@ -230,23 +248,53 @@ classdef MultiModalExperiment < handle
               if strcmp(obj.info.Channel1, 'Segmentation')
               elseif strcmp(obj.info.Channel1, 'Phase')
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh1.trackMovies.mov1;
+                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+                    testMov.getROIs;
+                    testMov.showCandidateSingleChan(frame, 1);
+                    val2Use = 'bestFocus';
+                    obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh1.saveData(1);
+
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
-                    frame = obj.info1.testFrame;
-                    % testMov = obj.MoviesCh1.trackMovies.mov1;
-                    % testMov2 = obj.MoviesCh2.trackMovies.mov1;
-                    % testMov.getTransformation(testMov2, frame);
-                    % testMov.getROIs;
-                    % testMov2.getROIs;
-                    % testMov.showCandidate(testMov2, frame);
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh1.trackMovies.mov1;
+                    testMov2 = obj.MoviesCh2.trackMovies.mov1;
+                    testMov.getTransformation(testMov2, frame);
+                    testMov.getROIs;
+                    testMov2.getROIs;
+                    testMov.showCandidate(testMov2, frame);
 
                     val2Use = 'bestFocus';
-                    obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-                    traces = obj.getTraces3D;
+                    obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+                    obj.PartChannelConsolidation(obj.MoviesCh1, obj.MoviesCh2);
+                    obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh1.saveData(1);
+                    obj.MoviesCh2.saveData(2);
                     
-                    trackingExp.ConsolidateChannels3;
-                    
-                    %% save Data
-                    trackingExp.saveData;
+                    obj.ConsolidateChannels3;
+                    if obj.info.rotationalCalib == 1
+                        obj.RotationalCalibration;
+                    end
+              end
+
+              %%% first run channel 2 analysis
+              if strcmp(obj.info.Channel2, 'Segmentation')
+              elseif strcmp(obj.info.Channel2, 'Phase')
+              elseif strcmp(obj.info.Channel2, 'Translational Tracking')
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh2.trackMovies.mov1;
+                    testMov.findCandidatePos(testMov.info.detectParam,2,frame);
+                    testMov.getROIs;
+                    testMov.showCandidateSingleChan(frame, 2);
+                    val2Use = 'bestFocus';
+                    obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh2.saveData(2);
               end
           end
 
@@ -328,7 +376,407 @@ classdef MultiModalExperiment < handle
                 
                 
                 disp('=================> DONE <===================');
+          end
+
+          function PartChannelConsolidation(obj, obj1, obj2)
+                %%% Pass the particles that are not detected in the other
+                %%% channel. When particles are added in the new channel,
+                %%% recalculate their intensity. 
+                %%% loop through frames
+                %Checking user input
+                assert(nargin==3, 'retrieveZCalData expects 3 inputs, 1)main object, object channel 1 and object channel 2');
+                fieldsN = fieldnames(obj1.trackMovies);
+                %Extraction of Data
+                nfields = numel(fieldsN);
+                allTraces = [];
+                for k = 1: nfields
+                    
+                    disp(['Retrieving data from tracking file ' num2str(k) ' / ' num2str(nfields) ' ...']);
+                    currentTrackMov1 = obj1.trackMovies.(fieldsN{k});
+                    currentTrackMov2 = obj2.trackMovies.(fieldsN{k});
+                    tform = load(append(currentTrackMov1.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
+                    tform = tform.transformation;
+                    f = waitbar(0, 'Initizalizing');
+                    for i = 1:size(currentTrackMov1.particles.List, 2)
+                        D = [];
+                        matches = [];
+                        waitbar(i./size(currentTrackMov1.particles.List, 2), f, 'Consolidating particles in both channels')
+                        ParticlesCh1 = currentTrackMov1.particles.List{1,i};
+                        ParticlesCh2 = currentTrackMov2.particles.List{1,i};
+        
+                        %%% Delete particles that are visible in both channels.
+                        %%% Those will not be passed to the other channel
+                        Coord1 = [];
+                        Coord2 = [];
+                        for j = 1:size(ParticlesCh1,1)
+                            %Coord1(j,:) = table2array(nanmean(ParticlesCh1{j, 1} (:,{'row', 'col'}), 1));
+                            Coord1(j,:) = [table2array(nanmean(ParticlesCh1{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh1{j, 1} (:,{'row'}), 1))];
+                        end
+                        for j = 1:size(ParticlesCh2,1)
+                            %Coord2(j,:) = table2array(nanmean(ParticlesCh2{j, 1} (:,{'row', 'col'}), 1));
+                            Coord2(j,:) = [table2array(nanmean(ParticlesCh2{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh2{j, 1} (:,{'row'}), 1))];
+                        end
+                        if ~or(isempty(Coord2), isempty(Coord1))
+                            % Coord2New = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
+                            Coord2New = transformPointsForward(tform, Coord2);
+                            D = pdist2(Coord1, Coord2New);
+                            [matches, costs] = matchpairs(D, 10);
+        
+                            PlaneCheck = [];
+                            %%%Check if the matched particles have at least a plane in common & if the distance is small:
+                            for k = 1:size(matches, 1)
+                                CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
+                                if numel(CommonPlanes) >= 1
+                                    PlaneCheck(k,1) = 1;
+                                else
+                                    PlaneCheck(k,1) = 0;
+                                end
+                            end
+                            matches(PlaneCheck == 0, :) = [];
+        
+                            %%%Delete particles that have a partner from the lists
+                            ToRemove1 = zeros(size(ParticlesCh1, 1),1);
+                            ToRemove2 = zeros(size(ParticlesCh2, 1),1);
+                            for l = 1:size(matches, 1)
+                                ToRemove1(matches(l,1),1) = 1;
+                                ToRemove2(matches(l,2),1) = 1;
+                            end
+                            ParticlesCh1 = ParticlesCh1(ToRemove1 == 0);
+                            ParticlesCh2 = ParticlesCh2(ToRemove2 == 0);
+                        end
+        
+                        %%% Pass particles from Ch1 to Ch2
+                        if ~isempty(ParticlesCh1)
+                            ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
+                            NewParticlesCh2 = [currentTrackMov2.particles.List{1,i}, cell(size(currentTrackMov2.particles.List{1,i}, 1), 1)];
+                            [data] = currentTrackMov2.getFrame(i, 2); % get frame from ch2
+                            sig = [currentTrackMov2.info.sigma_px currentTrackMov2.info.sigma_px];
+                            for l = 1:size(ParticlesCh1, 1)
+                                CurrentParticle = ParticlesCh1{l, 1};
+                                Coord = [CurrentParticle.col, CurrentParticle.row];
+                                %Coord = Transformation.Coords1toCoords2.b*Coord*Transformation.Coords1toCoords2.T + Transformation.Coords1toCoords2.c;
+                                Coord = transformPointsInverse(tform, Coord);
+                                NewParticle = CurrentParticle;
+                                NewParticle.row = Coord(:,2);
+                                NewParticle.col = Coord(:,1);
+                                for m = 1:size(NewParticle, 1)
+                                    if ~isnan(NewParticle.plane(m))
+                                        planeData = data(:,:, NewParticle.plane(m));
+                                        %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
+                                        AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                        [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
+                                                            currentTrackMov2.info.detectParam.delta, size(planeData,2), size(planeData,1));
+                                        ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
+                                        [NewParticle.intensity(m), NewParticle.SNR(m), ~] = currentTrackMov2.getIntensityGauss(ROI,sig);
+                                    end
+                                end
+                                NewParticlesCh2{end+1,1 } = NewParticle;
+                                NewParticlesCh2{end,2} = 'Passed';
+                            end
+                        else
+                            NewParticlesCh2 = [currentTrackMov2.particles.List{1,i}, cell(size(currentTrackMov2.particles.List{1,i}, 1), 1)];
+                        end
+        
+                        %%% Pass particles from Ch2 to Ch1
+                        if ~isempty(ParticlesCh2)
+                            ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
+                            NewParticlesCh1 = [currentTrackMov1.particles.List{1,i}, cell(size(currentTrackMov1.particles.List{1,i}, 1), 1)];
+                            [data] = currentTrackMov1.getFrame(i, 1); % get frame from ch1
+                            sig = [currentTrackMov1.info.sigma_px currentTrackMov1.info.sigma_px];
+                            for l = 1:size(ParticlesCh2, 1)
+                                CurrentParticle = ParticlesCh2{l, 1};
+                                Coord = [CurrentParticle.col, CurrentParticle.row];
+                                %Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
+                                Coord = transformPointsForward(tform, Coord);
+                                NewParticle = CurrentParticle;
+                                NewParticle.row = Coord(:,2);
+                                NewParticle.col = Coord(:,1);
+                                for m = 1:size(NewParticle, 1)
+                                    if ~isnan(NewParticle.plane(m))
+                                        planeData = data(:,:, NewParticle.plane(m));
+                                        AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                        [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
+                                                            currentTrackMov1.info.detectParam.delta, size(planeData,2), size(planeData,1));
+                                        ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
+                                        [NewParticle.intensity(m), NewParticle.SNR(m), ~] = currentTrackMov1.getIntensityGauss(ROI,sig);
+                                    end
+                                end
+                                NewParticlesCh1{end+1, 1} = NewParticle;
+                                NewParticlesCh1{end, 2} = 'Passed';
+                            end
+                        else
+                            NewParticlesCh1 = [currentTrackMov1.particles.List{1,i}, cell(size(currentTrackMov1.particles.List{1,i}, 1), 1)];
+                        end
+        
+                        currentTrackMov1.particles.List{1,i} = NewParticlesCh1;
+                        currentTrackMov2.particles.List{1,i} = NewParticlesCh2;
+        
+                        currentTrackMov1.particles.nParticles(1,i) = size(NewParticlesCh1, 1);
+                        currentTrackMov2.particles.nParticles(1,i) = size(NewParticlesCh2, 1);
+                    end
+                    close(f)
+                end
+          end
+
+          function ConsolidateChannels3(obj)
+                      % Select particles only when visible at the same time in both
+                      % channels:
+
+                ExpTime = obj.MoviesCh1.trackMovies.mov1.raw.movInfo.expT;
+
+                channel1 = obj.MoviesCh1.traces3D;
+                idx = cellfun(@(x) height(x) >= 1, channel1(:,1));
+                channel1 = channel1(idx, :);
+
+                channel2 = obj.MoviesCh2.traces3D;
+                idx = cellfun(@(x) height(x) >= 1, channel2(:,1));
+                channel2 = channel2(idx, :);
+   
+                numTraces1 = size(channel1, 1);
+                numTraces2 = size(channel2, 1);
+            
+                distances = zeros(numTraces1, numTraces2);
+    
+                Transformation = load(append(obj.MoviesCh1.trackMovies.mov1.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
+                Transformation = Transformation.transformation;
+    
+                f = waitbar(0,'Constructing distance matrix');
+                for i = 1:numTraces1
+                    waitbar(i./numTraces1,f,'Constructing distance matrix');
+                    trace1 = channel1{i,1};
+                    for j = 1:numTraces2
+                        trace2 = channel2{j,1}; 
+                        if obj.MoviesCh1.info.rotationalCalib == 1
+                            trace1.z = zeros(size(trace1.z));
+                            trace2.z = zeros(size(trace2.z));
+                        end
+                                 
+                        coords1 = table2array(trace1(:, 1:2)); 
+                        time1 = table2array(trace1(:, 10));   
+                        coords2 = [trace2.col, trace2.row];
+                        time2 = table2array(trace2(:, 10)); 
+    
+                        coords2New = transformPointsForward(Transformation, coords2);
+                        coords2 = [coords2New(:,2), coords2New(:,1)];
+    
+                        common_time = intersect(time1, time2);
+                        if ~isempty(common_time)
+                            coords1_common = [];
+                            coords2_common = [];
+                            coords1_common = coords1(ismember(time1, common_time), :);
+                            coords2_common = coords2(ismember(time2, common_time), :);
+                        
+                            distance = sqrt(sum((coords1_common - coords2_common).^2, 2));
+                            distances(i, j) = mean(distance);
+                        else 
+                            distances(i, j) = Inf;
+                        end
+                    end
+                end
+                close(f)
+                distances(isnan(distances)) = Inf;
+                % Threshold = obj.MoviesCh1.trackMovies.mov1.info.detectParam.delta^2*obj.MoviesCh1.trackMovies.mov1.info.PxSize;
+                % Threshold2 = sqrt(2* obj.MoviesCh1.trackMovies.mov1.info.detectParam.delta^2)*obj.MoviesCh1.trackMovies.mov1.info.PxSize;
+                % distances(distances > Threshold) = Inf;
+                Threshold2  = 10000;
+    
+                [closest_indices, ~] = matchpairs(distances, Threshold2);
+                row = closest_indices(:,2);
+                col = closest_indices(:,1);
+    
+                connectedtraces = cell(size(col,1), 2);
+                IsUsed1 = zeros(max(col),1);
+                IsUsed2 = zeros(max(row),1);
+                for i = 1:size(col, 1)
+                    idx1 = col(i);
+                    idx2 = row(i);
+    
+                    if IsUsed1(idx1, 1) == 0
+                        if IsUsed2(idx2,1) == 1
+                            for j = 1:size(connectedtraces, 1)
+                                if ismember(idx2, connectedtraces{j, 2})
+                                    connectedtraces{j,1} = [connectedtraces{j,1}, idx1];
+                                end
+                            end
+                        else
+                            connectedtraces{i,1} = idx1;
+                            connectedtraces{i,2} = idx2;
+                        end
+                    else
+                        for j = 1:size(connectedtraces, 1)
+                            if ismember(idx1, connectedtraces{j, 1})
+                                connectedtraces{j,2} = [connectedtraces{j,2}, idx2];
+                            end
+                        end
+                    end
+                    IsUsed2(idx2) = 1;
+                    IsUsed1(idx1) = 1;
+                end
+       
+                connectedtraces(cellfun(@isempty,connectedtraces(:,1)), :)=[];
+                
+                traces3Dcommon = struct([]);
+                for i = 1:size(connectedtraces, 1)
+                    trace2 = [];
+                    for j = 1:size(connectedtraces{i, 2}, 2)
+                        idx = connectedtraces{i,2}(j);
+                        ToAdd = table2array(channel2{idx,1});
+                        if j ~= 1
+                            double = ismember(ToAdd(:, 10), trace2(:,10));
+                            ToAdd(double, :) = [];
+                        end
+                        trace2 = [trace2; ToAdd];
+                    end
+    
+                    trace1 = [];
+                    for j = 1:size(connectedtraces{i, 1}, 2)
+                        idx = connectedtraces{i,1}(j);
+                        ToAdd = table2array(channel1{idx,1});
+                        if j ~= 1
+                            double = ismember(ToAdd(:, 10), trace1(:,10));
+                            ToAdd(double, :) = [];
+                        end
+                        trace1 = [trace1; ToAdd];
+                    end
+    
+                    if ~isempty(trace1)
+                        Int1 = trace1(:,8);
+                        time1 = trace1(:,10);
+                        Int2 = trace2(:,8);
+                        time2 = trace2(:,10);
+                    
+                        common_time = intersect(time1, time2);
+                        
+                        Int1 = Int1(ismember(time1, common_time), :);
+                        Int2 = Int2(ismember(time2, common_time), :);
+                        time1 = time1(ismember(time1, common_time), :);
+                        time2 = time2(ismember(time2, common_time), :);
+                        coords1 = trace1(ismember(trace1(:,10),time1), 1:2);
+                        coords2 = trace2(ismember(trace2(:,10),time2), 1:2);
+        
+                        traces3Dcommon{end+1,1} = coords1;
+                        traces3Dcommon{end,2} = coords2;
+        
+                        Time = common_time*ExpTime;
+        
+                        traces3Dcommon{end,3} = Int1;
+                        traces3Dcommon{end,4} = Int2; 
+                        traces3Dcommon{end,5} = Time.';
+                    end
+                end
+                if ~isempty(traces3Dcommon)
+                    traces3Dcommon = cell2table(traces3Dcommon,  "VariableNames",["Coord1" "Coord2" "Int1" "Int2" "Time"]);
+                    obj.traces3Dcommon = traces3Dcommon;
+                    Filename = append(obj.path, filesep, 'Traces3DCommon');
+                    save(Filename, "traces3Dcommon")
+                else
+                    obj.traces3Dcommon = [];
+                end
+          end
+
+          function RotationalCalibration(obj)
+            
+            %%% first correct the intensities of the traces (if bg is
+            %%% slightly up)
+            h = waitbar(0,'RotationalCalibration');
+
+            Model = 'a.*(cos(2*(x + b))).^2 + c';
+            mkdir(append(obj.path, filesep, 'TracesChannel'));
+            for i = 1:size(obj.traces3Dcommon,1)
+                fig = figure();
+                waitbar(i./(size(obj.traces3Dcommon,1)*2),h,'Taking diff intensity');
+                Time = obj.traces3Dcommon.Time{i,1};
+                Angle = (Time*10^(-3)*obj.info.RadTime*pi./180)'; %in radians
+                traceCh1 = obj.traces3Dcommon.Int1{i,1};
+                traceCh2 = obj.traces3Dcommon.Int2{i,1};
+                TotInt = traceCh1 + traceCh2;
+                traceCh1 = traceCh1./TotInt;
+                traceCh2 = traceCh2./TotInt;
+                IntTot = mean(TotInt); 
+                obj.traces3Dcommon.TotInt{i,1} = TotInt;
+                obj.traces3Dcommon.IntTot{i,1} = IntTot;
+
+                %%% for trace 1
+                try
+                    [f, gof] = fit(Angle, traceCh1, Model);
+                    FitRSquare(i,1) = gof.rsquare;
+                    coeff = coeffvalues(f);
+                    phase(i,1) = coeff(2);
+                    Amp(i,1) = coeff(1);
+                    subplot(1,2,1)
+                    plot(f, Angle, traceCh1)
+                    xlabel('Angle (rad)');
+                    ylabel('Normalized Intensity')
+                    ylim([0 1.2])
+                    title('Channel1')
+
+                    %%% for trace 2
+                    Lower = [-Inf, phase(i,1)+pi./4-0.0001];
+                    Upper = [Inf, phase(i,1)+pi./4+0.0001];
+                    [f, gof] = fit(Angle, traceCh2, Model, 'Lower', Lower, 'Upper', Upper);
+                    FitRSquare(i,2) = gof.rsquare;
+                    coeff = coeffvalues(f);
+                    Amp(i,2) = coeff(2);
+                    subplot(1,2,2)
+                    plot(f, Angle, traceCh2)
+                    xlabel('Angle (rad)');
+                    ylabel('Normalized Intensity')
+                    ylim([0 1.2])
+                    title('Channel2')
+    
+                    %%% calculate difference trace
+                    DifferenceTrace = traceCh1 - traceCh2;
+                    obj.traces3Dcommon.DiffTrace{i,1} = DifferenceTrace;
+                    saveas(fig, append(obj.path, filesep, 'TracesChannel', filesep, 'Trace', num2str(i), '.png'));
+                catch 
+                end
             end
+
+            %%%calculate tilt angle and ratio to get I0
+            TiltAngle = atan((obj.info.Bipyramid(2)/2)/(obj.info.Bipyramid(1)/2)); %in radians
+            CorrFactor = (cos(TiltAngle)).^2;
+
+            Model = 'a*cos(4*(x + b))+c';
+            mkdir(append(obj.path, filesep, 'TracesDiff'));
+            for i = 1:size(obj.traces3Dcommon,1)
+                waitbar((size(obj.traces3Dcommon,1)+i)./(size(obj.traces3Dcommon,1)*2),h,'Getting amplitude and I0');
+                try
+                    if ~any(FitRSquare(i,:) < 0.65)
+                        fig = figure();
+                        Time = obj.traces3Dcommon.Time{i,1}*10^(-3);
+                        Angle = (Time*obj.info.RadTime*pi./180)'; %in radians
+                        DiffTrace = obj.traces3Dcommon.DiffTrace{i,1};
+        
+                        Lower = [-Inf, phase(i,1)-0.0001, -Inf];
+                        Upper = [Inf, phase(i,1)+0.0001, Inf];
+                        Start = [max(DiffTrace) - min(DiffTrace), phase(i,1), 0];
+                        [f, gof] = fit(Angle, DiffTrace, Model, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
+                        coeff = coeffvalues(f);
+                        obj.traces3Dcommon.I{i,1} = abs(coeff(1));
+                        obj.traces3Dcommon.I0{i,1} = abs(coeff(1))./CorrFactor;
+                        plot(f, Angle, DiffTrace)
+                        xlabel('Angle (rad)');
+                        ylabel('Difference channel')
+                        title('Channel difference plotted to a*cos(4*x + phi)) + bg')
+                        ylim([-1.2 1.2])
+                        saveas(fig, append(obj.path, filesep, 'TracesDiff', filesep, 'TraceDiff', num2str(i), '.png'));
+                        obj.traces3Dcommon.TotIntCorrrected{i, 1} = obj.traces3Dcommon.IntTot{i,1}/CorrFactor;
+                    else
+                    end  
+                catch
+                end
+            end
+            close all
+
+            % obj.traces3Dcommon = cell2table(obj.traces3Dcommon, 'VariableNames', {'Int1', 'Int2',...
+            %     'Int1Norm', 'Int2Norm', 'Time', 'Diff', 'I', 'I0', 'TotIntTrace', 'TotInt', 'TotIntCorr'});
+            Traces3Dcommon = obj.traces3Dcommon;
+
+            Filename = append(obj.path, filesep, 'Traces3Dcommon.mat');
+            save(Filename, 'Traces3Dcommon');
+
+            disp("== Rotational calibration data saved")
+        end
     end
 end
 

@@ -2,7 +2,7 @@ classdef MPParticleMovie < Core.MPMovie
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties (SetAccess = 'protected')
+    properties
         
         candidatePos
         unCorrLocPos
@@ -35,13 +35,22 @@ classdef MPParticleMovie < Core.MPMovie
                 switch nargin
                         case 3
                             
-                            frames = 1: obj.calibrated{1,1}.nFrames;
+                            if strcmp(obj.info.frame2Load, 'all')
+                                frames = 1: obj.calibrated{1,1}.nFrames;
+                            elseif isa(obj.info.frame2Load, 'double')
+                                frames = obj.info.frame2Load;
+                            end
                             disp('Running detection on every frame');
          
                             
                         case 4
                             
-                            [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
+                            if strcmp(obj.info.frame2Load, 'all')
+                                [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
+                            elseif isa(obj.info.frame2Load, 'double')
+                                frames = obj.info.frame2Load;
+                            end
+                            
                             
                         otherwise
                             
@@ -165,17 +174,30 @@ classdef MPParticleMovie < Core.MPMovie
         
                             case 2
                                 roiSize = 6;
-                                frames = 1: obj.calibrated{1,1}.nFrames;
+                                if strcmp(obj.info.frame2Load, 'all')
+                                    frames = 1: obj.calibrated{1,1}.nFrames;
+                                elseif isa(obj.info.frame2Load, 'double')
+                                    frames = obj.info.frame2Load;
+                                end
                                 disp('Running SRLocalization on every frame with ROI of 6 pixel radius');
         
                             case 3
         
-                                frames = 1: obj.calibrated{1,1}.nFrames;
+                                if strcmp(obj.info.frame2Load, 'all')
+                                    frames = 1: obj.calibrated{1,1}.nFrames;
+                                elseif isa(obj.info.frame2Load, 'double')
+                                    frames = obj.info.frame2Load;
+                                end
                                 disp('Running SRLocalization on every frame');
         
                             case 4
         
-                                [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
+                                if strcmp(obj.info.frame2Load, 'all')
+                                    [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
+                                elseif isa(obj.info.frame2Load, 'double')
+                                    frames = obj.info.frame2Load;
+                                end
+                                
         
                             otherwise
         
@@ -248,19 +270,15 @@ classdef MPParticleMovie < Core.MPMovie
                 end
             end
             
-            function consolidatePlanes(obj,frames,detectParam)
-                for q = 1: obj.info.multiModal +1
-                    if iscell(detectParam)
-                        consThresh = detectParam{1,q}.consThresh;
-                    else
-                        consThresh = detectParam.consThresh;
-                    end
+            function consolidatePlanes(obj,frames,detectParam,q)
+
+                    consThresh = detectParam.consThresh;
                     %Consolidation refers to connect molecules that were localized
                     %at similar position in different plane on a single frame.
-                    assert(~isempty(obj.calibrated{1,q}),'Data should be calibrated to consolidate');
+                    assert(~isempty(obj.calibrated{1,1}),'Data should be calibrated to consolidate');
                     assert(~isempty(obj.info),'Information about the setup are missing to consolidate, please fill them in using giveInfo method');
-                    assert(~isempty(obj.candidatePos{q,1}), 'No candidate found, please run findCandidatePos before consolidation');
-                    assert(~isempty(obj.unCorrLocPos{q,1}),'Localization needs to be performed before consolidation');
+                    assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before consolidation');
+                    assert(~isempty(obj.unCorrLocPos),'Localization needs to be performed before consolidation');
                    
                     %Check if some particles were saved already.
                     folder = append('calibrated', num2str(q));
@@ -272,15 +290,15 @@ classdef MPParticleMovie < Core.MPMovie
                     if run
                         %Check the number of function input
                         switch nargin
-                            case 1
+                            case 2
                                 
-                                frames = 1: obj.calibrated{1,q}.nFrames;
+                                frames = 1: obj.calibrated{1,1}.nFrames;
                                 disp('Running consolidation on every frame with roi of 6 pixel');
                                 consThresh = 4;
-                            case 2
+                            case 3
                                 [frames] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                                 consThresh = 4;                       
-                            case 3
+                            case 4
                                 [frames] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                                 assert(isnumeric(consThresh),'Consolidation threshold should be numeric');
                             otherwise
@@ -365,141 +383,13 @@ classdef MPParticleMovie < Core.MPMovie
 
                         fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
                         save(fileName,'particle');
-                        obj.particles{q,1} = particle;
+                        obj.particles = particle;
                         
                     elseif run == 0
-                        obj.particles{q,1} = particle;
+                        obj.particles = particle;
                     end
-
-                end
-
-                %%% Pass the particles that are not detected in the other
-                %%% channel. When particles are added in the new channel,
-                %%% recalculate their intensity. 
-                if obj.info.rotational == 1
-                    obj.PartChannelConsolidation;
-                end
             end
 
-
-            function PartChannelConsolidation(obj)
-                %%% loop through frames
-
-                tform = load(append(obj.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
-                tform = tform.transformation;
-                f = waitbar(0, 'Initizalizing');
-                for i = 1:size(obj.particles{1, 1}.List, 2)
-                    D = [];
-                    matches = [];
-                    waitbar(i./size(obj.particles{1, 1}.List, 2), f, 'Consolidating particles in both channels')
-                    ParticlesCh1 = obj.particles{1, 1}.List{1,i};
-                    ParticlesCh2 = obj.particles{2, 1}.List{1,i};
-
-                    %%% Delete particles that are visible in both channels.
-                    %%% Those will not be passed to the other channel
-                    Coord1 = [];
-                    Coord2 = [];
-                    for j = 1:size(ParticlesCh1,1)
-                        %Coord1(j,:) = table2array(nanmean(ParticlesCh1{j, 1} (:,{'row', 'col'}), 1));
-                        Coord1(j,:) = [table2array(nanmean(ParticlesCh1{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh1{j, 1} (:,{'row'}), 1))];
-                    end
-                    for j = 1:size(ParticlesCh2,1)
-                        %Coord2(j,:) = table2array(nanmean(ParticlesCh2{j, 1} (:,{'row', 'col'}), 1));
-                        Coord2(j,:) = [table2array(nanmean(ParticlesCh2{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh2{j, 1} (:,{'row'}), 1))];
-                    end
-                    if ~or(isempty(Coord2), isempty(Coord1))
-                        % Coord2New = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
-                        Coord2New = transformPointsForward(tform, Coord2);
-                        D = pdist2(Coord1, Coord2New);
-                        [matches, costs] = matchpairs(D, 10);
-
-                        PlaneCheck = [];
-                        %%%Check if the matched particles have at least a plane in common & if the distance is small:
-                        for k = 1:size(matches, 1)
-                            CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
-                            if numel(CommonPlanes) >= 1
-                                PlaneCheck(k,1) = 1;
-                            else
-                                PlaneCheck(k,1) = 0;
-                            end
-                        end
-                        matches(PlaneCheck == 0, :) = [];
-
-                        %%%Delete particles that have a partner from the lists
-                        ToRemove1 = zeros(size(ParticlesCh1, 1),1);
-                        ToRemove2 = zeros(size(ParticlesCh2, 1),1);
-                        for l = 1:size(matches, 1)
-                            ToRemove1(matches(l,1),1) = 1;
-                            ToRemove2(matches(l,2),1) = 1;
-                        end
-                        ParticlesCh1 = ParticlesCh1(ToRemove1 == 0);
-                        ParticlesCh2 = ParticlesCh2(ToRemove2 == 0);
-                    end
-
-                    %%% Pass particles from Ch1 to Ch2
-                    ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
-                    NewParticlesCh2 = [obj.particles{2, 1}.List{1,i}, cell(size(obj.particles{2, 1}.List{1,i}, 1), 1)];
-                    [data] = obj.getFrame(i, 2); % get frame from ch2
-                    sig = [obj.info.sigma_px obj.info.sigma_px];
-                    for l = 1:size(ParticlesCh1, 1)
-                        CurrentParticle = ParticlesCh1{l, 1};
-                        Coord = [CurrentParticle.col, CurrentParticle.row];
-                        %Coord = Transformation.Coords1toCoords2.b*Coord*Transformation.Coords1toCoords2.T + Transformation.Coords1toCoords2.c;
-                        Coord = transformPointsInverse(tform, Coord);
-                        NewParticle = CurrentParticle;
-                        NewParticle.row = Coord(:,2);
-                        NewParticle.col = Coord(:,1);
-                        for m = 1:size(NewParticle, 1)
-                            if ~isnan(NewParticle.plane(m))
-                                planeData = data(:,:, NewParticle.plane(m));
-                                %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
-                                AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
-                                [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
-                                                    obj.info.detectParam.delta, size(planeData,2), size(planeData,1));
-                                ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
-                                [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
-                            end
-                        end
-                        NewParticlesCh2{end+1,1 } = NewParticle;
-                        NewParticlesCh2{end,2} = 'passed';
-                    end
-
-                    %%% Pass particles from Ch2 to Ch1
-                    ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
-                    NewParticlesCh1 = [obj.particles{1, 1}.List{1,i}, cell(size(obj.particles{1, 1}.List{1,i}, 1), 1)];
-                    [data] = obj.getFrame(i, 1); % get frame from ch1
-                    sig = [obj.info.sigma_px obj.info.sigma_px];
-                    for l = 1:size(ParticlesCh2, 1)
-                        CurrentParticle = ParticlesCh2{l, 1};
-                        Coord = [CurrentParticle.col, CurrentParticle.row];
-                        %Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
-                        Coord = transformPointsForward(tform, Coord);
-                        NewParticle = CurrentParticle;
-                        NewParticle.row = Coord(:,2);
-                        NewParticle.col = Coord(:,1);
-                        for m = 1:size(NewParticle, 1)
-                            if ~isnan(NewParticle.plane(m))
-                                planeData = data(:,:, NewParticle.plane(m));
-                                AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
-                                [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
-                                                    obj.info.detectParam.delta, size(planeData,2), size(planeData,1));
-                                ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
-                                [NewParticle.intensity(m), NewParticle.SNR(m), ~] = obj.getIntensityGauss(ROI,sig);
-                            end
-                        end
-                        NewParticlesCh1{end+1, 1} = NewParticle;
-                        NewParticlesCh1{end, 2} = 'Passed';
-                    end
-
-                    obj.particles{1,1}.List{1,i} = NewParticlesCh1;
-                    obj.particles{2,1}.List{1,i} = NewParticlesCh2;
-
-                    obj.particles{1,1}.nParticles(1,i) = size(NewParticlesCh1, 1);
-                    obj.particles{2,1}.nParticles(1,i) = size(NewParticlesCh2, 1);
-                end
-                close(f)
-            end
-            
             function [particle] = getParticles(obj,frames)
                 for q = 1:obj.info.multiModal+1
                     %GetParticles
@@ -512,6 +402,51 @@ classdef MPParticleMovie < Core.MPMovie
                         
                     end
                 end
+            end
+
+            function showCandidateSingleChan(obj, idx, q)
+                %Display Candidate
+                    assert(length(idx)==1, 'Only one frame can be displayed at once');
+                    
+                    [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
+                    assert(~isempty(obj.candidatePos{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+                    [frame] = getFrame(obj,idx,q);
+
+                    nImages = size(frame,3);
+                   
+                    nsFig = ceil(nImages/4);
+                    
+
+                    if isempty(obj.corrLocPos)
+                        candidate = obj.getCandidatePos(idx,q);
+                    else
+                        candidate = obj.corrLocPos{idx, 1};
+                    end
+               
+                    rowPos    = candidate.row;
+                    colPos    = candidate.col;
+                    planeIdx  = candidate.plane;
+
+                    h = figure();
+                    h.Name = sprintf('Frame %d',idx);
+                    for i = 1:nImages
+                        colcoord = colPos(planeIdx==i);
+                        rowcoord = rowPos(planeIdx==i);
+                        
+                        subplot(2,nImages/nsFig,i)
+                        hold on
+                        imagesc(frame(:,:,i))
+                        colormap('hot')
+                        hold on
+                        color = 'g+';
+                        for j = 1:size(colcoord, 1)
+                            plot(colcoord(j),rowcoord(j),color,'MarkerSize',10)
+                        end
+                        axis image;
+                        title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,1}.oRelZPos(i))});
+                        hold on
+                    end
+                    sgtitle(append('Channel ', num2str(q), ' - SR cal applied'))
             end
 
             
@@ -734,7 +669,7 @@ classdef MPParticleMovie < Core.MPMovie
             function [candidateList] = planeConsolidation(obj,candMet,focusMetric,consThresh,q)
                 %Loop through all candidate of a given frame and match them
                 %between frame until none can be match or all are matched.
-                nPlanes = obj.calibrated{1,q}.nPlanes;
+                nPlanes = obj.calibrated{1,1}.nPlanes;
                 counter = 1;
                 nPart = 0;
                 maxIt = size(candMet,1);
@@ -781,7 +716,7 @@ classdef MPParticleMovie < Core.MPMovie
        
                     particle(currentCand.plane,:) = currentCand;
                     nCheck = length(planes2Check);
-                    camConfig = obj.calibrated{1,q}.camConfig;
+                    camConfig = obj.calibrated{1,1}.camConfig;
                     for i = 1:nCheck
                         
                         cand = candMet(candMet.plane == planes2Check(i),:);
