@@ -37,6 +37,7 @@ classdef MultiModalExperiment < handle
             elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
                 obj.MoviesCh1 = Core.TrackingExperimentRotational(folder2Data, obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path, 1, obj.info1);
             elseif strcmp(obj.info.Channel1, 'Phase')
+                obj.MoviesCh1 = Core.PhaseExperiment(folder2Data, obj.cal2D, obj.info, obj.info1);
             elseif strcmp(obj.info.Channel1, 'Segmentation')
             end
 
@@ -45,6 +46,7 @@ classdef MultiModalExperiment < handle
             elseif strcmp(obj.info.Channel2, 'Rotational Tracking')
                 obj.MoviesCh2 = Core.TrackingExperimentRotational(folder2Data, obj.cal2D, obj.info, obj.SRCal.path, obj.ZCal.path, 2, obj.info2);
             elseif strcmp(obj.info.Channel2, 'Phase')
+                obj.MoviesCh2 = Core.PhaseExperiment(folder2Data, obj.cal2D, obj.info, obj.info2);
             elseif strcmp(obj.info.Channel2, 'Segmentation')
             end
 
@@ -200,6 +202,14 @@ classdef MultiModalExperiment < handle
                         end
                         obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
                     elseif strcmp(obj.info.Channel1, 'Phase')
+                        Movie1 = Core.MPPhaseMovie(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info);
+                        Movie1.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie1.giveInfo;
+                        else
+                            Movie1.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.PhaseMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
                     elseif strcmp(obj.info.Channel1, 'Segmentation')
                     end
 
@@ -220,8 +230,16 @@ classdef MultiModalExperiment < handle
                         else
                             Movie2.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
                         end
-                        obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
+                        obj.MoviesCh2.PhaseMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
                     elseif strcmp(obj.info.Channel2, 'Phase')
+                        Movie2 = Core.MPPhaseMovie(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info);
+                        Movie2.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie2.giveInfo;
+                        else
+                            Movie2.info = obj.MoviesCh2.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
                     elseif strcmp(obj.info.Channel2, 'Segmentation')
                     end
 
@@ -247,6 +265,7 @@ classdef MultiModalExperiment < handle
               %%% first run channel 1 analysis
               if strcmp(obj.info.Channel1, 'Segmentation')
               elseif strcmp(obj.info.Channel1, 'Phase')
+                    obj.MoviesCh1.retrievePhaseMask(1);
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
                     frame = obj.info.TestFrame;
                     testMov = obj.MoviesCh1.trackMovies.mov1;

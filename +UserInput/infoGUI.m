@@ -23,7 +23,7 @@ function [info, info1, info2] = infoGUI()
 
     ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Rotational Tracking');
+        'Phase');
     ch2Dropdown = addDropdown(col1, 'Channel 2:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
         'Rotational Tracking');
@@ -39,11 +39,13 @@ function [info, info1, info2] = infoGUI()
 
     %% Channel Panels
     channel1Panel = uipanel(gl, 'Title', 'Channel 1 Setup');
-    channel1Layout = uigridlayout(channel1Panel, [10, 2]);
+    channel1Layout = uigridlayout(channel1Panel, [14, 2]);
+    channel1Layout.RowHeight = {'fit'};
     state.channel1Controls = [];
 
     channel2Panel = uipanel(gl, 'Title', 'Channel 2 Setup');
-    channel2Layout = uigridlayout(channel2Panel, [10, 2]);
+    channel2Layout = uigridlayout(channel2Panel, [14, 2]);
+    channel2Layout.RowHeight = {'fit'};
     state.channel2Controls = [];
 
     %% OK Button
@@ -129,16 +131,48 @@ function [info, info1, info2] = infoGUI()
             info1.trackParam.memory = info1.track_memory;
 
             info1 = rmfield(info1, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
+        elseif contains(info.Channel1, 'Phase')
+            info1.optics.dz = info1.dz;
+            info1.optics.NA = info1.NA;
+            info1.optics.NA_ill = info1.NA_ill;
+            info1.optics.n = info1.n;
+            info1.optics.lambda = info1.lambda;
+            info1.optics.dlambda = info1.dlambda;
+            info1.optics.alpha = info1.alpha;
+            info1.optics.kzT = info1.kzT;
+
+            info1.proc.mirrorX = info1.mirrorX;
+            info1.proc.mirrorZ = info1.mirrorZ;
+            info1.proc.applyFourierMask = info1.applyFourierMask;
+
+            info1 = rmfield(info1, {'dz', 'NA', 'NA_ill', 'n', 'lambda', 'dlambda', 'alpha', 'kzT',...
+                        'mirrorX', 'mirrorZ', 'applyFourierMask'});
         end
 
-        if contains(info.Channel1, 'Tracking')
+        if contains(info.Channel2, 'Tracking')
             info2.detectParam.delta = info2.delta;
             info2.detectParam.chi2 = info2.chi2;
             info2.detectParam.consThresh = info2.consThresh;
             info2.trackParam.radius = info2.track_radius;
             info2.trackParam.memory = info2.track_memory;
 
-            info2 = rmfield(info2, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
+            info2 = rmfield(info2, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'}); 
+        elseif contains(info.Channel1, 'Phase')
+            info2.optics.dz = info2.dz;
+            info2.optics.NA = info2.NA;
+            info2.optics.NA_ill = info2.NA_ill;
+            info2.optics.n = info2.n;
+            info2.optics.lambda = info2.lambda;
+            info2.optics.dlambda = info2.dlambda;
+            info2.optics.alpha = info2.alpha;
+            info2.optics.kzT = info2.kzT;
+
+            info2.proc.mirrorX = info2.mirrorX;
+            info2.proc.mirrorZ = info2.mirrorZ;
+            info2.proc.applyFourierMask = info2.applyFourierMask;
+
+            info2 = rmfield(info2, {'dz', 'NA', 'NA_ill', 'n', 'lambda', 'dlambda', 'alpha', 'kzT',...
+                        'mirrorX', 'mirrorZ', 'applyFourierMask'});
         end
 
 
@@ -179,7 +213,18 @@ function controls = addChannelControls(layout, type)
             controls.threshold = addLabelField(layout, 'Threshold:', '50');
 
         case 'Phase'
-            controls.alpha = addLabelField(layout, 'Alpha:', '0.5');
+            controls.dz = addLabelField(layout, 'PxSize z (µm):', '56');
+            controls.NA = addLabelField(layout, 'NA detection:', '1.20');
+            controls.NA_ill = addLabelField(layout, 'NA illumination:', '0.26');
+            controls.n = addLabelField(layout, 'Refractive index:', '1.33');
+            controls.lambda = addLabelField(layout, 'Central wavelength:', '0.58');
+            controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.075');
+            controls.alpha = addLabelField(layout, 'Alpha:', '3.15');
+            controls.kzT = addLabelField(layout, 'axial cutoff:', '0.01');
+
+            controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'false'); 
+            controls.mirrorZ = addDropdown(layout, 'Mirror along z', {'true', 'false'}, 'true');             % mirror the input stack along Z
+            controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'true'); 
     end
 end
 

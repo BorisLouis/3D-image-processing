@@ -14,8 +14,8 @@ dimension = '3D';
 [info, info1, info2] = UserInput.infoGUI();
 
 %% create experiments
-trackingExp = Core.MultiModalExperiment(file,path2Cal, info, info1, info2,path2SRCal,path2ZCal);
+MultiModalExp = Core.MultiModalExperiment(file,path2Cal, info, info1, info2,path2SRCal,path2ZCal);
 
 %% get Movies
-trackingExp.RetrieveMovies;
-trackingExp.RunAnalysis;
+MultiModalExp.RetrieveMovies;
+MultiModalExp.RunAnalysis;
