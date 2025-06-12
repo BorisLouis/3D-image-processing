@@ -27,30 +27,21 @@ classdef MPParticleMovie < Core.MPMovie
             
         end
         
-        function findCandidatePos(obj,detectParamFull, frames)
+        function findCandidatePos(obj,detectParamFull, q, frames)
             %Method to perform localization on each plane for each frame
             %Check if some candidate exists already in the folder (previously saved)
-            for q = 1:obj.info.multiModal+1
-                if iscell(detectParamFull)
-                    if q == 1
-                        detectParam = detectParamFull{1};
-                    elseif q == 2
-                        detectParam = detectParamFull{2};
-                    end
-                else
-                    detectParam = detectParamFull;
-                end
+                detectParam = detectParamFull;
 
                 switch nargin
-                        case 2
+                        case 3
                             
-                            frames = 1: obj.calibrated{1,q}.nFrames;
+                            frames = 1: obj.calibrated{1,1}.nFrames;
                             disp('Running detection on every frame');
          
                             
-                        case 3
+                        case 4
                             
-                            [frames] = obj.checkFrame(frames,obj.calibrated{1,q}.nFrames);
+                            [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
                             
                         otherwise
                             
@@ -75,9 +66,9 @@ classdef MPParticleMovie < Core.MPMovie
                     assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
                     BgCorrFactor = {};
                     if q == 1
-                        [candidate, ~] = obj.detectCandidate(detectParam,frames,q);
+                        [candidate] = obj.detectCandidate(detectParam,frames,q);
                     elseif q == 2
-                        [candidate, BgCorrFactor] = obj.detectCandidate(detectParam,frames,q);
+                        [candidate] = obj.detectCandidate(detectParam,frames,q);
                     end
                     
                 elseif ~isempty(candidate)
@@ -100,18 +91,16 @@ classdef MPParticleMovie < Core.MPMovie
                 else
                 end
 
-                candidatePos{q,1} = candidate;
-                obj.candidatePos{q,1} = candidate;
+                candidatePos = candidate;
+                obj.candidatePos = candidate;
                 
-            end
             obj.BgcorrectionCh1Ch2 = BgCorrFactor;
             obj.candidatePos = candidatePos;
             obj.info.detectParam = detectParam;
         end
         
         function getROIs(obj)
-            for q = 1:obj.info.multiModal+1
-                T = obj.candidatePos{q,1}{1,1};
+                T = obj.candidatePos{1,1};
                 max_distance = obj.info.detectParam.consThresh;
                 particles = struct([]);
                 cleanedT = table();
@@ -141,17 +130,16 @@ classdef MPParticleMovie < Core.MPMovie
                         end
                     end
                 end
-                for i = 1:size(obj.candidatePos{q,1},1)
+                for i = 1:size(obj.candidatePos,1)
                     %obj.candidatePos{q,1}{i,1} = T(valid_rows, :); 
-                    obj.ROI{q,1} = max_distance;
-                end 
-            end      
+                    obj.ROI = max_distance;
+                end    
         end
             
             function [candidate] = getCandidatePos(obj, frames, q)
                 %Extract the position of the candidate of a given frame
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
-                candidate = obj.candidatePos{q,1}{idx};
+                candidate = obj.candidatePos{idx};
                 
                 if isempty(candidate)
                     
@@ -160,16 +148,12 @@ classdef MPParticleMovie < Core.MPMovie
                 end
             end  
             
-            function SRLocalizeCandidate(obj,detectParam,frames)
-                for q = 1:obj.info.multiModal+1
-                    if iscell(detectParam)
-                        roiSize = detectParam{1,q}.delta;
-                    else
-                        roiSize = detectParam.delta;
-                    end
-                    assert(~isempty(obj.calibrated{1,q}),'Data should be calibrated to consolidate');
+            function SRLocalizeCandidate(obj,detectParam,q, frames)
+                    roiSize = detectParam.delta;
+
+                    assert(~isempty(obj.calibrated{1,1}),'Data should be calibrated to consolidate');
                     assert(~isempty(obj.info),'Information about the setup are missing to consolidate, please fill them in using giveInfo method');
-                    assert(~isempty(obj.candidatePos{q,1}), 'No candidate found, please run findCandidatePos before consolidation');
+                    assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before consolidation');
                     folder = append('calibrated', num2str(q));
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
@@ -179,19 +163,19 @@ classdef MPParticleMovie < Core.MPMovie
                     if run
                         switch nargin
         
-                            case 1
-                                roiSize = 6;
-                                frames = 1: obj.calibrated{1,q}.nFrames;
-                                disp('Running SRLocalization on every frame with ROI of 6 pixel radius');
-        
                             case 2
-        
-                                frames = 1: obj.calibrated{1,q}.nFrames;
-                                disp('Running SRLocalization on every frame');
+                                roiSize = 6;
+                                frames = 1: obj.calibrated{1,1}.nFrames;
+                                disp('Running SRLocalization on every frame with ROI of 6 pixel radius');
         
                             case 3
         
-                                [frames] = obj.checkFrame(frames,obj.calibrated{1,q}.nFrames);
+                                frames = 1: obj.calibrated{1,1}.nFrames;
+                                disp('Running SRLocalization on every frame');
+        
+                            case 4
+        
+                                [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
         
                             otherwise
         
@@ -199,7 +183,7 @@ classdef MPParticleMovie < Core.MPMovie
         
                         end
                                                
-                        locPos = cell(size(obj.candidatePos{q,1}));
+                        locPos = cell(size(obj.candidatePos));
                         h = waitbar(0,'Fitting candidates ...');
                         nFrames = length(frames);
                         %Localization occurs here
@@ -244,9 +228,8 @@ classdef MPParticleMovie < Core.MPMovie
                     end
                     
                     %store in the object
-                    obj.unCorrLocPos{q,1} = locPos;
-                    obj.corrLocPos{q,1}   = locPos;
-                end
+                    obj.unCorrLocPos = locPos;
+                    obj.corrLocPos   = locPos;
             end
             
             function [locPos] = getLocPos(obj, frames, q, z)
@@ -532,24 +515,39 @@ classdef MPParticleMovie < Core.MPMovie
             end
 
             
-            function showCandidate(obj,idx)
+            function showCandidate(obj, obj2, idx)
                 %Display Candidate
                 for q = 1:(obj.info.multiModal + 1)
                     % if obj.info.rotationalCalib ~= 1
                     assert(length(idx)==1, 'Only one frame can be displayed at once');
-                    [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
-                    assert(~isempty(obj.candidatePos{q,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
                     
-                    [frame] = getFrame(obj,idx,q);
+                    if q == 1
+                        [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
+                        assert(~isempty(obj.candidatePos{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+                        [frame] = getFrame(obj,idx,q);
+                    elseif q ==  2
+                        [idx] = Core.Movie.checkFrame(idx,obj2.raw.maxFrame(1));
+                        assert(~isempty(obj2.candidatePos{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+                        [frame] = getFrame(obj2,idx,q);
+                    end
+                    
                     
                     nImages = size(frame,3);
                    
                     nsFig = ceil(nImages/4);
                     
-                    if isempty(obj.corrLocPos)
-                        candidate = obj.getCandidatePos(idx,q);
-                    else
-                        candidate = obj.corrLocPos{q, 1}{idx, 1};
+                    if q == 1
+                        if isempty(obj.corrLocPos)
+                            candidate = obj.getCandidatePos(idx,q);
+                        else
+                            candidate = obj.corrLocPos{idx, 1};
+                        end
+                    elseif q == 2
+                        if isempty(obj2.corrLocPos)
+                            candidate = obj2.getCandidatePos(idx,q);
+                        else
+                            candidate = obj2.corrLocPos{idx, 1};
+                        end
                     end
                                                
                     rowPos    = candidate.row;
@@ -581,7 +579,11 @@ classdef MPParticleMovie < Core.MPMovie
                             plot(colcoord(j),rowcoord(j),color,'MarkerSize',10)
                         end
                         axis image;
-                        title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,q}.oRelZPos(i))});
+                        if q == 1
+                            title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,1}.oRelZPos(i))});
+                        elseif q == 2
+                            title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj2.calibrated{1,1}.oRelZPos(i))});
+                        end
                         hold on
                     end
                     sgtitle(append('Channel ', num2str(q), ' - SR cal applied'))
@@ -590,19 +592,33 @@ classdef MPParticleMovie < Core.MPMovie
                 for q = 1:(obj.info.multiModal + 1)
                     % if obj.info.rotationalCalib ~= 1
                     assert(length(idx)==1, 'Only one frame can be displayed at once');
-                    [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
-                    assert(~isempty(obj.candidatePos{q,1}{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
                     
-                    [frame] = getFrame(obj,idx,q);
+                    if q == 1
+                        [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
+                        assert(~isempty(obj.candidatePos{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+                        [frame] = getFrame(obj,idx,q);
+                    elseif q == 2
+                        [idx] = Core.Movie.checkFrame(idx,obj2.raw.maxFrame(1));
+                        assert(~isempty(obj2.candidatePos{idx}),'There is no candidate found in that frame, check that you ran the detection for that frame');
+                        [frame] = getFrame(obj2,idx,q);
+                    end
                     
                     nImages = size(frame,3);
                    
                     nsFig = ceil(nImages/4);
                     
-                    if isempty(obj.corrLocPos)
-                        candidate = obj.getCandidatePos(idx,q);
-                    else
-                        candidate = obj.corrLocPos{q, 1}{idx, 1};
+                    if q == 1
+                        if isempty(obj.corrLocPos)
+                            candidate = obj.getCandidatePos(idx,q);
+                        else
+                            candidate = obj.corrLocPos{idx, 1};
+                        end
+                    elseif q == 2
+                        if isempty(obj2.corrLocPos)
+                            candidate = obj2.getCandidatePos(idx,q);
+                        else
+                            candidate = obj2.corrLocPos{idx, 1};
+                        end
                     end
                                                
                     rowPos    = candidate.rowNotCorr;
@@ -634,7 +650,11 @@ classdef MPParticleMovie < Core.MPMovie
                             plot(colcoord(j),rowcoord(j),color,'MarkerSize',10)
                         end
                         axis image;
-                        title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,q}.oRelZPos(i))});
+                        if q == 1
+                            title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,1}.oRelZPos(i))});
+                        elseif q == 2
+                             title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj2.calibrated{1,1}.oRelZPos(i))});
+                        end
                         hold on
                     end
                     sgtitle(append('Channel ', num2str(q), ' - SR cal not applied'))
@@ -1228,25 +1248,14 @@ classdef MPParticleMovie < Core.MPMovie
             assert(~isempty(obj.calibrated),'Data should be calibrated to detect candidate');
             assert(isstruct(detectParam),'Detection parameter should be a struct with two fields');
             nFrames = length(frames);
-            if q == 1
-                if size(obj.candidatePos, 1) < 2
-                    currentCandidate = obj.candidatePos;
-                else
-                    currentCandidate = obj.candidatePos{q,1};
-                end
-            elseif q == 2
-                if size(obj.candidatePos, 1) == 1
-                    currentCandidate = [];
-                else
-                    currentCandidate = obj.candidatePos{q,1};
-                end
-            end
+
+            currentCandidate = obj.candidatePos;
             
             detectionMethod = obj.info.detectionMethod;
 
             if(isempty(currentCandidate))
                 
-                candidate = cell(obj.calibrated{1,q}.nFrames,1);
+                candidate = cell(obj.calibrated{1,1}.nFrames,1);
                 
             else
                 
@@ -1275,7 +1284,7 @@ classdef MPParticleMovie < Core.MPMovie
                 
                 position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
                     zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
-                [volIm, BgCorrFactor{i,1}] = obj.getFrame(frames(i),q);
+                [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes

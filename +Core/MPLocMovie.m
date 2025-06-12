@@ -12,17 +12,18 @@ classdef MPLocMovie < Core.MPParticleMovie
     
     methods
         
-        function obj = MPLocMovie(raw, MPCal,info, SRCal, zCal)
+        function obj = MPLocMovie(raw, MPCal,info, SRCal, zCal, q)
             
             obj  = obj@Core.MPParticleMovie(raw,MPCal,info);
+            SRCal = {SRCal, q};
             
             switch nargin
                 
                 
-                case 4
+                case 5
                     obj.SRCal
                     obj.ZCal = [];
-                case 5
+                case 6
                     
                     obj.SRCal = SRCal;
                     obj.ZCal = zCal;
@@ -35,11 +36,11 @@ classdef MPLocMovie < Core.MPParticleMovie
         function set.SRCal(obj,SRCal)
             
             if ~isempty(SRCal)
-                assert(isfolder(SRCal), 'The given path is not a folder');
+                assert(isfolder(SRCal{1}), 'The given path is not a folder');
 
                 %Check Given path
-                for q = 1:obj.info.multiModal + 1
-                    [file2Analyze] = Core.Movie.getFileInPath(SRCal, append('SRCalibration', num2str(q), '.mat'));
+                q = SRCal{2};
+                    [file2Analyze] = Core.Movie.getFileInPath(SRCal{1}, append('SRCalibration', num2str(q), '.mat'));
     
                     if isempty(file2Analyze)
                         error('No SR calibration file found in the given folder');
@@ -51,9 +52,8 @@ classdef MPLocMovie < Core.MPParticleMovie
                         assert(and(isstruct(cal), and(isfield(cal,'trans'),isfield(cal,'rot'))),...
                             'SR calibration is supposed to be a struct with 2 fields');
     
-                        obj.SRCal{q,1} = cal; 
+                        obj.SRCal = cal; 
                     end
-                end
             else
                 obj.SRCal = [];
             end
@@ -95,24 +95,23 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
         
         function applySRCal(obj, rot, refPlane)
-            for q = 1: obj.info.multiModal + 1
-                assert(~isempty(obj.unCorrLocPos{q,1}),'You need to find candidate and SR Localized them before applying corrections');
+                assert(~isempty(obj.unCorrLocPos),'You need to find candidate and SR Localized them before applying corrections');
 
-                if isempty(obj.corrLocPos{q,1})
+                if isempty(obj.corrLocPos)
 
-                        obj.corrLocPos = obj.unCorrLocPos{q,1};
+                        obj.corrLocPos = obj.unCorrLocPos;
 
                 end
 
                 if(~isempty(obj.SRCal))
-                    if size(obj.corrLocPos{q,1},2) == 1
+                    if size(obj.corrLocPos,2) == 1
                         if nargin <2
                             refPlane = 5;
                         end
-                        for z = 1:size(size(obj.corrLocPos{q,1},2))
-                            data = obj.unCorrLocPos{q,1};
-                            nPlanesCal = size(obj.SRCal{q,1}.trans,1)+1;
-                            nPlanesFile = obj.calibrated{1,q}.nPlanes;
+                        for z = 1:size(size(obj.corrLocPos,2))
+                            data = obj.unCorrLocPos;
+                            nPlanesCal = size(obj.SRCal.trans,1)+1;
+                            nPlanesFile = obj.calibrated{1,1}.nPlanes;
                             assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in SR calibration and file');             
 
                             disp(['Applying SR calibration...']);
@@ -125,15 +124,15 @@ classdef MPLocMovie < Core.MPParticleMovie
                                         data2Corr = currData(currData.plane==currentPlane,{'row','col','plane'});
 
                                         if rot
-                                            corrMat = obj.SRCal{q,1}.rot; %% if ch2 is corrected, we only need the SRCal of ch1
+                                            corrMat = obj.SRCal.rot; %% if ch2 is corrected, we only need the SRCal of ch1
                                             [corrData] = Core.MPSRCalMovie.applyRot(data2Corr, corrMat,refPlane);
 
                                         else
-                                            corrMat = obj.SRCal{q,1}.trans; %% if ch2 is corrected, we only need the SRCal of ch1
+                                            corrMat = obj.SRCal.trans; %% if ch2 is corrected, we only need the SRCal of ch1
                                              [corrData] = Core.MPSRCalMovie.applyTrans(data2Corr,corrMat,refPlane);                    
                                         end
 
-                                        obj.corrLocPos{q,1}{i}(currData.plane==currentPlane,{'row','col','plane', 'rowNotCorr', 'colNotCorr'}) = corrData;        
+                                        obj.corrLocPos{i}(currData.plane==currentPlane,{'row','col','plane', 'rowNotCorr', 'colNotCorr'}) = corrData;        
                                     end
                                 end
 
@@ -147,10 +146,9 @@ classdef MPLocMovie < Core.MPParticleMovie
                     disp('========> DONE ! <=========');
                     warning('SR Calibration not found, no correction was applied');
                 end
-            end
         end
 
-        function CalcChannelTransition(obj, tform, frame)
+        function CalcChannelTransition(obj, obj2, tform, frame)
             %%% Calculate transformation 2 times: Once on the coordinates
             %%% that are not corrected => to get intensity, once on the
             %%% coordinates that are SR corrected => for tracking
@@ -199,8 +197,8 @@ classdef MPLocMovie < Core.MPParticleMovie
             % transformNotCorr2.c = -(1 /transformNotCorr.b) * transformNotCorr.c * transformNotCorr.T';
 
             for frameIdx = 1:frame
-                data1 = obj.corrLocPos{1,1}{frameIdx};  
-                data2 = obj.corrLocPos{2,1}{frameIdx};
+                data1 = obj.corrLocPos{frameIdx};  
+                data2 = obj2.corrLocPos{frameIdx};
                 if ~or(isempty(data1), isempty(data2)) 
 
                     data1.OriginChannel(:,1) = 1;
@@ -236,8 +234,13 @@ classdef MPLocMovie < Core.MPParticleMovie
     
                         CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;
     
-                        obj.corrLocPos{q,1}{frameIdx,1} = CombinedLoc;%(~toRemove, :);
-                        obj.corrLocPos{q,1}{frameIdx,1}.Properties.VariableNames{'OriginChannel'} = 'ParticlePassed';
+                        if q == 1
+                            obj.corrLocPos{frameIdx,1} = CombinedLoc;%(~toRemove, :);
+                            obj.corrLocPos{frameIdx,1}.Properties.VariableNames{'OriginChannel'} = 'ParticlePassed';
+                        elseif q ==  2
+                            obj2.corrLocPos{frameIdx,1} = CombinedLoc;%(~toRemove, :);
+                            obj2.corrLocPos{frameIdx,1}.Properties.VariableNames{'OriginChannel'} = 'ParticlePassed';
+                        end
                     end
                 end
             end
