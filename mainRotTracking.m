@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+path2SRCal = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
 
 %file info
-file.path  = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\AuBPs_184x92_in_glycerol\3_cP\sample1';
+file.path  = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol\glycerol 80\sample1';
 file.ext   = '.ome.tif';
-path2Cal = 'D:\Rotational Tracking\20250303_AuBPS_184x92_glycerol\2DCal';
+path2Cal = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
 dimension = '3D';
 
 %detection parameter

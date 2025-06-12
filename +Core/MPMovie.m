@@ -85,7 +85,7 @@ classdef MPMovie < Core.Movie
                 %check if a calibration file is in there.
             elseif length(unique(idx2Calibrated))==2
                 for q = 1:obj.info.multiModal+1
-                    name = append('calibrated', num2str(q))
+                    name = append('calibrated', num2str(q));
 
                     fullPath = [obj.raw.movInfo.Path filesep name];
                     [file2Analyze] = obj.getFileInPath(fullPath, '.mat');
