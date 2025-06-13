@@ -82,7 +82,7 @@ Ik = fftshift(fftn(fftshift(stackM)));
 
 % Amplitude = abs(ifft2(fftshift(Freal)));
 % Phase= angle(ifft2(fftshift(Freal)));
-mask = QP_package.cropXY(mask, max(size(Ik)));
+% mask = QP_package.cropXY(mask, max(size(Ik)));
 
 Gamma = Ik.*mask; % cross-spectral density
 

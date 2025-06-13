@@ -812,7 +812,7 @@ classdef MPLocMovie < Core.MPParticleMovie
             params = [guess.sig guess.mu guess.A min(data)];
          
             fun = @(x) SimpleFitting.minGauss1D(domain,data,x);
-            opt = optimset('Display','off');
+            opt = optimset('Display','on');
             % then we can do:
             [out, RMSD] = fminsearch(fun,params,opt);
             %normalize RMSD with mean data

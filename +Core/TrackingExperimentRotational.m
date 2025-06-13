@@ -81,6 +81,9 @@ classdef TrackingExperimentRotational < handle
             if isempty(SRCal)
                 obj.SRCal.cal = SRCal;
                 obj.SRCal.path = SRCal;
+            elseif isempty(SRCal{1,1})
+                obj.SRCal.cal = SRCal;
+                obj.SRCal.path = SRCal;
             else
                 assert(isfolder(SRCal{1}), 'The given path is not a folder');
                
@@ -273,6 +276,7 @@ classdef TrackingExperimentRotational < handle
                 zStep(:,1) = {zSt};
 
                 allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
+                currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
                 obj.traces3D = allTraces;
             end
             

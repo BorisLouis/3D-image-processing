@@ -873,17 +873,17 @@ classdef MultiModalExperiment < handle
 
                       CurrentTrace.Phase = Phase;
                       Traces3D{j, 1} = CurrentTrace;
-                      Phase = [];
                   end
                   CurrentTrackMov.traces3D = Traces3D;
-                  TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
+                  TrackObj.trackMovies.(fieldsN{i}) = currentTrackMov;
               end
 
-              if strcmp(obj.info.Channel2, 'Translational Tracking')
-                  TrackObj = obj.MoviesCh2;
-              elseif strcmp(obj.info.Channel1, 'Translational Tracking')
+             if and(strcmp(obj.info.Channel1, 'Phase'), strcmp(obj.info.Channel2, 'Translational Tracking'))
                   TrackObj = obj.MoviesCh1;
+              elseif and(strcmp(obj.info.Channel1, 'Translational Tracking'), strcmp(obj.info.Channel2, 'Phase'))
+                  TrackObj = obj.MoviesCh;
               end
+
           end
     end
 end

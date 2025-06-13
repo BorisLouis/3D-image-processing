@@ -1,4 +1,4 @@
-function [info, info1, info2] = infoGUI()
+function [info, info1, info2, file] = infoGUI(file)
     % Default outputs
     info = struct();
     info1 = struct();
@@ -14,13 +14,15 @@ function [info, info1, info2] = infoGUI()
 
     %% Column 1 – General Parameters
     col1 = uigridlayout(gl, [14, 2]);
+    
 
-    state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
+
+    state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.ome.tif');
     state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
     state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
-    state.multiModal = addDropdown(col1, 'multiModal:', {'1', '0'}, '1');
-    state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
 
+    state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
+    state.multiModal = addDropdown(col1, 'multiModal:', {'1', '0'}, '1');
     ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
         'Phase');
@@ -28,14 +30,17 @@ function [info, info1, info2] = infoGUI()
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
         'Rotational Tracking');
 
+    state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
     state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
-    state.Rotational = addDropdown(col1, 'Rotational:', {'1', '0'}, '1');
-
-    state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'1', '0'}, '0');
+    
+    state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
     state.TestFrame = addLabelField(col1, 'Test Frame:', '1');
 
-    state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
+    state.Rotational = addDropdown(col1, 'Rotational:', {'1', '0'}, '1');
     state.Bipyramid = addLabelField(col1, 'Bipyramid (nm):', '[184 92]');
+    state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'1', '0'}, '0');
+    state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
+    
 
     %% Channel Panels
     channel1Panel = uipanel(gl, 'Title', 'Channel 1 Setup');
@@ -64,6 +69,7 @@ function [info, info1, info2] = infoGUI()
     updateChannel(2, ch2Dropdown.Value);
     toggleRadTime();
     toggleBipyramid();
+    toggleRotationalControls();
 
     % Wait for user to press OK
     uiwait(fig);
@@ -79,6 +85,7 @@ function [info, info1, info2] = infoGUI()
             state.channel2Controls = addChannelControls(channel2Layout, mode);
         end
         toggleBipyramid();
+        toggleRotationalControls();
     end
 
     function toggleBipyramid()
@@ -99,8 +106,27 @@ function [info, info1, info2] = infoGUI()
         end
     end
 
+    function toggleRotationalControls()
+        ch1 = ch1Dropdown.Value;
+        ch2 = ch2Dropdown.Value;
+    
+        if strcmp(ch1, 'Rotational Tracking') && strcmp(ch2, 'Rotational Tracking')
+            state.Rotational.Value = '1';
+            state.Rotational.Enable = 'off';  % Fixed to 1
+            state.RotationalCalib.Enable = 'on';  % Let user change it
+        else
+            state.Rotational.Value = '0';
+            state.Rotational.Enable = 'off';  % Fixed to 0
+            state.RotationalCalib.Value = '0';
+            state.RotationalCalib.Enable = 'off';
+        end
+    
+        toggleRadTime();  % Always refresh dependent RadTime state
+    end
+
     function onOK()
         % Collect info structure
+        info.Dimension = state.Dimension.Value;
         info.PxSize = str2double(state.PxSize.Value);
         info.type = state.Type.Value;
         info.runMethod = state.RunMethod.Value;
@@ -118,6 +144,7 @@ function [info, info1, info2] = infoGUI()
         info.TestFrame = str2double(state.TestFrame.Value);
         info.RadTime = str2double(state.RadTime.Value);
         info.Bipyramid = str2num(state.Bipyramid.Value); %#ok<ST2NM>
+        file.ext = state.Ext.Value;
 
         % Substructures
         info1 = readControls(state.channel1Controls);
@@ -175,7 +202,7 @@ function [info, info1, info2] = infoGUI()
                         'mirrorX', 'mirrorZ', 'applyFourierMask'});
         end
 
-
+        
         % Resume and close
         uiresume(fig);
         delete(fig);
@@ -213,7 +240,7 @@ function controls = addChannelControls(layout, type)
             controls.threshold = addLabelField(layout, 'Threshold:', '50');
 
         case 'Phase'
-            controls.dz = addLabelField(layout, 'PxSize z (µm):', '56');
+            controls.dz = addLabelField(layout, 'PxSize z (µm):', '0.56');
             controls.NA = addLabelField(layout, 'NA detection:', '1.20');
             controls.NA_ill = addLabelField(layout, 'NA illumination:', '0.26');
             controls.n = addLabelField(layout, 'Refractive index:', '1.33');

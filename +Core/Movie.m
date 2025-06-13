@@ -60,10 +60,20 @@ classdef Movie < handle
             %load info
             [frameInfo, movInfo] = obj.loadInfo(raw);
                        
-            obj.raw.movInfo   = movInfo;
-            obj.raw.frameInfo = frameInfo;
-            obj.raw.fullPath  = [movInfo.Path filesep frameInfo(1).File];
-            obj.raw.maxFrame  = movInfo.maxFrame;
+
+            
+            if iscell(movInfo)
+                obj.raw.movInfo   = movInfo{1,1};
+                obj.raw.frameInfo = frameInfo{1,1};
+                obj.raw.fullPath1  = [movInfo{1,1}.Path filesep frameInfo{1,1}(1).File];
+                obj.raw.fullPath2  = [movInfo{1,2}.Path filesep frameInfo{1,2}(1).File];
+                obj.raw.maxFrame  = movInfo{1,1}.maxFrame;
+            else
+                obj.raw.movInfo   = movInfo;
+                obj.raw.frameInfo = frameInfo;
+                obj.raw.fullPath  = [movInfo.Path filesep frameInfo(1).File];
+                obj.raw.maxFrame  = movInfo.maxFrame;
+            end
             obj.raw.ext       = ext;
             
         end
@@ -465,10 +475,14 @@ classdef Movie < handle
             end
             fullPath = [file2Analyze(1).folder filesep file2Analyze(1).name];
             
-            if size(file2Analyze,1)>1
-                disp('Several files found in the directorly loading only: ');
-                disp(fullPath);
+            if and(size(file2Analyze,1) == 2, contains(file2Analyze(2).name, '.HIS'))
+                fullPath2 = [file2Analyze(2).folder filesep file2Analyze(2).name];
             end
+            
+            % if size(file2Analyze,1)>1
+            %     disp('Several files found in the directorly loading only: ');
+            %     disp(fullPath);
+            % end
             
             switch ext
                 
@@ -483,13 +497,26 @@ classdef Movie < handle
                         movInfo.maxFrame = totFrame;
 
                     end
+                   
+                case '.his'
+                    [frameInfo1, movInfo1] = Load.Movie.his.getInfo(fullPath);
+                    [frameInfo2, movInfo2] = Load.Movie.his.getInfo(fullPath2);
+                    frameInfo = {frameInfo1, frameInfo2};
+                    movInfo = {movInfo1, movInfo2};
                 otherwise
                     extName = strrep(ext,'.','');  
                     [frameInfo,movInfo] = Load.Movie.(extName).getInfo(fullPath);
                                   
             end
-            movInfo.ext = ext;
-            movInfo.indivFrame = movInfo.maxFrame;
+            try
+                movInfo.ext = ext;
+                movInfo.indivFrame = movInfo.maxFrame;
+            catch
+                movInfo{1,1}.ext = ext;
+                movInfo{1,1}.indivFrame = movInfo{1,1}.maxFrame;
+                movInfo{1,2}.ext = ext;
+                movInfo{1,2}.indivFrame = movInfo{1,2}.maxFrame;
+            end
             
         end
         

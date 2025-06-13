@@ -433,6 +433,20 @@ classdef MPMovie < Core.Movie
                         %saving data per plane and info to cal
                         [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP, Bg);
                         
+                    case '.his'
+                        % assert(~isempty(obj.cal2D.file),'no calibration file provided, cannot calibrate');
+                        MP = false;%not a multiplane data
+                        
+                       
+                        [movC1] = Load.Movie.his.getFrame(obj.raw.fullPath1, cFrame);
+                        [movC2] = Load.Movie.his.getFrame(obj.raw.fullPath2, cFrame);
+
+                        [data] = obj.Calibrate2D(movC1, movC2);
+
+                        isTransmission = false;
+
+                        [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP);
+
                     otherwise
                         extName = strrep(obj.raw.movInfo.ext,'.','');
                         
@@ -451,6 +465,14 @@ classdef MPMovie < Core.Movie
                 end
             end
             
+        end
+
+        function [data] = Calibrate2D(obj, Cam1, Cam2)
+            Path2Cal = obj.Cal2D;
+            
+
+            for i = 1:size(Cam1, 3)
+            end
         end
         
         function [calib] = saveCalibrated(obj,data,maxFrame,isTransmission,MP, Bg)
@@ -545,7 +567,7 @@ classdef MPMovie < Core.Movie
             end
             calib1.Width  = size(data{1,1},2);
             calib1.Height = size(data{1,1},1);
-            calib1.Backgrounds = Bg.Ch1;
+            % calib1.Backgrounds = Bg.Ch1;
             calib = calib1;
             fclose(fid);
             fName = [calDir1 filesep 'calibrated1.mat'];

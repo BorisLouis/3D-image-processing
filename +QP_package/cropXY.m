@@ -34,7 +34,7 @@
 % 	You should have received a copy of the GNU General Public License
 %  	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-function out = cropXY(input,N)
+function [out, ox, oy] = cropXY(input,N)
 [Nx,Ny,~] = size(input);
 if nargin < 2; N = max(Nx,Ny)+1;end
 

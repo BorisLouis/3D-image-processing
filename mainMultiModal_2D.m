@@ -6,9 +6,11 @@ path2ZCal = [];
 path2SRCal = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
 
 %file info
-file.path  = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol\glycerol 80\sample2';
+file.path  = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol\glycerol 80\sample1';
+file.ext   = '.ome.tif';
 path2Cal = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
-file.ext = '.ome.tif';
+dimension = '3D';
+
 [info, info1, info2] = UserInput.infoGUI();
 
 %% create experiments
