@@ -25,10 +25,10 @@ classdef MultiModalExperiment < handle
         function obj = MultiModalExperiment(folder2Data,cal2D,info, info1, info2,SRCalPath,zCalPath, varargin)
             obj.path = folder2Data.path;
             obj.ext  = folder2Data.ext;
-            obj.cal2D = cal2D;
             obj.info = info;
             obj.info1 = info1;
             obj.info2 = info2;
+            obj.cal2D = cal2D;
             obj.ZCal = zCalPath;
             obj.SRCal = SRCalPath; 
 
@@ -70,6 +70,7 @@ classdef MultiModalExperiment < handle
         end
 
         function set.cal2D(obj,cal2D)
+            
             if isempty(cal2D)
                 obj.cal2D = [];
             else
@@ -78,16 +79,30 @@ classdef MultiModalExperiment < handle
 
                 [file2Analyze] = Core.Movie.getFileInPath(cal2D,'2DCal.mat');
 
+                if strcmp(obj.info.Dimension, '2D')
+                    obj.info.runCal = false;
+                end
+
                 if isempty(file2Analyze)
-                    error('No 2D calibration file found in the given folder');
+                    if strcmp(obj.info.Dimension, '2D')
+                        obj.info.runCal = true;
+                        obj.cal2D = cal2D;
+                    else
+                        error('No 2D calibration file found in the given folder');
+                    end
                 else
-                    fileName = [file2Analyze.folder filesep file2Analyze.name];
-                    cal = load(fileName);
-                    field = fieldnames(cal);
-                    cal = cal.(field{1});
-                    assert(and(isstruct(cal), and(isfield(cal,'camConfig'),isfield(cal,'file'))),...
-                        '2D calibration is supposed to be a struct with 4 fields');
-                    obj.cal2D = cal;
+
+                    if strcmp(obj.info.Dimension, '2D')
+                        obj.cal2D = cal2D;
+                    else
+                        fileName = [file2Analyze.folder filesep file2Analyze.name];
+                        cal = load(fileName);
+                        field = fieldnames(cal);
+                        cal = cal.(field{1});
+                        assert(and(isstruct(cal), and(isfield(cal,'camConfig'),isfield(cal,'file'))),...
+                            '2D calibration is supposed to be a struct with 4 fields');
+                        obj.cal2D = cal;
+                    end
 
                 end
             end
@@ -177,14 +192,17 @@ classdef MultiModalExperiment < handle
                     file.path = file2Analyze.folder;
                     file.ext  = obj.ext;
 
-                    tmp = Core.MPMovie(file , obj.cal2D, obj.info);
-                    
+                    tmp = Core.MPMovie(file , obj.cal2D, obj.info);                  
                     if count == 1
                         tmp.giveInfo;
                     else
                         tmp.info = obj.trackMovies.(['mov' num2str(1)]).getInfo; 
                     end
-                    tmp.calibrate;
+                    if strcmp(obj.info.Dimension, '3D')
+                        tmp.calibrate;
+                    elseif strcmp(obj.info.Dimension, '2D')
+                        tmp.calibrate2DMovie;
+                    end
 
                     if strcmp(obj.info.Channel1, 'Rotational Tracking')
                         Movie1 = Core.MPTrackingMovieRotational(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info, obj.MoviesCh1.SRCal.path, obj.MoviesCh1.ZCal.path, 1);

@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
+path2SRCal = [];
 
 %file info
-file.path  = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\Glycerol\glycerol 80\sample2';
-path2Cal = 'S:\Rotational Tracking\20250407_AuBPs_184s92_glycerol\2DCal';
-file.ext = '.ome.tif';
+file.path  = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\testdata';
+path2Cal = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\20250613_test_camera_cal';
+file.ext = '.his';
 [info, info1, info2] = UserInput.infoGUI();
 
 %% create experiments

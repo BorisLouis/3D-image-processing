@@ -22,12 +22,12 @@ classdef TrackingExperimentRotational < handle
             %   Detailed explanation goes here
             obj.path = folder2Data.path;
             obj.ext  = folder2Data.ext;
-            obj.cal2D = cal2D;
             obj.info = info;
             if ~isempty(infoChannel)
                 obj.info = cell2struct([struct2cell(info); struct2cell(infoChannel)], ...
                          [fieldnames(info); fieldnames(infoChannel)], 1);
             end
+            obj.cal2D = cal2D;
             obj.ZCal = zCalPath;
             SRCalPath = {SRCalPath, q};
             obj.SRCal = SRCalPath; 
@@ -61,16 +61,29 @@ classdef TrackingExperimentRotational < handle
 
                 [file2Analyze] = Core.Movie.getFileInPath(cal2D,'2DCal.mat');
 
+                if strcmp(obj.info.Dimension, '2D')
+                    obj.info.runCal = false;
+                end
+
                 if isempty(file2Analyze)
-                    error('No 2D calibration file found in the given folder');
+                    if strcmp(obj.info.Dimension, '2D')
+                        obj.info.runCal = true;
+                        obj.cal2D = cal2D;
+                    else
+                        error('No 2D calibration file found in the given folder');
+                    end
                 else
-                    fileName = [file2Analyze.folder filesep file2Analyze.name];
-                    cal = load(fileName);
-                    field = fieldnames(cal);
-                    cal = cal.(field{1});
-                    assert(and(isstruct(cal), and(isfield(cal,'camConfig'),isfield(cal,'file'))),...
-                        '2D calibration is supposed to be a struct with 4 fields');
-                    obj.cal2D = cal;
+                    if strcmp(obj.info.Dimension, '2D')
+                        obj.cal2D = cal2D;
+                    else
+                        fileName = [file2Analyze.folder filesep file2Analyze.name];
+                        cal = load(fileName);
+                        field = fieldnames(cal);
+                        cal = cal.(field{1});
+                        assert(and(isstruct(cal), and(isfield(cal,'camConfig'),isfield(cal,'file'))),...
+                            '2D calibration is supposed to be a struct with 4 fields');
+                        obj.cal2D = cal;
+                    end
 
                 end
             end

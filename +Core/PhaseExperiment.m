@@ -14,7 +14,6 @@ classdef PhaseExperiment < handle
         function obj = PhaseExperiment(folder2Data,cal2D,info,infoChannel)
             
             obj.path = folder2Data.path;
-            obj.cal2D = cal2D;
             obj.ext  = folder2Data.ext;
             obj.info = info;
             if ~isempty(infoChannel)
@@ -22,6 +21,7 @@ classdef PhaseExperiment < handle
                          [fieldnames(info); fieldnames(infoChannel)], 1);
             end
             obj.info.optics.dx = obj.info.PxSize*10^(-3);
+            obj.cal2D = cal2D;
         end
         
         function set.path(obj, path)
@@ -50,8 +50,17 @@ classdef PhaseExperiment < handle
 
                 [file2Analyze] = Core.Movie.getFileInPath(cal2D,'2DCal.mat');
 
+                if strcmp(obj.info.Dimension, '2D')
+                    obj.info.runCal = false;
+                end
+
                 if isempty(file2Analyze)
-                    error('No 2D calibration file found in the given folder');
+                    if strcmp(obj.info.Dimension, '2D')
+                        obj.info.runCal = true;
+                        obj.cal2D = cal2D;
+                    else
+                        error('No 2D calibration file found in the given folder');
+                    end
                 else
                     fileName = [file2Analyze.folder filesep file2Analyze.name];
                     cal = load(fileName);

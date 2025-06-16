@@ -249,28 +249,45 @@ classdef MPMovie < Core.Movie
                 fName = sprintf('calibratedPlane%d.tif',1);
                         
                 fPathTiff = [calDir1 filesep fName];
-                calib1.filePath.(fieldN) = fPathTiff;   
+                calib1.filePath.(fieldN) = fPathTiff;
+                        
                 calib1.nFrames = maxFrame;
-                
                 t1 = Tiff(fPathTiff, 'a');
+                        
                 if isa(data2Store1,'uint32')
                     t1 = dataStorage.writeTiff(t1,data2Store1,32);
                 else
                     t1 = dataStorage.writeTiff(t1,data2Store1,16);
-                end   
+                end
+                        
                 t1.close;
+                        
+                        %We also write a few info about the calibrated data in a
+                        %text file
                       
-                fprintf(fid,...
-                    'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
-                calib1.camConfig{1,1} = 'None';
-                calib1.oRelZPos(idx2Plane) = 0;
-                calib1.Width  = size(data{1,1},2);
-                calib1.Height = size(data{1,1},1);
-                % calib1.Backgrounds = Bg.Ch1;
-                calib = calib1;
-                fclose(fid);
-                fName = [calDir1 filesep 'calibrated1.mat'];
-                save(fName,'calib');
+                            fprintf(fid,...
+                                'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
+                            calib1.camConfig{1,1} = 'None';
+                        end
+                        if isTrans1
+                        else
+                            if MP
+                                calib1.oRelZPos(idx2Plane) =  cal.inFocus1(cal.neworder1(i)).relZPos;
+                            else
+                                calib1.oRelZPos(idx2Plane) = 0;
+                            end
+                            idx2Plane = idx2Plane+1;
+                        end
+                        
+                        
+                    end
+                    calib1.Width  = size(data{1,1},2);
+                    calib1.Height = size(data{1,1},1);
+                    % calib1.Backgrounds = Bg.Ch1;
+                    calib = calib1;
+                    fclose(fid);
+                    fName = [calDir1 filesep 'calibrated1.mat'];
+                    save(fName,'calib');
 
             end
             close(f)
@@ -292,7 +309,7 @@ classdef MPMovie < Core.Movie
             [idx] = Core.Movie.checkFrame(idx,obj.raw.maxFrame(1));
             %Get the data of the requested frame
             [frame] = getFrame(obj,idx);
-            pxSize = obj.info.pxSize/1000;%in µm
+            pxSize = obj.info.pxSize/1000;%in Âµm
             scaleBarPx = scaleBar/pxSize;
             planes = size(frame,3);
             
@@ -350,7 +367,7 @@ classdef MPMovie < Core.Movie
                 hold on
                 x = size(currentIM,2)-scaleBarPx-(0.05*size(currentIM,2)):size(currentIM,2)-0.05*size(currentIM,2);
                 y = ones(1,length(x))*size(currentIM,1)-0.05*size(currentIM,2);
-                text(mean(x),mean(y)-0.04*size(currentIM,1),[num2str(scaleBar) ' µm'],'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',8);
+                text(mean(x),mean(y)-0.04*size(currentIM,1),[num2str(scaleBar) ' Âµm'],'HorizontalAlignment','center','Color','white','fontWeight','bold','fontSize',8);
                 plot(x,y,'-w','LineWidth',2.5);
                 axis image;
                 

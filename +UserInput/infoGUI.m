@@ -17,18 +17,18 @@ function [info, info1, info2, file] = infoGUI(file)
     
 
 
-    state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.ome.tif');
+    state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.his');
     state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
     state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
 
-    state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
+    state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '2D');
     state.multiModal = addDropdown(col1, 'multiModal:', {'1', '0'}, '1');
     ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Phase');
+        'Translational Tracking');
     ch2Dropdown = addDropdown(col1, 'Channel 2:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Rotational Tracking');
+        'Segmentation');
 
     state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
     state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
