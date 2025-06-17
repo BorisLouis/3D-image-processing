@@ -238,6 +238,8 @@ function controls = addChannelControls(layout, type)
 
         case 'Segmentation'
             controls.threshold = addLabelField(layout, 'Threshold:', '50');
+            controls.GlobalBgCorr = addLabelField(layout, 'Bg correction: 0 for off, number for on (size of Kernel)', '50');
+            controls.ShowSegment = addDropdown(layout, 'Show segmentation:', {'1', '0'}, '1');
 
         case 'Phase'
             controls.dz = addLabelField(layout, 'PxSize z (µm):', '0.56');

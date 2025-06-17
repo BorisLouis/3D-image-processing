@@ -195,85 +195,136 @@ classdef MPMovie < Core.Movie
         end
 
         function calibrate2DMovie(obj)
-            f = waitbar(0, 'Initializing...')
+            
             Folder2Cal = dir(obj.cal2D);
 
-            frameInfo = obj.raw.frameInfo;
-            movInfo   = obj.raw.movInfo;
-            maxFrame = obj.raw.movInfo.maxFrame(1);
-            step = 100;
-            frame2Load = obj.info.frame2Load;
-            if ischar(frame2Load)
-                frame2Load = 1:maxFrame;
+            if and(exist(append([obj.raw.movInfo.Path filesep append('calibrated1')])),...
+                    exist(append([obj.raw.movInfo.Path filesep append('calibrated2')])))
+                calib1 = load(append([obj.raw.movInfo.Path filesep append('calibrated1\calibrated1.mat')]));
+                calib1 = calib1.calib;
+                obj.calibrated{1,1} = calib1;
+                calib2 = load(append([obj.raw.movInfo.Path filesep append('calibrated2\calibrated2.mat')]));
+                calib2 = calib2.calib;
+                obj.calibrated{1,2} = calib2;
+                disp('Found calibration file - loading this')
             else
-                frame2Load = Core.Movie.checkFrame(frame2Load,maxFrame);
-            end
 
-            idx = find(strcmp({Folder2Cal.name}, '2DCal.mat'));
-            tform = load(append(Folder2Cal(idx).folder, filesep, Folder2Cal(idx).name));
-            tform = tform.tform;
-
-            endFrame = max(frame2Load);
-            startFrame = frame2Load(1);
+                f = waitbar(0, 'Initializing...')
+                frameInfo = obj.raw.frameInfo;
+                movInfo   = obj.raw.movInfo;
+                maxFrame = obj.raw.movInfo.maxFrame(1);
+                step = 100;
+                frame2Load = obj.info.frame2Load;
+                if ischar(frame2Load)
+                    frame2Load = 1:maxFrame;
+                else
+                    frame2Load = Core.Movie.checkFrame(frame2Load,maxFrame);
+                end
+    
+                idx = find(strcmp({Folder2Cal.name}, '2DCal.mat'));
+                tform = load(append(Folder2Cal(idx).folder, filesep, Folder2Cal(idx).name));
+                tform = tform.tform;
+    
+                endFrame = max(frame2Load);
+                startFrame = frame2Load(1);
+                
+                nStep = ceil((endFrame-startFrame)/step);
+                frame = startFrame:step:endFrame;
+    
+                %%% apply transformation
+                for i =  1:nStep
+                    disp(['Calibrating step ' num2str(i)]);
+                    if i < nStep
+                        cFrame = frame(i):frame(i+1)-1;
+                    else
+                        cFrame = frame(i):endFrame;
+                    end
+                    Mov1 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath1, cFrame);
+                    Mov2 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath2, cFrame);
+                    
+                    for j = 1:step
+                        waitbar(j./step, f, append('Applying calibration - step ', num2str(i), ' out of ', num2str(nStep)));
+                        Mov1New(:,:,j) = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
+                    end
+                    
+                    calDir1 = [obj.raw.movInfo.Path filesep append('calibrated1')];
+                    mkdir(calDir1);
+           
+                    fid = fopen([calDir1 filesep 'CalibratedInfo.txt'],'w');
+                    fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
+                    calib1.mainPath = calDir1;
+    
+                    data2Store1 = uint16(Mov1New);
             
-            nStep = ceil((endFrame-startFrame)/step);
-            frame = startFrame:step:endFrame;
+                    fieldN = sprintf('plane%d',1);
+                    fName = sprintf('calibratedPlane%d.tif',1);
+                            
+                    fPathTiff = [calDir1 filesep fName];
+                    calib1.filePath.(fieldN) = fPathTiff;   
+                    calib1.nFrames = maxFrame;
+                    
+                    t1 = Tiff(fPathTiff, 'a');
+                    if isa(data2Store1,'uint32')
+                        t1 = dataStorage.writeTiff(t1,data2Store1,32);
+                    else
+                        t1 = dataStorage.writeTiff(t1,data2Store1,16);
+                    end   
+                    t1.close;
+                          
+                    fprintf(fid,...
+                        'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
+                    calib1.camConfig{1,1} = 'None';
+                    calib1.oRelZPos(1) = 0;
+                    calib1.Width  = size(Mov1New,2);
+                    calib1.Height = size(Mov1New,1);
+                    % calib1.Backgrounds = Bg.Ch1;
+                    calib = calib1;
+                    fclose(fid);
+                    fName = [calDir1 filesep 'calibrated1.mat'];
+                    save(fName,'calib');
+    
+                    calDir2 = [obj.raw.movInfo.Path filesep append('calibrated2')];
+                    mkdir(calDir2);
+           
+                    fid = fopen([calDir2 filesep 'CalibratedInfo.txt'],'w');
+                    fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
+                    calib2.mainPath = calDir2;
+    
+                    data2Store2 = uint16(Mov2);
+            
+                    fieldN = sprintf('plane%d',1);
+                    fName = sprintf('calibratedPlane%d.tif',1);
+                            
+                    fPathTiff = [calDir2 filesep fName];
+                    calib2.filePath.(fieldN) = fPathTiff;   
+                    calib2.nFrames = maxFrame;
+                    
+                    t2 = Tiff(fPathTiff, 'a');
+                    if isa(data2Store2,'uint32')
+                        t2 = dataStorage.writeTiff(t2,data2Store2,32);
+                    else
+                        t2 = dataStorage.writeTiff(t2,data2Store2,16);
+                    end   
+                    t2.close;
+                          
+                    fprintf(fid,...
+                        'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
+                    calib2.camConfig{1,1} = 'None';
+                    calib2.oRelZPos(1) = 0;
+                    calib2.Width  = size(Mov2,2);
+                    calib2.Height = size(Mov2,1);
+                    % calib1.Backgrounds = Bg.Ch1;
+                    calib = calib2;
+                    fclose(fid);
+                    fName = [calDir2 filesep 'calibrated2.mat'];
+                    save(fName,'calib');
 
-            %%% apply transformation
-            for i =  1:nStep
-                disp(['Calibrating step ' num2str(i)]);
-                if i < nStep
-                    cFrame = frame(i):frame(i+1)-1;
-                else
-                    cFrame = frame(i):endFrame;
                 end
-                Mov1 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath1, cFrame);
-                Mov2 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath2, cFrame);
-
-                f = waitbar(0, 'Initializing')
-                for j = 1:step
-                    waitbar(j./step, f, append('Applying calibration - step ', num2str(i), ' out of ', num2str(nStep)));
-                    Mov1New(:,:,j) = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
-                end
+                obj.calibrated{1,1} = calib1;
+                obj.calibrated{1,2} = calib2;
                 
-                calDir1 = [obj.raw.movInfo.Path filesep append('calibrated1')];
-                mkdir(calDir1);
-       
-                fid = fopen([calDir1 filesep 'CalibratedInfo.txt'],'w');
-                fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
-                calib1.mainPath = calDir1;
-
-                data2Store1 = uint16(Mov1);
-        
-                fieldN = sprintf('plane%d',1);
-                fName = sprintf('calibratedPlane%d.tif',1);
-                        
-                fPathTiff = [calDir1 filesep fName];
-                calib1.filePath.(fieldN) = fPathTiff;   
-                calib1.nFrames = maxFrame;
-                
-                t1 = Tiff(fPathTiff, 'a');
-                if isa(data2Store1,'uint32')
-                    t1 = dataStorage.writeTiff(t1,data2Store1,32);
-                else
-                    t1 = dataStorage.writeTiff(t1,data2Store1,16);
-                end   
-                t1.close;
-                      
-                fprintf(fid,...
-                    'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
-                calib1.camConfig{1,1} = 'None';
-                calib1.oRelZPos(idx2Plane) = 0;
-                calib1.Width  = size(data{1,1},2);
-                calib1.Height = size(data{1,1},1);
-                % calib1.Backgrounds = Bg.Ch1;
-                calib = calib1;
-                fclose(fid);
-                fName = [calDir1 filesep 'calibrated1.mat'];
-                save(fName,'calib');
-
+                close(f)
             end
-            close(f)
         end
         
         function h = showFrame(obj,idx,scaleBar,idx2Plane)

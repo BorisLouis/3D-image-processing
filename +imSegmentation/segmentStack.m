@@ -98,7 +98,7 @@ end
 function [BW] = globThresh(imStack,connectivity,diskDim)
         
     BW = imbinarize(imStack,'global');
-    BW = ~BW;
+    % BW = ~BW;
     BW = bwareaopen(BW,connectivity);
     SE = strel('disk',diskDim);
     BW = imopen(BW,SE);
@@ -114,7 +114,7 @@ function [BW] = adaptiveThresh(imStack,connectivity,threshold,diskDim,neigh)
         end
         
         BW = imbinarize(imStack,th);
-        BW = ~BW;
+        % BW = ~BW;
         BW = bwareaopen(BW,connectivity);
         SE = strel('disk',diskDim);
         BW = imopen(BW,SE);

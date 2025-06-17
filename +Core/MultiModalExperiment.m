@@ -301,6 +301,7 @@ classdef MultiModalExperiment < handle
           function RunAnalysis(obj)
               %%% first run channel 1 analysis
               if strcmp(obj.info.Channel1, 'Segmentation')
+                    obj.MoviesCh1.retrieveSegmentMask(1);
               elseif strcmp(obj.info.Channel1, 'Phase')
                     obj.MoviesCh1.retrievePhaseMask(1);
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')

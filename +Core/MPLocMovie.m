@@ -34,7 +34,9 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
         
         function set.SRCal(obj,SRCal)
-            
+            while iscell(SRCal)
+                SRCal = SRCal{1,1};
+            end
             if ~isempty(SRCal)
                 assert(isfolder(SRCal{1}), 'The given path is not a folder');
 

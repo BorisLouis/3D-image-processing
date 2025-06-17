@@ -65,8 +65,15 @@ classdef Movie < handle
             if iscell(movInfo)
                 obj.raw.movInfo   = movInfo{1,1};
                 obj.raw.frameInfo = frameInfo{1,1};
-                obj.raw.fullPath1  = [movInfo{1,1}.Path filesep frameInfo{1,1}(1).File];
-                obj.raw.fullPath2  = [movInfo{1,2}.Path filesep frameInfo{1,2}(1).File];
+                if and(contains(frameInfo{1, 1}.File, 'Cam1'), contains(frameInfo{1, 2}.File, 'Cam2'))
+                    obj.raw.fullPath1  = [movInfo{1,1}.Path filesep frameInfo{1,1}(1).File];
+                    obj.raw.fullPath2  = [movInfo{1,2}.Path filesep frameInfo{1,2}(1).File];
+                elseif and(contains(frameInfo{1, 1}.File, 'Cam2'), contains(frameInfo{1, 2}.File, 'Cam1'))
+                    obj.raw.fullPath2  = [movInfo{1,1}.Path filesep frameInfo{1,1}(1).File];
+                    obj.raw.fullPath1  = [movInfo{1,2}.Path filesep frameInfo{1,2}(1).File];
+                else
+                    error("Check name of video files in folder, should contain 'Cam1' and 'Cam2'")
+                end
                 obj.raw.maxFrame  = movInfo{1,1}.maxFrame;
             else
                 obj.raw.movInfo   = movInfo;
