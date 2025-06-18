@@ -20,9 +20,10 @@ function [info, info1, info2, file] = infoGUI(file)
     state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.his');
     state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
     state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
+    state.calibrate = addDropdown(col1, 'calibrate', {'true', 'false'}, 'false');
 
     state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '2D');
-    state.multiModal = addDropdown(col1, 'multiModal:', {'1', '0'}, '1');
+    state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'on');
     ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
         'Translational Tracking');
@@ -36,9 +37,9 @@ function [info, info1, info2, file] = infoGUI(file)
     state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
     state.TestFrame = addLabelField(col1, 'Test Frame:', '1');
 
-    state.Rotational = addDropdown(col1, 'Rotational:', {'1', '0'}, '1');
+    state.Rotational = addDropdown(col1, 'Rotational:', {'on', 'off'}, 'on');
     state.Bipyramid = addLabelField(col1, 'Bipyramid (nm):', '[184 92]');
-    state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'1', '0'}, '0');
+    state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'on', 'off'}, 'off');
     state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
     
 
@@ -52,6 +53,9 @@ function [info, info1, info2, file] = infoGUI(file)
     channel2Layout = uigridlayout(channel2Panel, [14, 2]);
     channel2Layout.RowHeight = {'fit'};
     state.channel2Controls = [];
+
+    channel1Layout.RowHeight = repmat({30}, 1, 14);
+    channel2Layout.RowHeight = repmat({30}, 1, 14);
 
     %% OK Button
     btn = uibutton(gl, 'Text', 'OK', ...
@@ -99,7 +103,7 @@ function [info, info1, info2, file] = infoGUI(file)
     end
 
     function toggleRadTime()
-        if strcmp(state.RotationalCalib.Value, '1')
+        if strcmp(state.RotationalCalib.Value, 'on')
             state.RadTime.Enable = 'on';
         else
             state.RadTime.Enable = 'off';
@@ -111,18 +115,52 @@ function [info, info1, info2, file] = infoGUI(file)
         ch2 = ch2Dropdown.Value;
     
         if strcmp(ch1, 'Rotational Tracking') && strcmp(ch2, 'Rotational Tracking')
-            state.Rotational.Value = '1';
-            state.Rotational.Enable = 'off';  % Fixed to 1
+            state.Rotational.Value = 'on';
+            state.Rotational.Enable = 'off';  % Fixed to on
             state.RotationalCalib.Enable = 'on';  % Let user change it
         else
-            state.Rotational.Value = '0';
+            state.Rotational.Value = 'off';
             state.Rotational.Enable = 'off';  % Fixed to 0
-            state.RotationalCalib.Value = '0';
+            state.RotationalCalib.Value = 'off';
             state.RotationalCalib.Enable = 'off';
         end
     
         toggleRadTime();  % Always refresh dependent RadTime state
     end
+
+    function toggleSegmentDiameter()
+        ctrlSets = {state.channel1Controls, state.channel2Controls};
+        for i = 1:2
+            ctrlSet = ctrlSets{i};
+            if isfield(ctrlSet, 'CheckSize') && isfield(ctrlSet, 'SegmentDiameter')
+                if strcmp(ctrlSet.CheckSize.Value, 'on')
+                    ctrlSet.SegmentDiameter.Value = '[]';
+                    ctrlSet.SegmentDiameter.Enable = 'off';
+                else
+                    ctrlSet.SegmentDiameter.Enable = 'on';
+                end
+            end
+        end
+    end
+
+    function toggleTestFrame()
+        ctrlSets = {state.channel1Controls, state.channel2Controls};
+        for i = 1:2
+            ctrlSet = ctrlSets{i};
+            if isfield(ctrlSet, 'ShowSegmentation') && isfield(ctrlSet, 'CheckSize') && isfield(ctrlSet, 'TestFrame')
+                checkOn = strcmp(ctrlSet.CheckSize.Value, 'on');
+                showSegOn = strcmp(ctrlSet.ShowSegmentation.Value, 'on');
+    
+                if checkOn || showSegOn
+                    ctrlSet.TestFrame.Enable = 'on';
+                else
+                    ctrlSet.TestFrame.Value = '[]';
+                    ctrlSet.TestFrame.Enable = 'off';
+                end
+            end
+        end
+    end
+
 
     function onOK()
         % Collect info structure
@@ -131,6 +169,11 @@ function [info, info1, info2, file] = infoGUI(file)
         info.type = state.Type.Value;
         info.runMethod = state.RunMethod.Value;
         info.multiModal = str2double(state.multiModal.Value);
+        if strcmp(state.calibrate.Value, 'true')
+            info.calibrate = 1;
+        else
+            info.calibrate = 0;
+        end
         if strcmp(state.Frame2Load.Value, 'all')
             info.frame2Load = state.Frame2Load.Value;
         else
@@ -207,20 +250,6 @@ function [info, info1, info2, file] = infoGUI(file)
         uiresume(fig);
         delete(fig);
     end
-end
-
-%% === UI Helper Functions ===
-
-function field = addLabelField(layout, label, defaultValue)
-    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right');
-    field = uieditfield(layout, 'text', 'Value', defaultValue);
-end
-
-function dd = addDropdown(layout, label, items, defaultValue)
-    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right');
-    dd = uidropdown(layout, 'Items', items, 'Value', defaultValue);
-end
-
 function controls = addChannelControls(layout, type)
     controls = struct();
     switch type
@@ -228,7 +257,6 @@ function controls = addChannelControls(layout, type)
             controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
             controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
             controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
-            controls.calibrate = addDropdown(layout, 'calibrate', {'true', 'false'}, 'false');
             controls.euDist = addLabelField(layout, 'euDist (nm)', '1000');
             controls.delta = addLabelField(layout, 'delta', '6');
             controls.chi2 = addLabelField(layout, 'chi2', '50');
@@ -237,9 +265,19 @@ function controls = addChannelControls(layout, type)
             controls.track_memory = addLabelField(layout, 'track.memory (frames)', '3');
 
         case 'Segmentation'
-            controls.threshold = addLabelField(layout, 'Threshold:', '50');
-            controls.GlobalBgCorr = addLabelField(layout, 'Bg correction: 0 for off, number for on (size of Kernel)', '50');
-            controls.ShowSegment = addDropdown(layout, 'Show segmentation:', {'1', '0'}, '1');
+            controls.GlobalBgCorr = addLabelField(layout, ...
+                'GlobalBgThr', '10');
+            controls.ShowSegmentation = addDropdown(layout, 'ShowSegmentation:', {'on', 'off'}, 'on');
+            % controls.TestFrame = addLabelField(layout, 'TestFrame:', '1');
+        
+            % Add logic linking dropdowns to restrictions
+            % controls.CheckSize.ValueChangedFcn = @(src, event) toggleSegmentDiameter();
+            % controls.ShowSegmentation.ValueChangedFcn = @(src, event) toggleTestFrame();
+        
+            % Initial states
+            % toggleSegmentDiameter();
+            % toggleTestFrame();
+
 
         case 'Phase'
             controls.dz = addLabelField(layout, 'PxSize z (µm):', '0.56');
@@ -255,6 +293,28 @@ function controls = addChannelControls(layout, type)
             controls.mirrorZ = addDropdown(layout, 'Mirror along z', {'true', 'false'}, 'true');             % mirror the input stack along Z
             controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'true'); 
     end
+end
+end
+
+%% === UI Helper Functions ===
+
+function field = addLabelField(layout, label, defaultValue)
+    uilabel(layout, 'Text', label, ...
+        'HorizontalAlignment', 'right', ...
+        'FontSize', 11);
+    field = uieditfield(layout, 'text', ...
+        'Value', defaultValue, ...
+        'FontSize', 11);
+end
+
+function dd = addDropdown(layout, label, items, defaultValue)
+    uilabel(layout, 'Text', label, ...
+        'HorizontalAlignment', 'right', ...
+        'FontSize', 11);
+    dd = uidropdown(layout, ...
+        'Items', items, ...
+        'Value', defaultValue, ...
+        'FontSize', 11);
 end
 
 function s = readControls(controls)

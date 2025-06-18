@@ -200,6 +200,16 @@ classdef MPMovie < Core.Movie
 
             if and(exist(append([obj.raw.movInfo.Path filesep append('calibrated1')])),...
                     exist(append([obj.raw.movInfo.Path filesep append('calibrated2')])))
+                if obj.info.calibrate == 1
+                    run = 1;
+                else 
+                    run = 0;
+                end
+            else
+                run = 1;
+            end
+
+            if run == 0
                 calib1 = load(append([obj.raw.movInfo.Path filesep append('calibrated1\calibrated1.mat')]));
                 calib1 = calib1.calib;
                 obj.calibrated{1,1} = calib1;
@@ -207,9 +217,9 @@ classdef MPMovie < Core.Movie
                 calib2 = calib2.calib;
                 obj.calibrated{1,2} = calib2;
                 disp('Found calibration file - loading this')
-            else
+            else 
 
-                f = waitbar(0, 'Initializing...')
+                f = waitbar(0, 'Initializing...');
                 frameInfo = obj.raw.frameInfo;
                 movInfo   = obj.raw.movInfo;
                 maxFrame = obj.raw.movInfo.maxFrame(1);
@@ -262,6 +272,7 @@ classdef MPMovie < Core.Movie
                     fPathTiff = [calDir1 filesep fName];
                     calib1.filePath.(fieldN) = fPathTiff;   
                     calib1.nFrames = maxFrame;
+                    calib1.nPlanes = 1;
                     
                     t1 = Tiff(fPathTiff, 'a');
                     if isa(data2Store1,'uint32')
@@ -298,6 +309,7 @@ classdef MPMovie < Core.Movie
                     fPathTiff = [calDir2 filesep fName];
                     calib2.filePath.(fieldN) = fPathTiff;   
                     calib2.nFrames = maxFrame;
+                    calib2.nPlanes = 1;
                     
                     t2 = Tiff(fPathTiff, 'a');
                     if isa(data2Store2,'uint32')
@@ -434,9 +446,9 @@ classdef MPMovie < Core.Movie
                 for i = 1:numel(fieldsN)
                     %Load plane
                     [mov] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
-                    bg = double(imgaussfilt(mov, 15));
-                    mov = double(mov) - bg;
-                    data(:,:,i) = mov;
+                    % bg = double(imgaussfilt(mov, 15));
+                    % mov = double(mov) - bg;
+                    data(:,:,i) = double(mov);
                 end
             end
         end

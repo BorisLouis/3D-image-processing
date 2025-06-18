@@ -954,9 +954,8 @@ classdef MultiModalExperiment < handle
                   CurrentTrackMov.traces3D = Traces3D;
                   TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
                     
-                  FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TracesWMask.mat');
-                  save(FileName, 'Traces3D');
-                  disp('== Traces with mask saved - Movie ', num2str(i), ' out of ', num2str(nFields), ' ==');
+                  FileName = append()
+
               end
 
               if strcmp(obj.info.Channel2, 'Translational Tracking')

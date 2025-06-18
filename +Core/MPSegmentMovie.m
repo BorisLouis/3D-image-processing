@@ -17,35 +17,45 @@ classdef MPSegmentMovie < Core.MPMovie
                 nFrames = obj.calibrated{1, 1}.nFrames; 
             elseif isa(obj.info.frame2Load, 'double')
                 nFrames = max(obj.info.frame2Load);
-            end
+            end            
 
             for i = 1:nFrames
-                waitbar(i./nFrames, f, append('Running segmentation: frame ', num2str(i), ' out of ', num2str(nFrames)));
-                CurrFrame = obj.getFrame(i,q);
-                imgaussfilt(CurrFrame, 20);
-                CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, 25);
-                CurrFrameBg(CurrFrameBg < 2000) = 0;
+                waitbar(i./nFrames, f, append('Segmenting frame ', num2str(i), ' out of ', num2str(nFrames), '...'))
+                CurrFrame = obj.getFrame(i, q);
+                CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
+                CurrFrameBg(CurrFrameBg < 0) = 0;
+                CurrFrameBg = mat2gray(CurrFrameBg);
 
-                CurrFrameBg = imbinarize(CurrFrameBg);
-                BurrFrameBg = bwareaopen(CurrFrameBg, 15, 8);
+                CurrFrameEnhanced = imadjust(CurrFrameBg);
+                [~,mask(:,:,i)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive');
 
-                se = strel('disk', 2);
-                Mask(:,:,i) = imopen(CurrFrameBg, se);
-
-                if obj.info.ShowSegment == 1
-                    if i == 10
+                if strcmp(obj.info.ShowSegmentation, 'on')
+                    if i == obj.info.TestFrame
                         figure()
-                        subplot(1,2,1)
+                        subplot(1,3,1)
                         imagesc(CurrFrame)
+                        title('Raw data')
                         axis image
-                        subplot(1,2,2)
-                        imshowpair(CurrFrame, CurrFrameBg)
+                        subplot(1,3,2)
+                        imagesc(mask(:,:,i))
+                        title('Segment mask')
+                        axis image
+                        subplot(1,3,3)
+                        imshowpair(CurrFrame, mask(:,:,i))
+                        title('Overlay')
                         axis image
                     end
-                end
+                end       
             end
             close(f)
-            obj.SegmentMap = Mask;
+            obj.SegmentMap = mask;
+        end
+
+        function SaveMask(obj, q)
+            FileName = append(obj.calibrated{1, 1}.mainPath, filesep, 'SegmentMask');
+            Mask = obj.SegmentMap;
+            save(FileName, "Mask");
+            disp(append("== Segmentmask saved - Channel ", num2str(q), " =="))
         end
     end
 end

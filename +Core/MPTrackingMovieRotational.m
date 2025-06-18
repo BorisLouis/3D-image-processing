@@ -222,6 +222,13 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 filename =[path 'Traces3D.mat'];
                 
                 save(filename,'TrackedData');
+
+                path = append(obj.raw.movInfo.Path, filesep);
+                filename =[path 'Traces3D.mat'];
+                
+                save(filename,'TrackedData');
+
+                disp(append('== Tracked traces saved - channel ', num2str(q), ' == '))
         end
         
         function showTraces(obj)

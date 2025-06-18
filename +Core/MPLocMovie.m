@@ -254,83 +254,27 @@ classdef MPLocMovie < Core.MPParticleMovie
         end
         
         function applyZCal(obj)
-            for q = 1:obj.info.multiModal+1
-                disp('Applying Z Calibration... ');
-                assert(~isempty(obj.unCorrLocPos{q,1}),'Need to fit before applying the calibration');
-                if isempty(obj.ZCal)
-                    
-                    warning('Z Calibration needed to correct the data, using Intensity instead');
-                    if strcmp(obj.info.zMethod,'PSFE')
-                        error('zMethod is selected is PSFE while no z calibration was provided')
-                    end
-                 
-                    obj.corrected.Z = false;
-                    disp('========> DONE ! <=========');
-                end
+            disp('Applying Z Calibration... ');
+            assert(~isempty(obj.unCorrLocPos),'Need to fit before applying the calibration');
+            if isempty(obj.ZCal)
                 
-                if isempty(obj.corrLocPos{q,1})
-                    obj.corrLocPos{q,1} = obj.unCorrLocPos{q,1};
-                    warning('Z calibration is currently being applied on non-SRCorrected (X-Y) data');
+                warning('Z Calibration needed to correct the data, using Intensity instead');
+                if strcmp(obj.info.zMethod,'PSFE')
+                    error('zMethod is selected is PSFE while no z calibration was provided')
                 end
-                
-                if size(obj.corrLocPos{q,1}, 2) == 1
-                    for z = 1:size(obj.corrLocPos{q,1}, 1)
-                        data = obj.corrLocPos{q,1}{z,1}; 
-                        zCal = obj.ZCal;
-                        zMethod = obj.info.zMethod;
-                        
-                        if or(strcmp(zMethod,'Intensity'),strcmp(zMethod,'3DFit'))
-                            obj.corrected.Z = false;
-                           
-                        elseif strcmp(zMethod,'PSFE')
-                        
-                            %we check which method is best:
-                            [method] = obj.pickZFitMethod;
-                            
-                            %Here we translate ellipticity into z position based on
-                            %calibration
-                            nPlanesCal = size(zCal.calib,1);
-                            nPlanesFile = obj.calibrated{1,q}.nPlanes;
-                            assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in Z calibration and file');
+             
+                obj.corrected.Z = false;
+                disp('========> DONE ! <=========');
+            end
             
-                            disp('Applying Z Calibration using PSFE and ZCal');
-                            for i = 1 : length(data)
-                                currData = data{i};
-                                nPos = size(currData,1);
+            if isempty(obj.corrLocPos)
+                obj.corrLocPos{q,1} = obj.unCorrLocPos;
+                warning('Z calibration is currently being applied on non-SRCorrected (X-Y) data');
+            end
             
-                                for j = 1 : nPos
-            
-                                    currentEllip = currData.ellip(j);
-                                    currentPlane = currData.plane(j);
-                                    [zPos] = obj.getZPosition(currentEllip,zCal,currentPlane,method);
-            
-                                    obj.corrLocPos{q,1}{z,1}{i}.z(j) = zPos;
-                                end
-                                
-                            end
-                                     %Here we translate the ellipticity range into zRange for each
-                            %plane
-            
-                            ellipRange = zCal.fitZParam.ellipRange;
-                            nPlanes = obj.calibrated{1,q}.nPlanes;
-                            zRange = cell(nPlanes,1);
-                            
-                            for i = 1 : nPlanes
-                                zRange{i} = obj.getZRange(ellipRange,zCal,i,method);
-                            end
-                            
-                            obj.corrected.Z = true;
-                            obj.calibrated{1,q}.zRange{z} = zRange;
-                            
-                        else
-                            error('Unknown Z method');
-                        end
-                        
-                        disp('=======> DONE ! <========');
-
-                    end
-                else
-                    data = obj.corrLocPos{q,1}; 
+            if size(obj.corrLocPos, 2) == 1
+                for z = 1:size(obj.corrLocPos, 1)
+                    data = obj.corrLocPos{z,1}; 
                     zCal = obj.ZCal;
                     zMethod = obj.info.zMethod;
                     
@@ -345,7 +289,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                         %Here we translate ellipticity into z position based on
                         %calibration
                         nPlanesCal = size(zCal.calib,1);
-                        nPlanesFile = obj.calibrated{1,q}.nPlanes;
+                        nPlanesFile = obj.calibrated.nPlanes;
                         assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in Z calibration and file');
         
                         disp('Applying Z Calibration using PSFE and ZCal');
@@ -359,7 +303,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                                 currentPlane = currData.plane(j);
                                 [zPos] = obj.getZPosition(currentEllip,zCal,currentPlane,method);
         
-                                obj.corrLocPos{q,1}{i}.z(j) = zPos;
+                                obj.corrLocPos{z,1}{i}.z(j) = zPos;
                             end
                             
                         end
@@ -367,7 +311,7 @@ classdef MPLocMovie < Core.MPParticleMovie
                         %plane
         
                         ellipRange = zCal.fitZParam.ellipRange;
-                        nPlanes = obj.calibrated{1,q}.nPlanes;
+                        nPlanes = obj.calibrated.nPlanes;
                         zRange = cell(nPlanes,1);
                         
                         for i = 1 : nPlanes
@@ -375,14 +319,68 @@ classdef MPLocMovie < Core.MPParticleMovie
                         end
                         
                         obj.corrected.Z = true;
-                        obj.calibrated{1,q}.zRange = zRange;
+                        obj.calibrated.zRange{z} = zRange;
                         
                     else
                         error('Unknown Z method');
                     end
                     
                     disp('=======> DONE ! <========');
+
                 end
+            else
+                data = obj.corrLocPos; 
+                zCal = obj.ZCal;
+                zMethod = obj.info.zMethod;
+                
+                if or(strcmp(zMethod,'Intensity'),strcmp(zMethod,'3DFit'))
+                    obj.corrected.Z = false;
+                   
+                elseif strcmp(zMethod,'PSFE')
+                
+                    %we check which method is best:
+                    [method] = obj.pickZFitMethod;
+                    
+                    %Here we translate ellipticity into z position based on
+                    %calibration
+                    nPlanesCal = size(zCal.calib,1);
+                    nPlanesFile = obj.calibrated.nPlanes;
+                    assert(nPlanesCal == nPlanesFile,'Mismatch between number of planes in Z calibration and file');
+    
+                    disp('Applying Z Calibration using PSFE and ZCal');
+                    for i = 1 : length(data)
+                        currData = data{i};
+                        nPos = size(currData,1);
+    
+                        for j = 1 : nPos
+    
+                            currentEllip = currData.ellip(j);
+                            currentPlane = currData.plane(j);
+                            [zPos] = obj.getZPosition(currentEllip,zCal,currentPlane,method);
+    
+                            obj.corrLocPos{i}.z(j) = zPos;
+                        end
+                        
+                    end
+                             %Here we translate the ellipticity range into zRange for each
+                    %plane
+    
+                    ellipRange = zCal.fitZParam.ellipRange;
+                    nPlanes = obj.calibrated.nPlanes;
+                    zRange = cell(nPlanes,1);
+                    
+                    for i = 1 : nPlanes
+                        zRange{i} = obj.getZRange(ellipRange,zCal,i,method);
+                    end
+                    
+                    obj.corrected.Z = true;
+                    obj.calibrated.zRange = zRange;
+                    
+                else
+                    error('Unknown Z method');
+                end
+                
+                disp('=======> DONE ! <========');
             end
         end
         
@@ -495,8 +493,10 @@ classdef MPLocMovie < Core.MPParticleMovie
                                             colM = partData.col(3)*pxSize;
                                             zM   = partData.z(3);
                                             adjR = 0; 
-                                            data = table(row,col,z,rowM,colM,zM,adjR,...
-                               'VariableNames',{'row','col','z','rowM','colM','zM','adjR'});
+                                            Int = partData.intensity(3);
+                                            SNR = partData.SNR(3);
+                                            data = table(row,col,z,rowM,colM,zM,adjR,Int,SNR,...
+                                                 'VariableNames',{'row','col','z','rowM','colM','zM','adjR', 'int', 'SNR'});
     
                                         else
                                             PartVolIm = obj.getPartVolIm(partData,ROIRad,fData);

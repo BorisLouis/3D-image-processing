@@ -87,6 +87,7 @@ classdef SegmentExperiment < handle
                 currentTrackMov = obj.SegmentMovies.(fieldsN{i});
 
                 currentTrackMov.getSegmentMovie(q);
+                currentTrackMov.SaveMask(q);
             end
         end
 

@@ -74,7 +74,7 @@ switch method
         [BWglobal] = globThresh(imStack,connectivity,diskDim);
         gSegStack = BWglobal;
         aSegStack = [];
-    case 'adapt'
+    case 'adaptive'
         
         [BWadapt] = adaptiveThresh(imStack,connectivity,threshold,diskDim,neigh);
         gSegStack = [];

@@ -433,8 +433,10 @@ classdef MPParticleMovie < Core.MPMovie
                         colcoord = colPos(planeIdx==i);
                         rowcoord = rowPos(planeIdx==i);
                         
-                        subplot(2,nImages/nsFig,i)
-                        hold on
+                        if nImages ~= 1
+                            subplot(2,nImages/nsFig,i)
+                            hold on
+                        end
                         imagesc(frame(:,:,i))
                         colormap('hot')
                         hold on
@@ -443,7 +445,9 @@ classdef MPParticleMovie < Core.MPMovie
                             plot(colcoord(j),rowcoord(j),color,'MarkerSize',10)
                         end
                         axis image;
-                        title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,1}.oRelZPos(i))});
+                        if nImages ~= 1
+                            title({['Plane ' num2str(i)],sprintf(' Zpos = %0.3f',obj.calibrated{1,1}.oRelZPos(i))});
+                        end
                         hold on
                     end
                     sgtitle(append('Channel ', num2str(q), ' - SR cal applied'))
@@ -711,10 +715,15 @@ classdef MPParticleMovie < Core.MPMovie
                     cellBlock = cell2table(cell(nPlanes, 2), 'VariableNames', strcat("C_", string(1:2)));
                     numericBlock2 = array2table(nan(nPlanes, 2), 'VariableNames', strcat("N2_", string(1:2)));
 
-                    particle = [numericBlock1, cellBlock, numericBlock2];
+                    if strcmp(obj.info.Dimension, '2D')
+                        particle = [numericBlock1, numericBlock2, cellBlock];
+                    else
+                        particle = [numericBlock1, cellBlock, numericBlock2];
+                    end
                     particle.Properties.VariableNames = currentCand.Properties.VariableNames;
        
                     particle(currentCand.plane,:) = currentCand;
+
                     nCheck = length(planes2Check);
                     camConfig = obj.calibrated{1,1}.camConfig;
                     for i = 1:nCheck
@@ -1517,7 +1526,13 @@ classdef MPParticleMovie < Core.MPMovie
                 newPart(2,:) = particleData(idx-1,:);
             end
             
-            newPart(3,:) = particleData(idx,:);
+            try
+                newPart(3,:) = particleData(idx,:);
+            catch
+                newPart = [numericBlock1, numericBlock2, cellBlock];
+                newPart.Properties.VariableNames = particleData.Properties.VariableNames;
+                newPart(3,:) = particleData(idx,:);
+            end
             
             if idx+1 <= 8 && idx+1<= height(particleData)
                 newPart(4,:) = particleData(idx+1,:);
