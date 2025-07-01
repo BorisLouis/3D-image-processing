@@ -55,30 +55,36 @@ for j = 3 : size(MainFolder,1)
         coord = coord-CM;
     
         %in X
+        AvStep = MSD.getAvStepSize(coord(:,1)/10^3); 
         msdx = MSD.calc(coord(:,1)/10^3);%convert to um;
         tau = (1:length(msdx))'*expTime;
         allMSDX(i,1:length(msdx)) = msdx;
         DX   = MSD.getDiffCoeff(msdx,tau,DiffFit,'1D');
         nX   = MSD.getViscosity(DX,Radius,Temp);
-        aX   = MSD.getDiffTypeAlpha(msdx,expTime);
-        vX   = coord(1,1) - coord(end,1)/10^3/(length(coord)*expTime); %um/s
+        %aX   = MSD.getDiffTypeAlpha(msdx,expTime);
+        aX   = MSD.getDiffTypeAlpha2(msdx,expTime, AvStep);
+        vX   = abs(coord(1,1) - coord(end,1)/10^3/(length(coord)*expTime)); %um/s
     
         %inY
+        AvStep = MSD.getAvStepSize(coord(:,2)/10^3); 
         msdy = MSD.calc(coord(:,2)/10^3);%convert to um;
         allMSDY(i,1:length(msdy)) = msdy;
         DY   = MSD.getDiffCoeff(msdy,tau,DiffFit,'1D');
         nY   = MSD.getViscosity(DY,Radius,Temp);
-        aY   = MSD.getDiffTypeAlpha(msdy,expTime);
-        vY   = coord(1,2) - coord(end,2)/10^3/(length(coord)*expTime); %um/s
+        %aY   = MSD.getDiffTypeAlpha(msdy,expTime);
+        aY   = MSD.getDiffTypeAlpha2(msdy,expTime, AvStep);
+        vY   = abs(coord(1,2) - coord(end,2)/10^3/(length(coord)*expTime)); %um/s
     
         %inZ
         if strcmp(Dimension, '3D')
+            AvStep = MSD.getAvStepSize(coord(:,3)/10^3); 
             msdz = MSD.calc(coord(:,3)/10^3);%convert to um;
             allMSDZ(i,1:length(msdz)) = msdz;
             DZ   = MSD.getDiffCoeff(msdz,tau,fitRDiff,'1D');
             nZ   = MSD.getViscosity(DZ,R,T);
-            aZ   = MSD.getDiffTypeAlpha(msdz,expTime);
-            vZ   = coord(1,3) - coord(end,3)/10^3/(length(coord)*expTime); %um/s
+            %aZ   = MSD.getDiffTypeAlpha(msdz,expTime);
+            aZ   = MSD.getDiffTypeAlpha2(msdz,expTime, AvStep);
+            vZ   = abs(coord(1,3) - coord(end,3)/10^3/(length(coord)*expTime)); %um/s
         else
             msdz = [];
             allMSDZ(i, 1:1) = NaN;
@@ -92,16 +98,19 @@ for j = 3 : size(MainFolder,1)
     
         %inR
         if strcmp(Dimension, '3D')
+            AvStep = MSD.getAvStepSize(coord(:, 1:3)/10^3); 
             msdr = MSD.calc(coord(:, 1:3)/10^3);%convert to um;
             allMSDR(i,1:length(msdr)) = msdr;
             DR   = MSD.getDiffCoeff(msdr,tau,DiffFit,'3D');
         elseif strcmp(Dimension, '2D')
+            AvStep = MSD.getAvStepSize(coord(:, 1:2)/10^3); 
             msdr = MSD.calc(coord(:, 1:2)/10^3);%convert to um;
             allMSDR(i,1:length(msdr)) = msdr;
             DR   = MSD.getDiffCoeff(msdr,tau,DiffFit,'2D');
         end          
         nR   = MSD.getViscosity(DR,Radius,Temp);
-        aR   = MSD.getDiffTypeAlpha(msdr,expTime);
+        %aR   = MSD.getDiffTypeAlpha(msdr,expTime);
+        aR   = MSD.getDiffTypeAlpha2(msdr,expTime, AvStep);
         dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2 +...
             (coord(1,3)-coord(end,3))^2);
         vR = dR/10^3/(length(coord)*expTime); %um/s
@@ -172,8 +181,19 @@ close(f)
 
 FileName = append(FilePath, filesep, name);
 save(FileName, "AllMovieResults");
+
 if strcmp(Experiment, 'Tracking-Segmentation')
     name = 'msdResSegmentation';
+    AllMovieResultsMask = AllMovieResults([AllMovieResults.Mask] == 1);
+    AllMask = rmfield(AllMovieResultsMask, {'msdX', 'msdY', 'msdZ', 'msdR', 'tau'});
+    AllMask = struct2table(AllMask);
+    writetable(AllMask,append(FilePath, filesep, name, '.xlsx'),'Sheet','data - mask');
+    AllMovieResultsNoMask = AllMovieResults([AllMovieResults.Mask] == 0);
+    AllNoMask = rmfield(AllMovieResultsNoMask, {'msdX', 'msdY', 'msdZ', 'msdR', 'tau'});
+    AllNoMask = struct2table(AllNoMask);
+    writetable(AllNoMask,append(FilePath, filesep, name, '.xlsx'),'Sheet','data - no mask');
+    writecell({AllMovieResultsMask.msdR}',append(FilePath, filesep, name, '.xlsx'),'Sheet','msdR - mask');
+    writecell({AllMovieResultsNoMask.msdR}',append(FilePath, filesep, name, '.xlsx'),'Sheet','msdR - no mask');
 elseif strcmp(Experiment, 'Tracking-Phase')
     name = 'msdResPhase';
 elseif strcmp(Experiment, 'Tracking')

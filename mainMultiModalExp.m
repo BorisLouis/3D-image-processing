@@ -6,8 +6,8 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\testdata';
-path2Cal = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\20250613_test_camera_cal';
+file.path  = 'F:\Indra\20250626\A549_mSi';
+path2Cal = 'F:\Indra\20250626\2DCal';
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
 %% create experiments

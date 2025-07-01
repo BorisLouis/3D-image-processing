@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-file.path  = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\20250613_test_camera_cal';
+file.path  = 'F:\Indra\260625_cam1\merged';
 file.ext   = '.his';
 info.runMethod = 'run';
 info.nChan = 1; %Number of images in 1 channel from 1 camera

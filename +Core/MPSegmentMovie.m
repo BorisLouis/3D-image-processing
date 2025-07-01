@@ -31,7 +31,7 @@ classdef MPSegmentMovie < Core.MPMovie
 
                 if strcmp(obj.info.ShowSegmentation, 'on')
                     if i == obj.info.TestFrame
-                        figure()
+                        Fig = figure();
                         subplot(1,3,1)
                         imagesc(CurrFrame)
                         title('Raw data')
@@ -44,6 +44,10 @@ classdef MPSegmentMovie < Core.MPMovie
                         imshowpair(CurrFrame, mask(:,:,i))
                         title('Overlay')
                         axis image
+                        sgtitle(append('TestFrame ', num2str(i)));
+
+                        Filename = append(obj.raw.movInfo.Path, filesep, 'Segmentation_Testframe_', num2str(i), '.png');
+                        saveas(Fig, Filename);
                     end
                 end       
             end
