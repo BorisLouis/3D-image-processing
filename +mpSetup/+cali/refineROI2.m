@@ -25,4 +25,10 @@ function [ new_ROI ] = refineROI2( ROI, im_shifts, multiModal )
 
         new_ROI(i,:) = [xTransl, yTransl, wScaled, hScaled];
     end
+
+    MinROI = min(new_ROI(:,2));
+    if MinROI < 1
+        new_ROI(:,2) = new_ROI(:,2) + ceil(abs(MinROI)); 
+    end
+
 end

@@ -79,7 +79,7 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
         isTransmission1 = isTransmission1(newor);
         close(h)
     
-        % if info.rotational == true
+        if info.rotational == true
             %background substraction
             se = strel('disk', 12);
             h = waitbar(0,'Rotational tracking: background substraction...');
@@ -91,7 +91,9 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
                 end
             end
             close(h)
-        % end
+        else
+            bg1 = NaN;
+        end
 
         BackgroundCorr.Ch1 = bg1;
     
@@ -131,10 +133,13 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
                 data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*C2(i+size(chC3,3));
             end
 
-            [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1);
-            [cal.Icorrf2NoFluo] = mpSetup.cali.findChIntChannels(cal.Icorrf1NoFluo, cal.Icorrf2NoFluo, IntCh1, IntCh2);
-            for i = 1:size(chC1,3)
-                data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*cal.Icorrf1NoFluo(i+size(chC1,3));
+            if info.rotational == 1
+                waitbar(.7,h,'Channel2: Correcting channel intensities rot tracking...')
+                [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1);
+                [cal.Icorrf2NoFluo] = mpSetup.cali.findChIntChannels(cal.Icorrf1NoFluo, cal.Icorrf2NoFluo, IntCh1, IntCh2);
+                for i = 1:size(chC1,3)
+                    data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*cal.Icorrf1NoFluo(i+size(chC1,3));
+                end
             end
             
             waitbar(.9,h,'Channel2: Reordering...')
@@ -143,7 +148,7 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             isTransmission2 = isTransmission2(newor2);
             close(h)
     
-            % if info.rotational == true
+            if info.rotational == true
                 %background substraction
                 h = waitbar(0,'Channel2: Rotational tracking: background substraction...');
                 se = strel('disk', 12);
@@ -156,7 +161,10 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
                     end
                 end
                 close(h)
-            % end
+            else
+                bg2 = NaN;
+                CorrBgFactor = NaN;
+            end
             BackgroundCorr.Ch2 = bg2;
             BackgroundCorr.Ratio = CorrBgFactor;
         else 
