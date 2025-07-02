@@ -482,8 +482,10 @@ classdef Movie < handle
             end
             fullPath = [file2Analyze(1).folder filesep file2Analyze(1).name];
             
-            if and(size(file2Analyze,1) == 2, contains(file2Analyze(2).name, '.HIS'))
-                fullPath2 = [file2Analyze(2).folder filesep file2Analyze(2).name];
+            if size(file2Analyze,1) == 2
+                if contains(file2Analyze(2).name, '.HIS')
+                    fullPath2 = [file2Analyze(2).folder filesep file2Analyze(2).name];
+                end
             end
             
             % if size(file2Analyze,1)>1

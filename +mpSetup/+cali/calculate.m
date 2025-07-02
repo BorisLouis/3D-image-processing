@@ -60,12 +60,12 @@ end
 
 waitbar(.1,h,'Finding channels')
 % find channels
-[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, false, nChan, DarkFieldPhase );
-[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, false, nChan, DarkFieldPhase );
+[ chCentCam1, ~, commonW1 ] = mpSetup.cali.findChannels( chan1, true, nChan, DarkFieldPhase );
+[ chCentCam2, ~, commonW2 ] = mpSetup.cali.findChannels( chan2, true, nChan, DarkFieldPhase );
 commonwin = min([commonW1; commonW2]); 
 if multiModal == true
-    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, false, nChan, DarkFieldPhase );
-    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, false, nChan, DarkFieldPhase );
+    [ chCentCam3, ~, commonW3 ] = mpSetup.cali.findChannels( chan3, true, nChan, DarkFieldPhase );
+    [ chCentCam4, ~, commonW4 ] = mpSetup.cali.findChannels( chan4, true, nChan, DarkFieldPhase );
     commonwin = min([commonW1; commonW2; commonW3; commonW4]); 
 else 
 end
