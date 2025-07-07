@@ -715,11 +715,8 @@ classdef MPParticleMovie < Core.MPMovie
                     cellBlock = cell2table(cell(nPlanes, 2), 'VariableNames', strcat("C_", string(1:2)));
                     numericBlock2 = array2table(nan(nPlanes, 2), 'VariableNames', strcat("N2_", string(1:2)));
 
-                    if strcmp(obj.info.Dimension, '2D')
-                        particle = [numericBlock1, numericBlock2, cellBlock];
-                    else
-                        particle = [numericBlock1, cellBlock, numericBlock2];
-                    end
+                    particle = [numericBlock1, numericBlock2, cellBlock];
+
                     particle.Properties.VariableNames = currentCand.Properties.VariableNames;
        
                     particle(currentCand.plane,:) = currentCand;
@@ -1513,7 +1510,7 @@ classdef MPParticleMovie < Core.MPMovie
             cellBlock = cell2table(cell(nPlanes, 2), 'VariableNames', strcat("C_", string(1:2)));
             numericBlock2 = array2table(nan(nPlanes, 2), 'VariableNames', strcat("N2_", string(1:2)));
 
-            newPart = [numericBlock1, cellBlock, numericBlock2];
+            newPart = [numericBlock1, numericBlock2, cellBlock];
             newPart.Properties.VariableNames = particleData.Properties.VariableNames;
      
             %store best focus in center

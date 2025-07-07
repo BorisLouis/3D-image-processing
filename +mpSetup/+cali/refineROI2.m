@@ -31,4 +31,10 @@ function [ new_ROI ] = refineROI2( ROI, im_shifts, multiModal )
         new_ROI(:,2) = new_ROI(:,2) + ceil(abs(MinROI)); 
     end
 
+    MaxROI = max(new_ROI(:,1) + new_ROI(:,3));
+    if MaxROI > 2048
+        new_ROI(:,1) = new_ROI(:,1) - ceil(MaxROI - 2048); 
+    end
+   
+
 end

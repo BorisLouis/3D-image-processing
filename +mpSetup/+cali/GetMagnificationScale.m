@@ -41,27 +41,8 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         config = "monomodal";
         transf = "similarity"; %similarity
 
-        %% new approach
-        % scaleLimits = [0, 1.5];
-        % rotationLimits = [-1.2, 1.2]; % Rotation in degrees
-        % translationLimits = [-140, 140; 140, 140]; % Translation limits [X; Y]
-        % [optimizer, metric] = imregconfig("multimodal");
-        % optimizer.MaximumIterations  = 1000;
-        % tform_initial = imregtform(Plane9infocus, Plane1infocus, "similarity", optimizer, metric);
-        % T = tform_initial.T;
-        % scale_init = sqrt(T(1,1)^2 + T(2,1)^2); % Scale
-        % rotation_init = atan2d(T(2,1), T(1,1)); % Rotation (degrees)
-        % translation_init = T(3,1:2); % Translation (x, y)
-        % [best_tform, best_similarity] = customOptimizer(Plane9infocus, Plane1infocus, scale_init, rotation_init, translation_init, scaleLimits, rotationLimits, translationLimits, optimizer);
-        % transformations{chIdx, 1} = best_tform;
-        % transformations{chIdx, 2} = best_similarity;
-        % movingRegistered = imwarp(Plane9infocus, best_tform, "OutputView", imref2d(size(Plane1infocus)));
-
-
         %% old approach
         [optimizer,metric] = imregconfig(config);
-        % optimizer.MaximumIterations = 10000;
-        %tform = imregtform(Plane9infocus,Plane1infocus,transf, optimizer, metric);
         tform = imregcorr(Plane9infocus,Plane1infocus,transf);
         transformations{chIdx, 1} = tform;
         movingRegistered = imwarp(Plane9infocus,tform,"OutputView",imref2d(size(Plane1infocus)));

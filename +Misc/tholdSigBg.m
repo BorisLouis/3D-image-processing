@@ -20,19 +20,17 @@ sigVq = interp1(double(sigCDF.x),double(sigCDF.y),globXq);
 bgVq  = interp1(double(bgCCDF.x),double(bgCCDF.y),globXq);
 diffVq = abs(sigVq-bgVq);
 %not sure what was this for:
-% if mean(sigCDF.x(sigCDF.y>0.95))>2*max(bg)
-%     tHold = max(bg);
-% else
-[~,idx] = nanmin(diffVq);
+if mean(sigCDF.x(sigCDF.y>0.95))>2*max(bg)
+    tHold = max(bg);
+else
+    [~,idx] = nanmin(diffVq);
+    val = max(bgV);
+    tHold = val;
+end
 %try to take the threshold that remove 99.9% of background
-val = max(bgV);
-tHold = val;
+
 
 %previous
-%tHold = globXq(idx);
-%tHold= prctile(bg,99);
-%tHold = (tHold + tHold2)/2;
-%end
-
+%tHold = mean(bg)+3*std(bg);
 end
 

@@ -860,16 +860,23 @@ classdef MultiModalExperiment < handle
                   CurrentPhaseMov = PhaseObj.PhaseMovies.(fieldsN{i});
 
                   Traces3D = CurrentTrackMov.traces3D;
-                  QPmap = CurrentPhaseMov.QPmap;
+                  CurrentQPMap = 0;
 
                   for j = 1:size(Traces3D,1)
                       CurrentTrace = Traces3D{j, 1};
 
                       for k = 1:size(CurrentTrace, 1)
-                          Row = CurrentTrace.rowM(k)./obj.info.PxSize;
-                          Col = CurrentTrace.colM(k)./obj.info.PxSize;
+                          Row = CurrentTrace.rowM(k);
+                          Col = CurrentTrace.colM(k);
                           z = CurrentTrace.z(k)./1000;
                           t = CurrentTrace.t(k);
+
+                          if CurrentQPMap ~= ceil(t./100)
+                              QPmap = load(append(CurrentPhaseMov.raw.movInfo.Path, filesep, 'PhaseMovie', filesep,...
+                                  'PhaseMovie', num2str(ceil(t./100)), '.mat'));
+                              QPmap = QPmap.QPmap;
+                              CurrentQPMap = ceil(t./100);
+                          end                         
 
                           QProw = round(Row) - CurrentPhaseMov.Cropped.StartY;
                           QPcol = round(Col) - CurrentPhaseMov.Cropped.StartX;
@@ -881,25 +888,33 @@ classdef MultiModalExperiment < handle
 
                           test = z./(CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx2) - CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx));
 
-                          if or(QPcol < 0, QProw < 0)
-                              Phase(k,1) = NaN;
+                          if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
+                              CurrentTrace = [];
+                              break
                           else
-                              PhasePx1 = QPmap(QProw, QPcol, idx, t);
-                              PhasePx2 = QPmap(QProw, QPcol, idx2, t);
+                              PhasePx1 = QPmap(QProw, QPcol, idx, rem(t, 100));
+                              PhasePx2 = QPmap(QProw, QPcol, idx2, rem(t, 100));
                               if idx2 > idx
-                                  Phase = (PhasePx2 - PhasePx1)*test + PhasePx1;
+                                  Phase(k,1) = (PhasePx2 - PhasePx1)*test + PhasePx1;
                               elseif idx2 < idx
-                                  Phase = (PhasePx1 - PhasePx2)*test + PhasePx2;
+                                  Phase(k,1) = (PhasePx1 - PhasePx2)*test + PhasePx2;
                               end
                           end
                       end
 
-                      CurrentTrace.Phase = Phase;
+                      if ~isempty(CurrentTrace)
+                          CurrentTrace.Phase = Phase;
+                      end
                       Traces3D{j, 1} = CurrentTrace;
                       Phase = [];
                   end
+                  Traces3D = Traces3D(~cellfun(@isempty, Traces3D(:,1)), :);
                   CurrentTrackMov.traces3D = Traces3D;
                   TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
+
+                  FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TraceswPhase.mat');
+                  save(FileName, 'Traces3D');
+                  disp(append('== Traces with phase saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
               end
 
               if strcmp(obj.info.Channel2, 'Translational Tracking')

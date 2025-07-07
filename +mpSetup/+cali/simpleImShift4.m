@@ -40,16 +40,7 @@ function [ imShifts ] = simpleImShift( inFocus, cam1, cam2)
         tformChanged.R = [1, 0; 0, 1];
         tformChanged.A = [tformChanged.Scale, 0, tformChanged.Translation(1); 0, tformChanged.Scale, tformChanged.Translation(2); 0, 0, 1];
         movingRegistered = imwarp(imChi,tformChanged, "OutputView",imref2d(size(imCh1)));
-
-        % subplot(1,2,2)
-        % imshowpair(imCh1,movingRegistered);
-        % title("after correction");
-        % sgtitle(append("Plane ", num2str(chIdx), " x Plane ", num2str(chIdx+8)));
-
-        % storing the shifts
-        % imShifts(chIdx,1:2) = [tform.Translation(1), tform.Translation(2)];
-        % imShifts(chIdx,3) = tform.Scale;
-        % imShifts(chIdx,4) = tform.RotationAngle;   
+  
         imShifts{chIdx,2} = {multissim(imChi, imCh1)};
         imShifts{chIdx,1} = tform;        
     end

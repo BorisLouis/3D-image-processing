@@ -19,40 +19,72 @@ classdef MPSegmentMovie < Core.MPMovie
                 nFrames = max(obj.info.frame2Load);
             end            
 
-            for i = 1:nFrames
-                waitbar(i./nFrames, f, append('Segmenting frame ', num2str(i), ' out of ', num2str(nFrames), '...'))
-                CurrFrame = obj.getFrame(i, q);
-                CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
-                CurrFrameBg(CurrFrameBg < 0) = 0;
-                CurrFrameBg = mat2gray(CurrFrameBg);
+            mkdir(append(obj.raw.movInfo.Path, filesep, 'SegmentMovie'));
 
-                CurrFrameEnhanced = imadjust(CurrFrameBg);
-                [~,mask(:,:,i)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive');
-
-                if strcmp(obj.info.ShowSegmentation, 'on')
-                    if i == obj.info.TestFrame
-                        Fig = figure();
-                        subplot(1,3,1)
-                        imagesc(CurrFrame)
-                        title('Raw data')
-                        axis image
-                        subplot(1,3,2)
-                        imagesc(mask(:,:,i))
-                        title('Segment mask')
-                        axis image
-                        subplot(1,3,3)
-                        imshowpair(CurrFrame, mask(:,:,i))
-                        title('Overlay')
-                        axis image
-                        sgtitle(append('TestFrame ', num2str(i)));
-
-                        Filename = append(obj.raw.movInfo.Path, filesep, 'Segmentation_Testframe_', num2str(i), '.png');
-                        saveas(Fig, Filename);
+            n = 1;
+            Step = 0;
+            ChunkSize = 100;
+            for k = 1:ChunkSize:nFrames
+                Step = Step + 1;
+                idx = k:min(k+ChunkSize-1, nFrames);
+                Startidx = idx(1)-1;
+                for i = idx
+                    waitbar(n./nFrames, f, append('Segmenting frame ', num2str(n), ' out of ', num2str(nFrames), '...'))
+                    CurrFrameAll = obj.getFrame(n, q);
+                    for j = 1:size(CurrFrameAll, 3)
+                        CurrFrame = CurrFrameAll(:,:,j);
+                        CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
+                        CurrFrameBg(CurrFrameBg < 0) = 0;
+                        CurrFrameBg = mat2gray(CurrFrameBg);
+                        CurrFrameEnhanced = imadjust(CurrFrameBg);
+                        [~,mask(:,:,i-Startidx, j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive');
                     end
-                end       
+        
+                    if strcmp(obj.info.ShowSegmentation, 'on')
+                        if i == obj.info.TestFrame
+                            if strcmp(obj.info.Dimension, '3D')
+                                Fig = figure();
+                                subplot(1,3,1)
+                                imagesc(CurrFrame)
+                                title('Raw data')
+                                axis image
+                                subplot(1,3,2)
+                                imagesc(mask(:,:,i))
+                                title('Segment mask')
+                                axis image
+                                subplot(1,3,3)
+                                imshowpair(CurrFrame, mask(:,:,i, 4))
+                                title('Overlay')
+                                axis image
+                                sgtitle(append('TestFrame ', num2str(i), ' - plane 4'));
+                            elseif strcmp(obj.info.Dimension, '2D')
+                                Fig = figure();
+                                subplot(1,3,1)
+                                imagesc(CurrFrame)
+                                title('Raw data')
+                                axis image
+                                subplot(1,3,2)
+                                imagesc(mask(:,:,i))
+                                title('Segment mask')
+                                axis image
+                                subplot(1,3,3)
+                                imshowpair(CurrFrame, mask(:,:,i))
+                                title('Overlay')
+                                axis image
+                                sgtitle(append('TestFrame ', num2str(i)));
+                            end
+    
+                            Filename = append(obj.raw.movInfo.Path, filesep, 'Segmentation_Testframe_', num2str(i), '.png');
+                            saveas(Fig, Filename);
+                        end
+                    end    
+                    n = n+1;
+                end
+                Filename = append(obj.raw.movInfo.Path, filesep, 'SegmentMovie', filesep, 'SegmentMovie', num2str(Step), '.mat');
+                save(Filename, 'mask');
+                QPmap = [];
             end
             close(f)
-            obj.SegmentMap = mask;
         end
 
         function SaveMask(obj, q)

@@ -49,7 +49,6 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         
     else
         tHold = Misc.tholdSigBg(bg,sig);
-        %tHold = 200;
         im = im>tHold;
         %remove small pixel
         im = bwareaopen(im,21);
@@ -69,7 +68,9 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
     
     assert(size(im,2)==2048, 'unexpected movie size, are you working with the sCMOS?')
     % integration over the cols, here we expect to find 4 channels
-    s1 = sum(im,1);
+    se = strel('rectangle',[75 3]);
+    ims1 = imerode(im,se);
+    s1 = median(ims1,1);
     % find change points between fluorescence and bg
     chP = findCp(s1,'bottom',nChan);
     % now we want to find the size of the window and its center, also that
@@ -93,9 +94,12 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
     chYw = zeros(size(chP,1),1);
     for i = 1:size(chP,1)
         chIm = im(:,chLims(i):chLims(i+1));
+        se = strel('rectangle',[3 50]);
+        chIm2= imerode(chIm,se);
         % integration
-        s2 =  sum(chIm,2);
+        s2 =  median(chIm2,2);
         % change points
+        
         chP2 = findCp(s2,'bottom',1);
         % windown size
         chYw(i) =  chP2(2) - chP2(1) + 1;
@@ -122,8 +126,9 @@ end
 function ch_p = findCp(trace_in,sCase,nCP)
     % nCP number of expected change points
     trace_in = trace_in(:);
+    sT = trace_in;
     % smoothing the trace
-    sT = smooth(trace_in,20);
+    % sT = smooth(trace_in,20);
     % normalizing the trace
     sT = sT - min(sT);
     sT = sT ./ max(sT);
