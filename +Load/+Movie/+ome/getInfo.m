@@ -253,7 +253,14 @@ function [checkRes] = checkFrameInfo(frameInfo)
     %if camera sync was properly used.
     test = abs(diff(matC(1:frame2Comp)));
     
-    if all(test)
+    idx1 = find(matC==1,1,'first');
+    idx2 = find(matC==0,1,'first');
+    
+    timing = abs(frameInfo(idx1).time-frameInfo(idx2).time);
+    
+    
+    
+    if and(all(test), timing<2)
         checkRes = 'Yes';
     else
         checkRes = 'Fix';
