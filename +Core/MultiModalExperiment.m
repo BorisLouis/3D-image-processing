@@ -862,8 +862,12 @@ classdef MultiModalExperiment < handle
                   Traces3D = CurrentTrackMov.traces3D;
                   CurrentQPMap = 0;
 
+                  f = waitbar(0, 'initializing...');
+
                   for j = 1:size(Traces3D,1)
                       CurrentTrace = Traces3D{j, 1};
+                      waitbar(j./size(Traces3D, 1), f, append('Combining phase & tracking - Movie ', num2str(i),...
+                          ' out of ', num2str(nfields)));
 
                       for k = 1:size(CurrentTrace, 1)
                           Row = CurrentTrace.rowM(k);
@@ -888,12 +892,17 @@ classdef MultiModalExperiment < handle
 
                           test = z./(CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx2) - CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx));
 
+                          Frame = rem(t, 100);
+                          if Frame == 0
+                              Frame = 100;
+                          end
+
                           if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
                               CurrentTrace = [];
                               break
                           else
-                              PhasePx1 = QPmap(QProw, QPcol, idx, rem(t, 100));
-                              PhasePx2 = QPmap(QProw, QPcol, idx2, rem(t, 100));
+                              PhasePx1 = QPmap(QProw, QPcol, idx, Frame);
+                              PhasePx2 = QPmap(QProw, QPcol, idx2, Frame);
                               if idx2 > idx
                                   Phase(k,1) = (PhasePx2 - PhasePx1)*test + PhasePx1;
                               elseif idx2 < idx
@@ -915,6 +924,7 @@ classdef MultiModalExperiment < handle
                   FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TraceswPhase.mat');
                   save(FileName, 'Traces3D');
                   disp(append('== Traces with phase saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
+                  close(f);
               end
 
               if strcmp(obj.info.Channel2, 'Translational Tracking')
@@ -936,36 +946,54 @@ classdef MultiModalExperiment < handle
               fieldsN = fieldnames(TrackObj.trackMovies);
               nfields = numel(fieldsN);
 
+              
               for i = 1:nfields
+                  
                   CurrentTrackMov = TrackObj.trackMovies.(fieldsN{i}); 
                   CurrentSegmentMov = SegmentObj.SegmentMovies.(fieldsN{i});
 
                   Traces3D = CurrentTrackMov.traces3D;
-                  SegmentMap = CurrentSegmentMov.SegmentMap;
+                  CurrentSegmentMap = 0;
 
+                  f = waitbar(0, 'initializing...');
                   for j = 1:size(Traces3D,1)
+                      waitbar(j./size(Traces3D, 1), f, append('Combining segmentation & tracking - Movie ', num2str(i),...
+                          ' out of ', num2str(nfields)));
                       CurrentTrace = Traces3D{j, 1};
 
                       SegmentPx = [];
                       for k = 1:size(CurrentTrace, 1)
-                          Row = CurrentTrace.rowM(k)./obj.info.PxSize;
-                          Col = CurrentTrace.colM(k)./obj.info.PxSize;
+                          Row = CurrentTrace.rowM(k);
+                          Col = CurrentTrace.colM(k);
                           z = CurrentTrace.z(k)./1000;
                           t = CurrentTrace.t(k);
+
+                          if CurrentSegmentMap ~= ceil(t./100)
+                              mask = load(append(CurrentSegmentMov.raw.movInfo.Path, filesep, 'SegmentMovie', filesep,...
+                                  'SegmentMovie', num2str(ceil(t./100)), '.mat'));
+                              SegmentMap = mask.mask;
+                              CurrentSegmentMap = ceil(t./100);
+                          end   
 
                           PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
                           [~, idx] = min(abs(PlaneCoords - z));
 
+                          Frame = rem(t, 100);
+                          if Frame == 0
+                              Frame = 100;
+                          end
+
                           if strcmp(obj.info.Dimension, '2D')
-                            SegmentPx(k,1) = SegmentMap(round(Row), round(Col), t);  
+                            SegmentPx(k,1) = SegmentMap(round(Row), round(Col), Frame);  
                           else
-                            SegmentPx(k,1) = SegmentMap(round(Row), round(Col), idx, t);
+                            SegmentPx(k,1) = SegmentMap(round(Row), round(Col), Frame, idx);
                           end
                       end
 
                       CurrentTrace.InSegment = SegmentPx;
                       Traces3D{j, 1} = CurrentTrace;
                   end
+                  close(f)
                   CurrentTrackMov.traces3D = Traces3D;
                   TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
                     

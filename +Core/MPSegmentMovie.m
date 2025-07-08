@@ -82,7 +82,7 @@ classdef MPSegmentMovie < Core.MPMovie
                 end
                 Filename = append(obj.raw.movInfo.Path, filesep, 'SegmentMovie', filesep, 'SegmentMovie', num2str(Step), '.mat');
                 save(Filename, 'mask');
-                QPmap = [];
+                mask = [];
             end
             close(f)
         end
