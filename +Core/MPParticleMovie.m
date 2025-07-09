@@ -45,11 +45,7 @@ classdef MPParticleMovie < Core.MPMovie
                             
                         case 4
                             
-                            if strcmp(obj.info.frame2Load, 'all')
-                                [frames] = obj.checkFrame(frames,obj.calibrated{1,1}.nFrames);
-                            elseif isa(obj.info.frame2Load, 'double')
-                                frames = obj.info.frame2Load;
-                            end
+                            disp('Running detection on testframe');
                             
                             
                         otherwise

@@ -110,7 +110,7 @@ function [BW] = adaptiveThresh(imStack,connectivity,threshold,diskDim,neigh)
         if size(imStack,3) ==1
             th = adaptthresh(imStack,threshold,'Fore','bright');
         else
-            th = adaptthresh(imStack,threshold,'neigh',neigh,'Fore','bright');
+            th = adaptthresh(imStack,threshold,'neigh',neigh,'Fore','bright', 'Statistic', 'gaussian');
         end
         
         BW = imbinarize(imStack,th);

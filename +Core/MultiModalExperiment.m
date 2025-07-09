@@ -286,8 +286,93 @@ classdef MultiModalExperiment < handle
                     
                 end
                 
-            end       
-            
+            end   
+
+            if obj.info.drawROI == 1
+                for i = 3:size(folder2Mov,1)
+                    if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
+                        disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
+                    else
+                        if strcmp(obj.info.Channel1, 'Segmentation')
+                            Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
+                            idx1 = find(contains({Folder1.name}, '.tif'));
+                            Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
+                        elseif strcmp(obj.info.Channel2, 'Segmentation')
+                            Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
+                            idx2 = find(contains({Folder2.name}, '.tif'));
+                            Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
+                        else
+                            error('No segmentation channel to draw ROI on');
+                        end 
+    
+                        f = figure;          
+                        imagesc(double(Frame))
+                        colormap("gray");
+                        title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
+    
+                        h = drawfreehand();
+                        mask{i, 1} = createMask(h);
+                        close(f)
+                    end
+                end
+
+                if exist('mask', 'var')
+                    Filename = append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat');
+                    save(Filename, "mask");  
+    
+                    f = waitbar(0, "initializing");
+                    for i = 3:size(folder2Mov,1)
+                        Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
+                        idx1 = find(contains({Folder1.name}, '.tif'));
+                        Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
+                        idx2 = find(contains({Folder1.name}, '.tif'));
+    
+                        t1 = Tiff(append(Folder1(idx1).folder, filesep, Folder1(idx1).name), 'r+');
+                        t2 = Tiff(append(Folder2(idx2).folder, filesep, Folder2(idx2).name), 'r+');
+    
+                        if strcmp(obj.info.Channel1, 'Segmentation')
+                            nFrames1 = obj.MoviesCh1.SegmentMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                        elseif strcmp(obj.info.Channel1, 'Phase')
+                            nFrames1 = obj.MoviesCh1.PhaseMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                        else
+                            nFrames1 = obj.MoviesCh1.trackMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                        end
+    
+                        if strcmp(obj.info.Channel2, 'Segmentation')
+                            nFrames2 = obj.MoviesCh2.SegmentMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                        elseif strcmp(obj.info.Channel1, 'Phase')
+                            nFrames2 = obj.MoviesCh2.PhaseMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                        else
+                            nFrames2 = obj.MoviesCh2.trackMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                        end
+    
+                        if nFrames1 ~= nFrames2
+                            error('Different number of frames for ch1 and ch2')
+                        else
+                            nFrames = nFrames1;
+                        end
+    
+                        for j = 1:nFrames
+                            waitbar(j./nFrames, f, append("Applying ROI - movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
+                            Frame1 = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),j);
+                            Frame2 = Load.Movie.tif.getframes(append(Folder1(idx2).folder, filesep, Folder1(idx2).name),j);
+    
+                            Frame1(mask{i,1} == 0) = NaN;
+                            Frame2(mask{i,1} == 0) = NaN;
+    
+                            t1.setDirectory(j);
+                            t2.setDirectory(j);
+    
+                            t1.write(Frame1);
+                            t2.write(Frame2);   
+                        end
+                        t1.close();
+                        t2.close();
+                    end
+                    close(f);
+                end
+            end
+
             if isempty(obj.MoviesCh1)              
                error(['No %s was found for planes 9-16. Please check:\n',...
                    '1) that you gave the correct file extension.\n',...
@@ -301,6 +386,8 @@ classdef MultiModalExperiment < handle
           function RunAnalysis(obj)
               %%% first run channel 1 analysis
               if strcmp(obj.info.Channel1, 'Segmentation')
+                    testMov = obj.MoviesCh1.SegmentMovies.mov1;
+                    testMov.getSegmentMovie(1, obj.info.TestFrame)
                     obj.MoviesCh1.retrieveSegmentMask(1);
               elseif strcmp(obj.info.Channel1, 'Phase')
                     obj.MoviesCh1.retrievePhaseMask(1);
@@ -984,9 +1071,11 @@ classdef MultiModalExperiment < handle
                           end
 
                           if strcmp(obj.info.Dimension, '2D')
-                            SegmentPx(k,1) = SegmentMap(round(Row), round(Col), Frame);  
+                            Segment = SegmentMap{Frame, 1};
+                            SegmentPx(k,1) = Segment(round(Row), round(Col));  
                           else
-                            SegmentPx(k,1) = SegmentMap(round(Row), round(Col), Frame, idx);
+                            Segment = SegmentMap{Frame, 1};
+                            SegmentPx(k,1) = Segment(round(Row), round(Col), idx);
                           end
                       end
 

@@ -86,7 +86,7 @@ classdef SegmentExperiment < handle
                 disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                 currentTrackMov = obj.SegmentMovies.(fieldsN{i});
 
-                currentTrackMov.getSegmentMovie(q);
+                currentTrackMov.getSegmentMovie(q, []);
                 currentTrackMov.SaveMask(q);
             end
         end

@@ -21,6 +21,7 @@ function [info, info1, info2, file] = infoGUI(file)
     state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
     state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
     state.calibrate = addDropdown(col1, 'calibrate', {'true', 'false'}, 'false');
+    state.drawROI = addDropdown(col1, 'draw ROI', {'on', 'off'}, 'on');
 
     state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '2D');
     state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'on');
@@ -168,7 +169,17 @@ function [info, info1, info2, file] = infoGUI(file)
         info.PxSize = str2double(state.PxSize.Value);
         info.type = state.Type.Value;
         info.runMethod = state.RunMethod.Value;
-        info.multiModal = str2double(state.multiModal.Value);
+        if strcmp(state.multiModal.Value, 'on')
+            info.multiModal = 1;
+        else 
+            info.multiModal = 0;
+        end
+        if strcmp(state.drawROI.Value, 'on')
+            info.drawROI = 1;
+        else 
+            info.drawROI = 0;
+        end
+
         if strcmp(state.calibrate.Value, 'true')
             info.calibrate = 1;
         else
@@ -182,8 +193,16 @@ function [info, info1, info2, file] = infoGUI(file)
         info.Channel1 = ch1Dropdown.Value;
         info.Channel2 = ch2Dropdown.Value;
         info.FWHM = str2double(state.FWHM.Value);
-        info.rotational = str2double(state.Rotational.Value);
-        info.rotationalCalib = str2double(state.RotationalCalib.Value);
+        if strcmp(state.Rotational.Value, 'on')
+            info.rotational = 1;
+        else 
+            info.rotational = 0;
+        end
+        if strcmp(state.Rotational.Value, 'on')
+            info.rotationalCalib = 1;
+        else 
+            info.rotationalCalib = 0;
+        end
         info.TestFrame = str2double(state.TestFrame.Value);
         info.RadTime = str2double(state.RadTime.Value);
         info.Bipyramid = str2num(state.Bipyramid.Value); %#ok<ST2NM>
@@ -268,15 +287,8 @@ function controls = addChannelControls(layout, type)
             controls.GlobalBgCorr = addLabelField(layout, ...
                 'GlobalBgThr', '10');
             controls.ShowSegmentation = addDropdown(layout, 'ShowSegmentation:', {'on', 'off'}, 'on');
-            % controls.TestFrame = addLabelField(layout, 'TestFrame:', '1');
-        
-            % Add logic linking dropdowns to restrictions
-            % controls.CheckSize.ValueChangedFcn = @(src, event) toggleSegmentDiameter();
-            % controls.ShowSegmentation.ValueChangedFcn = @(src, event) toggleTestFrame();
-        
-            % Initial states
-            % toggleSegmentDiameter();
-            % toggleTestFrame();
+            controls.threshold = addLabelField(layout, 'Threshold:', '0.25');
+            controls.diskDim = addLabelField(layout, 'Disk dim:', '2');          
 
 
         case 'Phase'

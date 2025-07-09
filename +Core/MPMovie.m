@@ -230,6 +230,7 @@ classdef MPMovie < Core.Movie
                 else
                     frame2Load = Core.Movie.checkFrame(frame2Load,maxFrame);
                 end
+                frame2Load = 1:maxFrame;
     
                 idx = find(strcmp({Folder2Cal.name}, '2DCal.mat'));
                 tform = load(append(Folder2Cal(idx).folder, filesep, Folder2Cal(idx).name));

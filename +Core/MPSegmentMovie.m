@@ -11,80 +11,137 @@ classdef MPSegmentMovie < Core.MPMovie
             
         end
         
-        function getSegmentMovie(obj, q)
-            f = waitbar(0, 'Initializing segmentation algorithm...');
-            if strcmp(obj.info.frame2Load, 'all')
-                nFrames = obj.calibrated{1, 1}.nFrames; 
-            elseif isa(obj.info.frame2Load, 'double')
-                nFrames = max(obj.info.frame2Load);
-            end            
+        function getSegmentMovie(obj, q, frame)
 
-            mkdir(append(obj.raw.movInfo.Path, filesep, 'SegmentMovie'));
+            if ~isempty(frame)
+                CurrFrameAll = obj.getFrame(frame, q);
+                for j = 1:size(CurrFrameAll, 3) 
+                    CurrFrame = CurrFrameAll(:,:,j);
+                    CellMask = CurrFrame;
+                    CellMask(CellMask ~= 0) = 1;
+                    CellBorder = bwperim(CellMask);
 
-            n = 1;
-            Step = 0;
-            ChunkSize = 100;
-            for k = 1:ChunkSize:nFrames
-                Step = Step + 1;
-                idx = k:min(k+ChunkSize-1, nFrames);
-                Startidx = idx(1)-1;
-                for i = idx
-                    waitbar(n./nFrames, f, append('Segmenting frame ', num2str(n), ' out of ', num2str(nFrames), '...'))
-                    CurrFrameAll = obj.getFrame(n, q);
-                    for j = 1:size(CurrFrameAll, 3)
-                        CurrFrame = CurrFrameAll(:,:,j);
-                        CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
-                        CurrFrameBg(CurrFrameBg < 0) = 0;
-                        CurrFrameBg = mat2gray(CurrFrameBg);
-                        CurrFrameEnhanced = imadjust(CurrFrameBg);
-                        [~,mask(:,:,i-Startidx, j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive');
-                    end
-        
-                    if strcmp(obj.info.ShowSegmentation, 'on')
-                        if i == obj.info.TestFrame
-                            if strcmp(obj.info.Dimension, '3D')
-                                Fig = figure();
-                                subplot(1,3,1)
-                                imagesc(CurrFrame)
-                                title('Raw data')
-                                axis image
-                                subplot(1,3,2)
-                                imagesc(mask(:,:,i))
-                                title('Segment mask')
-                                axis image
-                                subplot(1,3,3)
-                                imshowpair(CurrFrame, mask(:,:,i, 4))
-                                title('Overlay')
-                                axis image
-                                sgtitle(append('TestFrame ', num2str(i), ' - plane 4'));
-                            elseif strcmp(obj.info.Dimension, '2D')
-                                Fig = figure();
-                                subplot(1,3,1)
-                                imagesc(CurrFrame)
-                                title('Raw data')
-                                axis image
-                                subplot(1,3,2)
-                                imagesc(mask(:,:,i))
-                                title('Segment mask')
-                                axis image
-                                subplot(1,3,3)
-                                imshowpair(CurrFrame, mask(:,:,i))
-                                title('Overlay')
-                                axis image
-                                sgtitle(append('TestFrame ', num2str(i)));
-                            end
-    
-                            Filename = append(obj.raw.movInfo.Path, filesep, 'Segmentation_Testframe_', num2str(i), '.png');
-                            saveas(Fig, Filename);
+                    CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
+                    CurrFrameBg(CurrFrameBg < 0) = 0;
+                    CurrFrameBg = mat2gray(CurrFrameBg);
+                    CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
+                    [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
+                        'diskDim', obj.info.diskDim);
+
+                    cc = bwconncomp(mask(:,:,j));
+                    stats = regionprops(cc, 'Area', "PixelIdxList");
+                    keepIdx = true(1, cc.NumObjects);
+                    for i = 1:cc.NumObjects
+                        pix = stats(i).PixelIdxList;
+                        % Check if any pixel overlaps with cell border
+                        if any(CellBorder(pix))
+                            keepIdx(i) = false;  % mark for removal
                         end
-                    end    
-                    n = n+1;
+                    end
+                    
+                    % Create new binary image from kept components
+                    testmask = false(size(mask(:,:,j)));
+                    for i = find(keepIdx)
+                        testmask(stats(i).PixelIdxList) = true;
+                    end
+                    mask(:,:,j) = testmask;
                 end
-                Filename = append(obj.raw.movInfo.Path, filesep, 'SegmentMovie', filesep, 'SegmentMovie', num2str(Step), '.mat');
-                save(Filename, 'mask');
-                mask = [];
+
+                Fig = figure();
+                subplot(1,3,1)
+                if strcmp(obj.info.Dimension, '3D')
+                    CurrFrame = CurrFrame(:,:,4);
+                end
+                imagesc(CurrFrame);
+                colormap("gray")
+                axis image
+                title('Raw data')
+
+                if strcmp(obj.info.Dimension, '3D')
+                    mask = mask(:,:,4);
+                end
+                subplot(1,3,2)
+                imagesc(mask);
+                axis image
+                title('Mask')
+
+                subplot(1,3,3)
+                imshowpair(CurrFrame, mask);
+                axis image
+                title("overlay")
+                if strcmp(obj.info.Dimension, '3D')
+                    sgtitle(append('Frame ', num2str(frame), ' - plane 4'));
+                else
+                    sgtitle(append('Frame ', num2str(frame)));
+                end
+                
+
+                Filename = append(obj.raw.movInfo.Path, filesep, 'Segmentation_TestFrame', num2str(frame), '.png');
+                saveas(Fig, Filename);
+                    
+
+            else
+
+                f = waitbar(0, 'Initializing segmentation algorithm...');
+                if strcmp(obj.info.frame2Load, 'all')
+                    nFrames = obj.calibrated{1, 1}.nFrames; 
+                elseif isa(obj.info.frame2Load, 'double')
+                    nFrames = max(obj.info.frame2Load)-min(obj.info.frame2Load);
+                end            
+    
+                mkdir(append(obj.raw.movInfo.Path, filesep, 'SegmentMovie'));
+    
+                n = obj.info.frame2Load(1);
+                Step = floor(n./100);
+                ChunkSize = 100;
+                for k = 1:ChunkSize:nFrames
+                    Step = Step + 1;
+                    idx = k:min(k+ChunkSize-1, nFrames);
+                    Startidx = idx(1)-1;
+                    for i = idx
+                        waitbar((n-obj.info.frame2Load(1))./nFrames, f, append('Segmenting frame ', num2str(n), ' out of ', num2str(nFrames), '...'))
+                        CurrFrameAll = obj.getFrame(n, q);
+                        for j = 1:size(CurrFrameAll, 3)
+                            CurrFrame = CurrFrameAll(:,:,j);
+                            CellMask = CurrFrame;
+                            CellMask(CellMask ~= 0) = 1;
+                            CellBorder = bwperim(CellMask);
+        
+                            CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
+                            CurrFrameBg(CurrFrameBg < 0) = 0;
+                            CurrFrameBg = mat2gray(CurrFrameBg);
+                            CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
+                            [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
+                                'diskDim', obj.info.diskDim);
+        
+                            cc = bwconncomp(mask(:,:,j));
+                            stats = regionprops(cc, 'Area', "PixelIdxList");
+                            keepIdx = true(1, cc.NumObjects);
+                            for i = 1:cc.NumObjects
+                                pix = stats(i).PixelIdxList;
+                                % Check if any pixel overlaps with cell border
+                                if any(CellBorder(pix))
+                                    keepIdx(i) = false;  % mark for removal
+                                end
+                            end
+                            
+                            % Create new binary image from kept components
+                            testmask = false(size(mask(:,:,j)));
+                            for i = find(keepIdx)
+                                testmask(stats(i).PixelIdxList) = true;
+                            end
+                            mask(:,:,j) = testmask;
+                            Mask{j, 1} = mask;
+                        end
+    
+                        n = n+1;
+                    end
+                    Filename = append(obj.raw.movInfo.Path, filesep, 'SegmentMovie', filesep, 'SegmentMovie', num2str(Step), '.mat');
+                    save(Filename, 'Mask');
+                    mask = [];
+                end
+                close(f)
             end
-            close(f)
         end
 
         function SaveMask(obj, q)
