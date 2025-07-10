@@ -447,6 +447,9 @@ classdef MPParticleMovie < Core.MPMovie
                         hold on
                     end
                     sgtitle(append('Channel ', num2str(q), ' - SR cal applied'))
+
+                    Filename = append(obj.raw.movInfo.Path, filesep, 'TrackingCandidates_TestFrame', num2str(idx), '.png');
+                    saveas(h, Filename);
             end
 
             

@@ -255,7 +255,29 @@ classdef MPMovie < Core.Movie
                     
                     for j = 1:step
                         waitbar(j./step, f, append('Applying calibration - step ', num2str(i), ' out of ', num2str(nStep)));
-                        Mov1New(:,:,j) = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
+                        %Mov1New(:,:,j) = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
+                        paddedImg = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
+
+                        zeroRows = all(paddedImg == 0, 2);
+                        rowIdx = find(~zeroRows);
+                        for k = 1:min(rowIdx)-1
+                            paddedImg(k, :) = paddedImg(min(rowIdx), :);
+                        end
+                    
+                        for k = max(rowIdx)+1:size(paddedImg, 1)
+                            paddedImg(k, :) = paddedImg(max(rowIdx), :);
+                        end
+                    
+                        zeroCols = all(paddedImg == 0, 1);
+                        colIdx = find(~zeroCols);
+                        for l = 1:min(colIdx)-1
+                            paddedImg(:, l) = paddedImg(:, min(colIdx));
+                        end
+                        for l = max(colIdx)+1:size(paddedImg, 2)
+                            paddedImg(:, l) = paddedImg(:, max(colIdx));
+                        end
+
+                        Mov1New(:,:,j) = paddedImg;
                     end
                     
                     calDir1 = [obj.raw.movInfo.Path filesep append('calibrated1')];

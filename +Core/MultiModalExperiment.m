@@ -297,10 +297,12 @@ classdef MultiModalExperiment < handle
                             Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
                             idx1 = find(contains({Folder1.name}, '.tif'));
                             Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
+                            Dilation = obj.info1.GlobalBgCorr;
                         elseif strcmp(obj.info.Channel2, 'Segmentation')
                             Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
                             idx2 = find(contains({Folder2.name}, '.tif'));
                             Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
+                            Dilation = obj.info2.GlobalBgCorr;
                         else
                             error('No segmentation channel to draw ROI on');
                         end 
@@ -311,7 +313,9 @@ classdef MultiModalExperiment < handle
                         title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
     
                         h = drawfreehand();
-                        mask{i, 1} = createMask(h);
+                        Mask = createMask(h);
+                        se = strel('disk', 10);
+                        mask{i, 1} = imdilate(Mask, se);
                         close(f)
                     end
                 end
@@ -426,7 +430,7 @@ classdef MultiModalExperiment < handle
                     end
               end
 
-              %%% first run channel 2 analysis
+              %%% then run channel 2 analysis
               if strcmp(obj.info.Channel2, 'Segmentation')
                     obj.MoviesCh2.retrieveSegmentMask(2);
               elseif strcmp(obj.info.Channel2, 'Phase')
@@ -1033,7 +1037,7 @@ classdef MultiModalExperiment < handle
               fieldsN = fieldnames(TrackObj.trackMovies);
               nfields = numel(fieldsN);
 
-              
+              AllTraces = {};
               for i = 1:nfields
                   
                   CurrentTrackMov = TrackObj.trackMovies.(fieldsN{i}); 
@@ -1058,7 +1062,7 @@ classdef MultiModalExperiment < handle
                           if CurrentSegmentMap ~= ceil(t./100)
                               mask = load(append(CurrentSegmentMov.raw.movInfo.Path, filesep, 'SegmentMovie', filesep,...
                                   'SegmentMovie', num2str(ceil(t./100)), '.mat'));
-                              SegmentMap = mask.mask;
+                              SegmentMap = mask.Mask;
                               CurrentSegmentMap = ceil(t./100);
                           end   
 
@@ -1089,13 +1093,20 @@ classdef MultiModalExperiment < handle
                   FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TracesWMask.mat');
                   save(FileName, 'Traces3D');
                   disp(append('== Traces with mask saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
+
+                  AllTraces = [AllTraces; Traces3D];
               end
+
+              Filename = append(obj.path, filesep, 'TracesWMask.mat');
+              save(Filename, 'AllTraces');
 
               if strcmp(obj.info.Channel2, 'Translational Tracking')
                   TrackObj = obj.MoviesCh2;
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
                   TrackObj = obj.MoviesCh1;
               end
+
+              disp('All traces with mask saved')
           end
     end
 end

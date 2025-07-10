@@ -489,8 +489,8 @@ classdef MPLocMovie < Core.MPParticleMovie
                                             row  = partData.row(3)*pxSize;
                                             col  = partData.col(3)*pxSize;
                                             z    = partData.z(3);
-                                            rowM = partData.row(3)*pxSize;
-                                            colM = partData.col(3)*pxSize;
+                                            rowM = partData.row(3);
+                                            colM = partData.col(3);
                                             zM   = partData.z(3);
                                             adjR = 0; 
                                             Int = partData.intensity(3);

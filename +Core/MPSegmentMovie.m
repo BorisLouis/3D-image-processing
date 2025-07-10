@@ -86,7 +86,7 @@ classdef MPSegmentMovie < Core.MPMovie
                 if strcmp(obj.info.frame2Load, 'all')
                     nFrames = obj.calibrated{1, 1}.nFrames; 
                 elseif isa(obj.info.frame2Load, 'double')
-                    nFrames = max(obj.info.frame2Load)-min(obj.info.frame2Load);
+                    nFrames = max(obj.info.frame2Load);
                 end            
     
                 mkdir(append(obj.raw.movInfo.Path, filesep, 'SegmentMovie'));
@@ -99,42 +99,46 @@ classdef MPSegmentMovie < Core.MPMovie
                     idx = k:min(k+ChunkSize-1, nFrames);
                     Startidx = idx(1)-1;
                     for i = idx
-                        waitbar((n-obj.info.frame2Load(1))./nFrames, f, append('Segmenting frame ', num2str(n), ' out of ', num2str(nFrames), '...'))
-                        CurrFrameAll = obj.getFrame(n, q);
-                        for j = 1:size(CurrFrameAll, 3)
-                            CurrFrame = CurrFrameAll(:,:,j);
-                            CellMask = CurrFrame;
-                            CellMask(CellMask ~= 0) = 1;
-                            CellBorder = bwperim(CellMask);
-        
-                            CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
-                            CurrFrameBg(CurrFrameBg < 0) = 0;
-                            CurrFrameBg = mat2gray(CurrFrameBg);
-                            CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
-                            [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
-                                'diskDim', obj.info.diskDim);
-        
-                            cc = bwconncomp(mask(:,:,j));
-                            stats = regionprops(cc, 'Area', "PixelIdxList");
-                            keepIdx = true(1, cc.NumObjects);
-                            for i = 1:cc.NumObjects
-                                pix = stats(i).PixelIdxList;
-                                % Check if any pixel overlaps with cell border
-                                if any(CellBorder(pix))
-                                    keepIdx(i) = false;  % mark for removal
+                        waitbar((n-obj.info.frame2Load(1))./nFrames, f, append('Segmenting frame ', num2str(n), ' out of ', num2str(nFrames), '...'));
+                        if i == n
+                            CurrFrameAll = obj.getFrame(n, q);
+                            for j = 1:size(CurrFrameAll, 3)
+                                CurrFrame = CurrFrameAll(:,:,j);
+                                CellMask = CurrFrame;
+                                CellMask(CellMask ~= 0) = 1;
+                                CellBorder = bwperim(CellMask);
+            
+                                CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
+                                CurrFrameBg(CurrFrameBg < 0) = 0;
+                                CurrFrameBg = mat2gray(CurrFrameBg);
+                                CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
+                                [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
+                                    'diskDim', obj.info.diskDim);
+            
+                                cc = bwconncomp(mask(:,:,j));
+                                stats = regionprops(cc, 'Area', "PixelIdxList");
+                                keepIdx = true(1, cc.NumObjects);
+                                for i = 1:cc.NumObjects
+                                    pix = stats(i).PixelIdxList;
+                                    % Check if any pixel overlaps with cell border
+                                    if any(CellBorder(pix))
+                                        keepIdx(i) = false;  % mark for removal
+                                    end
                                 end
+                                
+                                % Create new binary image from kept components
+                                testmask = false(size(mask(:,:,j)));
+                                for i = find(keepIdx)
+                                    testmask(stats(i).PixelIdxList) = true;
+                                end
+                                mask(:,:,j) = testmask;
+                                Mask{n, 1} = mask;
                             end
-                            
-                            % Create new binary image from kept components
-                            testmask = false(size(mask(:,:,j)));
-                            for i = find(keepIdx)
-                                testmask(stats(i).PixelIdxList) = true;
-                            end
-                            mask(:,:,j) = testmask;
-                            Mask{j, 1} = mask;
+        
+                            n = n+1;
+                        else
+                            Mask{i,1} = [];
                         end
-    
-                        n = n+1;
                     end
                     Filename = append(obj.raw.movInfo.Path, filesep, 'SegmentMovie', filesep, 'SegmentMovie', num2str(Step), '.mat');
                     save(Filename, 'Mask');
