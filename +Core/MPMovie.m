@@ -468,6 +468,9 @@ classdef MPMovie < Core.Movie
                 %data = zeros(obj.calibrated{1,q}.Height,obj.calibrated{1,q}.Width,numel(fieldsN));
                 for i = 1:numel(fieldsN)
                     %Load plane
+                    if ~strcmp(obj.calibrated{1,1}.filePath.(fieldsN{i})(1), obj.cal2D(1))
+                        obj.calibrated{1,1}.filePath.(fieldsN{i})(1) = obj.cal2D(1);
+                    end
                     [mov] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
                     % bg = double(imgaussfilt(mov, 15));
                     % mov = double(mov) - bg;

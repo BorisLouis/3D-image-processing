@@ -329,25 +329,25 @@ classdef MultiModalExperiment < handle
                         Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
                         idx1 = find(contains({Folder1.name}, '.tif'));
                         Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
-                        idx2 = find(contains({Folder1.name}, '.tif'));
+                        idx2 = find(contains({Folder2.name}, '.tif'));
     
                         t1 = Tiff(append(Folder1(idx1).folder, filesep, Folder1(idx1).name), 'r+');
                         t2 = Tiff(append(Folder2(idx2).folder, filesep, Folder2(idx2).name), 'r+');
     
                         if strcmp(obj.info.Channel1, 'Segmentation')
-                            nFrames1 = obj.MoviesCh1.SegmentMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                            nFrames1 = obj.MoviesCh1.SegmentMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         elseif strcmp(obj.info.Channel1, 'Phase')
-                            nFrames1 = obj.MoviesCh1.PhaseMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                            nFrames1 = obj.MoviesCh1.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         else
-                            nFrames1 = obj.MoviesCh1.trackMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                            nFrames1 = obj.MoviesCh1.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         end
     
                         if strcmp(obj.info.Channel2, 'Segmentation')
-                            nFrames2 = obj.MoviesCh2.SegmentMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                            nFrames2 = obj.MoviesCh2.SegmentMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         elseif strcmp(obj.info.Channel1, 'Phase')
-                            nFrames2 = obj.MoviesCh2.PhaseMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                            nFrames2 = obj.MoviesCh2.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         else
-                            nFrames2 = obj.MoviesCh2.trackMovies.(append('mov', num2str(i-2))).raw.maxFrame;
+                            nFrames2 = obj.MoviesCh2.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         end
     
                         if nFrames1 ~= nFrames2

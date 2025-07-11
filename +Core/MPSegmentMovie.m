@@ -24,7 +24,7 @@ classdef MPSegmentMovie < Core.MPMovie
                     CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
                     CurrFrameBg(CurrFrameBg < 0) = 0;
                     CurrFrameBg = mat2gray(CurrFrameBg);
-                    CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
+                    CurrFrameEnhanced = CurrFrameBg;
                     [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
                         'diskDim', obj.info.diskDim);
 
@@ -44,6 +44,7 @@ classdef MPSegmentMovie < Core.MPMovie
                     for i = find(keepIdx)
                         testmask(stats(i).PixelIdxList) = true;
                     end
+                    testmask = imfill(testmask, "holes");
                     mask(:,:,j) = testmask;
                 end
 
@@ -91,7 +92,11 @@ classdef MPSegmentMovie < Core.MPMovie
     
                 mkdir(append(obj.raw.movInfo.Path, filesep, 'SegmentMovie'));
     
-                n = obj.info.frame2Load(1);
+                if strcmp(obj.info.frame2Load, 'all')
+                    n = 1;
+                else
+                    n = obj.info.frame2Load(1);
+                end
                 Step = floor(n./100);
                 ChunkSize = 100;
                 for k = 1:ChunkSize:nFrames
@@ -111,7 +116,7 @@ classdef MPSegmentMovie < Core.MPMovie
                                 CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
                                 CurrFrameBg(CurrFrameBg < 0) = 0;
                                 CurrFrameBg = mat2gray(CurrFrameBg);
-                                CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
+                                CurrFrameEnhanced = CurrFrameBg;
                                 [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
                                     'diskDim', obj.info.diskDim);
             
