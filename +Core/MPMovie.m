@@ -326,8 +326,8 @@ classdef MPMovie < Core.Movie
     
                     data2Store2 = uint16(Mov2);
             
-                    fieldN = sprintf('plane%d',1);
-                    fName = sprintf('calibratedPlane%d.tif',1);
+                    fieldN = sprintf('plane%d',2);
+                    fName = sprintf('calibratedPlane%d.tif',2);
                             
                     fPathTiff = [calDir2 filesep fName];
                     calib2.filePath.(fieldN) = fPathTiff;   

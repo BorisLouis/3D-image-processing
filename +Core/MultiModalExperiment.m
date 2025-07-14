@@ -1053,7 +1053,9 @@ classdef MultiModalExperiment < handle
                           CurrentTrace = Traces3D{j, 1};
     
                           SegmentPx = [];
-                          for k = 1:size(CurrentTrace, 1)
+                          % for k = 1:size(CurrentTrace, 1)
+                          k = 1;
+                          
                               Row = CurrentTrace.rowM(k);
                               Col = CurrentTrace.colM(k);
                               z = CurrentTrace.z(k)./1000;
@@ -1081,7 +1083,9 @@ classdef MultiModalExperiment < handle
                                 Segment = SegmentMap{Frame, 1};
                                 SegmentPx(k,1) = Segment(round(Row), round(Col), idx);
                               end
-                          end
+
+                              SegmentPx = ones(size(CurrentTrace, 1), 1) * SegmentPx(1,1);
+                          % end
     
                           CurrentTrace.InSegment = SegmentPx;
                           Traces3D{j, 1} = CurrentTrace;

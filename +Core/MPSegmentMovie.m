@@ -24,7 +24,7 @@ classdef MPSegmentMovie < Core.MPMovie
                     CurrFrameBg = CurrFrame - imgaussfilt(CurrFrame, obj.info.GlobalBgCorr);
                     CurrFrameBg(CurrFrameBg < 0) = 0;
                     CurrFrameBg = mat2gray(CurrFrameBg);
-                    CurrFrameEnhanced = CurrFrameBg;
+                    CurrFrameEnhanced = imadjust(imadjust(CurrFrameBg));
                     [~, mask(:,:,j)] = imSegmentation.segmentStack(CurrFrameEnhanced, 'method', 'adaptive', 'threshold', 0.999,...
                         'diskDim', obj.info.diskDim);
 

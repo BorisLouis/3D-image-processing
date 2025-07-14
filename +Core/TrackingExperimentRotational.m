@@ -316,43 +316,53 @@ classdef TrackingExperimentRotational < handle
             for i = 1: nfields
                 
                 try
+                    
                     disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.trackMovies.(fieldsN{i});
-                    
-                    %Molecule detection
-                    % if currentTrackMov.info.rotationalCalib == 0
-                        currentTrackMov.findCandidatePos(detectParam, q);
+
+                    filename = append(currentTrackMov.raw.movInfo.Path, filesep, 'Traces3D.mat');
+
+                    % if exist(filename)
+                    % 
+                    %     traces = load(filename);
+                    %     traces = traces.TrackedData';
                     % else
+                    % 
+                        %Molecule detection
+                        % if currentTrackMov.info.rotationalCalib == 0
+                            currentTrackMov.findCandidatePos(detectParam, q);
+                        % else
+                        % end
+                        
+                        currentTrackMov.showCandidateSingleChan(obj.info.TestFrame, q);
+        
+                        %SR fitting
+                        currentTrackMov.SRLocalizeCandidate(detectParam, q);
+                        refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
+                        rot = true;
+                        %apply SRCal
+                        currentTrackMov.applySRCal(rot,refPlane);
+                        
+                        %apply ZCal
+                        currentTrackMov.applyZCal;
+                        
+                        %Plane consolidation
+                        if strcmp(obj.info.frame2Load, 'all')
+                            frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
+                        elseif isa(obj.info.frame2Load, 'double')
+                            frames = obj.info.frame2Load;
+                        end
+                        currentTrackMov.consolidatePlanes(frames,detectParam,q)
+        
+                        %superResolve
+                        currentTrackMov.superResolve(q);
+                        
+                        %tracking occurs here
+                        currentTrackMov.trackParticle(trackParam,q);
+                        
+                        [traces] = currentTrackMov.getTraces;
                     % end
-                    
-                    currentTrackMov.showCandidateSingleChan(obj.info.TestFrame, q);
-    
-                    %SR fitting
-                    currentTrackMov.SRLocalizeCandidate(detectParam, q);
-                    refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
-                    rot = true;
-                    %apply SRCal
-                    currentTrackMov.applySRCal(rot,refPlane);
-                    
-                    %apply ZCal
-                    currentTrackMov.applyZCal;
-                    
-                    %Plane consolidation
-                    if strcmp(obj.info.frame2Load, 'all')
-                        frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
-                    elseif isa(obj.info.frame2Load, 'double')
-                        frames = obj.info.frame2Load;
-                    end
-                    currentTrackMov.consolidatePlanes(frames,detectParam,q)
-    
-                    %superResolve
-                    currentTrackMov.superResolve(q);
-                    
-                    %tracking occurs here
-                    currentTrackMov.trackParticle(trackParam,q);
-                    
-                    [traces] = currentTrackMov.getTraces;
-    
+        
                     allTraces = [];
                     fileN = cell(length(traces),1);
                     fileN(:,1) = {i};
@@ -379,6 +389,8 @@ classdef TrackingExperimentRotational < handle
                     allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
                     currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
                     obj.traces3D = allTraces;
+                    obj.trackMovies.(fieldsN{i}) = currentTrackMov;
+            
                 catch
                     disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);
                 end
