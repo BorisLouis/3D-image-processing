@@ -380,7 +380,7 @@ classdef TrackingExperimentRotational < handle
                     currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
                     obj.traces3D = allTraces;
                 catch
-                    disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);
+                    disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' faile']);
                 end
             end
             

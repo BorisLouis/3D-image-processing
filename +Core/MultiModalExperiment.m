@@ -402,8 +402,7 @@ classdef MultiModalExperiment < handle
                     testMov.getROIs;
                     testMov.showCandidateSingleChan(frame, 1);
                     val2Use = 'bestFocus';
-                    obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-                    obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
                     obj.MoviesCh1.saveData(1);
 
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
@@ -442,8 +441,7 @@ classdef MultiModalExperiment < handle
                     testMov.getROIs;
                     testMov.showCandidateSingleChan(frame, 2);
                     val2Use = 'bestFocus';
-                    obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-                    obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
                     obj.MoviesCh2.saveData(2);
               end
 
@@ -1039,62 +1037,67 @@ classdef MultiModalExperiment < handle
 
               AllTraces = {};
               for i = 1:nfields
+
+                  try
                   
-                  CurrentTrackMov = TrackObj.trackMovies.(fieldsN{i}); 
-                  CurrentSegmentMov = SegmentObj.SegmentMovies.(fieldsN{i});
-
-                  Traces3D = CurrentTrackMov.traces3D;
-                  CurrentSegmentMap = 0;
-
-                  f = waitbar(0, 'initializing...');
-                  for j = 1:size(Traces3D,1)
-                      waitbar(j./size(Traces3D, 1), f, append('Combining segmentation & tracking - Movie ', num2str(i),...
-                          ' out of ', num2str(nfields)));
-                      CurrentTrace = Traces3D{j, 1};
-
-                      SegmentPx = [];
-                      for k = 1:size(CurrentTrace, 1)
-                          Row = CurrentTrace.rowM(k);
-                          Col = CurrentTrace.colM(k);
-                          z = CurrentTrace.z(k)./1000;
-                          t = CurrentTrace.t(k);
-
-                          if CurrentSegmentMap ~= ceil(t./100)
-                              mask = load(append(CurrentSegmentMov.raw.movInfo.Path, filesep, 'SegmentMovie', filesep,...
-                                  'SegmentMovie', num2str(ceil(t./100)), '.mat'));
-                              SegmentMap = mask.Mask;
-                              CurrentSegmentMap = ceil(t./100);
-                          end   
-
-                          PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
-                          [~, idx] = min(abs(PlaneCoords - z));
-
-                          Frame = rem(t, 100);
-                          if Frame == 0
-                              Frame = 100;
+                      CurrentTrackMov = TrackObj.trackMovies.(fieldsN{i}); 
+                      CurrentSegmentMov = SegmentObj.SegmentMovies.(fieldsN{i});
+    
+                      Traces3D = CurrentTrackMov.traces3D;
+                      CurrentSegmentMap = 0;
+    
+                      f = waitbar(0, 'initializing...');
+                      for j = 1:size(Traces3D,1)
+                          waitbar(j./size(Traces3D, 1), f, append('Combining segmentation & tracking - Movie ', num2str(i),...
+                              ' out of ', num2str(nfields)));
+                          CurrentTrace = Traces3D{j, 1};
+    
+                          SegmentPx = [];
+                          for k = 1:size(CurrentTrace, 1)
+                              Row = CurrentTrace.rowM(k);
+                              Col = CurrentTrace.colM(k);
+                              z = CurrentTrace.z(k)./1000;
+                              t = CurrentTrace.t(k);
+    
+                              if CurrentSegmentMap ~= ceil(t./100)
+                                  mask = load(append(CurrentSegmentMov.raw.movInfo.Path, filesep, 'SegmentMovie', filesep,...
+                                      'SegmentMovie', num2str(ceil(t./100)), '.mat'));
+                                  SegmentMap = mask.Mask;
+                                  CurrentSegmentMap = ceil(t./100);
+                              end   
+    
+                              PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
+                              [~, idx] = min(abs(PlaneCoords - z));
+    
+                              Frame = rem(t, 100);
+                              if Frame == 0
+                                  Frame = 100;
+                              end
+    
+                              if strcmp(obj.info.Dimension, '2D')
+                                Segment = SegmentMap{Frame, 1};
+                                SegmentPx(k,1) = Segment(round(Row), round(Col));  
+                              else
+                                Segment = SegmentMap{Frame, 1};
+                                SegmentPx(k,1) = Segment(round(Row), round(Col), idx);
+                              end
                           end
-
-                          if strcmp(obj.info.Dimension, '2D')
-                            Segment = SegmentMap{Frame, 1};
-                            SegmentPx(k,1) = Segment(round(Row), round(Col));  
-                          else
-                            Segment = SegmentMap{Frame, 1};
-                            SegmentPx(k,1) = Segment(round(Row), round(Col), idx);
-                          end
+    
+                          CurrentTrace.InSegment = SegmentPx;
+                          Traces3D{j, 1} = CurrentTrace;
                       end
-
-                      CurrentTrace.InSegment = SegmentPx;
-                      Traces3D{j, 1} = CurrentTrace;
+                      close(f)
+                      CurrentTrackMov.traces3D = Traces3D;
+                      TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
+                        
+                      FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TracesWMask.mat');
+                      save(FileName, 'Traces3D');
+                      disp(append('== Traces with mask saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
+    
+                      AllTraces = [AllTraces; Traces3D];
+                  catch
+                      disp(append('== Failed segmenttracking - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
                   end
-                  close(f)
-                  CurrentTrackMov.traces3D = Traces3D;
-                  TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
-                    
-                  FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TracesWMask.mat');
-                  save(FileName, 'Traces3D');
-                  disp(append('== Traces with mask saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
-
-                  AllTraces = [AllTraces; Traces3D];
               end
 
               Filename = append(obj.path, filesep, 'TracesWMask.mat');

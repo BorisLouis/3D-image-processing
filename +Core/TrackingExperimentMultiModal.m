@@ -283,8 +283,8 @@ classdef TrackingExperimentMultiModal < handle
             end
             
             
-%             filename = [obj.path filesep 'traces3D.mat'];
-%             save(filename,'allTraces');
+            filename = [obj.path filesep 'traces3D.mat'];
+            save(filename,'allTraces');
             
             
             disp('=================> DONE <===================');

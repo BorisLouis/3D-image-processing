@@ -550,7 +550,7 @@ classdef MPLocMovie < Core.MPParticleMovie
 
                 fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
                 profile('off')
-                save(fileName,'particle');
+                % save(fileName,'particle');
                 disp('========> DONE ! <=========');
         end
                    
