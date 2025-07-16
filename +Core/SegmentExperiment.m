@@ -83,11 +83,15 @@ classdef SegmentExperiment < handle
             nfields = numel(fieldsN);
             allTraces = [];
             for i = 1: nfields
-                disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
-                currentTrackMov = obj.SegmentMovies.(fieldsN{i});
-
-                currentTrackMov.getSegmentMovie(q, []);
-                currentTrackMov.SaveMask(q);
+                try
+                    disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
+                    currentTrackMov = obj.SegmentMovies.(fieldsN{i});
+    
+                    currentTrackMov.getSegmentMovie(q, []);
+                    currentTrackMov.SaveMask(q);
+                catch
+                    disp(append('Failed segmenting movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
+                end
             end
         end
 

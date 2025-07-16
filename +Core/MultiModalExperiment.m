@@ -289,34 +289,41 @@ classdef MultiModalExperiment < handle
             end   
 
             if obj.info.drawROI == 1
-                for i = 3:size(folder2Mov,1)
-                    if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
-                        disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
-                    else
-                        if strcmp(obj.info.Channel1, 'Segmentation')
-                            Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
-                            idx1 = find(contains({Folder1.name}, '.tif'));
-                            Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
-                            Dilation = obj.info1.GlobalBgCorr;
-                        elseif strcmp(obj.info.Channel2, 'Segmentation')
-                            Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
-                            idx2 = find(contains({Folder2.name}, '.tif'));
-                            Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
-                            Dilation = obj.info2.GlobalBgCorr;
-                        else
-                            error('No segmentation channel to draw ROI on');
-                        end 
-    
-                        f = figure;          
-                        imagesc(double(Frame))
-                        colormap("gray");
-                        title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
-    
-                        h = drawfreehand();
-                        Mask = createMask(h);
-                        se = strel('disk', 10);
-                        mask{i, 1} = imdilate(Mask, se);
-                        close(f)
+                if exist("S:\Indra\20250710\Cam1\ROIs.mat")
+                    mask = load("S:\Indra\20250710\Cam1\ROIs.mat");
+                    mask = mask.mask;
+                    mask = [zeros([512 512]) ; mask];
+                else
+
+                    for i = 3:size(folder2Mov,1)
+                            if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
+                                disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
+                            else
+                                if strcmp(obj.info.Channel1, 'Segmentation')
+                                    Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
+                                    idx1 = find(contains({Folder1.name}, '.tif'));
+                                    Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
+                                    Dilation = obj.info1.GlobalBgCorr;
+                                elseif strcmp(obj.info.Channel2, 'Segmentation')
+                                    Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
+                                    idx2 = find(contains({Folder2.name}, '.tif'));
+                                    Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
+                                    Dilation = obj.info2.GlobalBgCorr;
+                                else
+                                    error('No segmentation channel to draw ROI on');
+                                end 
+            
+                                f = figure;          
+                                imagesc(double(Frame))
+                                colormap("gray");
+                                title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
+            
+                                h = drawfreehand();
+                                Mask = createMask(h);
+                                se = strel('disk', 10);
+                                mask{i, 1} = imdilate(Mask, se);
+                                close(f)
+                            end
                     end
                 end
 
@@ -359,7 +366,7 @@ classdef MultiModalExperiment < handle
                         for j = 1:nFrames
                             waitbar(j./nFrames, f, append("Applying ROI - movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
                             Frame1 = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),j);
-                            Frame2 = Load.Movie.tif.getframes(append(Folder1(idx2).folder, filesep, Folder1(idx2).name),j);
+                            Frame2 = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),j);
     
                             Frame1(mask{i,1} == 0) = NaN;
                             Frame2(mask{i,1} == 0) = NaN;

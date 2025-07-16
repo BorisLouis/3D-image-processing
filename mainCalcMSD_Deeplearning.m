@@ -185,7 +185,7 @@ features = zscore(features);
 
 %% PCA 
 % [coeff, score, ~, ~, explained] = pca(features);
-tsneScore = tsne(features, 'NumDimensions', 2, 'Perplexity', 30, 'Standardize', false);
+tsneScore = tsne(features, 'NumDimensions', 3, 'Perplexity', 10, 'Standardize', false);
 
 %% evaluate optimal number of clusters
 maxK = 10;
@@ -207,9 +207,11 @@ optimalK = 3;
 [idx, C] = kmeans(tsneScore, optimalK);
 f2 = figure;
 % gscatter(score(:,1), score(:,2), idx);
-gscatter(tsneScore(:,1), tsneScore(:,2), idx);
-xlabel('PC1'); ylabel('PC2');
-title('MSD Clustering using PCA + K-means');
+scatter3(tsneScore(:,1), tsneScore(:,2), tsneScore(:,3), 10, idx, 'filled');
+xlabel('tsne1'); ylabel('tsne2'); zlabel('tsne3');
+% xlabel('PCA1'); ylabel('PCA2');
+title('MSD Clustering using tSNE + K-means');
+% title('MSD Clustering using PCA + K-means');
 FigName = append(FilePath, filesep, 'Clustering.png');
 saveas(f2, FigName)
 
