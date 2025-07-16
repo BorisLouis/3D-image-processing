@@ -80,10 +80,14 @@ classdef PhaseExperiment < handle
             nfields = numel(fieldsN);
             allTraces = [];
             for i = 1: nfields
-                disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
-                currentTrackMov = obj.PhaseMovies.(fieldsN{i});
-
-                currentTrackMov.getPhaseMovie(q);
+                try
+                    disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
+                    currentTrackMov = obj.PhaseMovies.(fieldsN{i});
+    
+                    currentTrackMov.getPhaseMovie(q);
+                catch
+                    disp(append('Failed phase masking - Movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
+                end
             end
         end
     end
