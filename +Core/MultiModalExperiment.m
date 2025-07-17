@@ -397,9 +397,9 @@ classdef MultiModalExperiment < handle
           function RunAnalysis(obj)
               %%% first run channel 1 analysis
               if strcmp(obj.info.Channel1, 'Segmentation')
-                    testMov = obj.MoviesCh1.SegmentMovies.mov1;
-                    testMov.getSegmentMovie(1, obj.info.TestFrame)
-                    obj.MoviesCh1.retrieveSegmentMask(1);
+                    % testMov = obj.MoviesCh1.SegmentMovies.mov1;
+                    % testMov.getSegmentMovie(1, obj.info.TestFrame)
+                    % obj.MoviesCh1.retrieveSegmentMask(1);
               elseif strcmp(obj.info.Channel1, 'Phase')
                     obj.MoviesCh1.retrievePhaseMask(1);
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
@@ -443,13 +443,13 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh2.retrievePhaseMask(2);
               elseif strcmp(obj.info.Channel2, 'Translational Tracking')
                     frame = obj.info.TestFrame;
-                    testMov = obj.MoviesCh2.trackMovies.mov1;
+                    testMov = obj.MoviesCh2.trackMovies.mov5;
                     testMov.findCandidatePos(testMov.info.detectParam,2,frame);
                     testMov.getROIs;
                     testMov.showCandidateSingleChan(frame, 2);
-                    val2Use = 'bestFocus';
-                    obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-                    obj.MoviesCh2.saveData(2);
+                    % val2Use = 'bestFocus';
+                    % obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+                    % obj.MoviesCh2.saveData(2);
               end
 
               if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
