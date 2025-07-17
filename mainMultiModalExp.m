@@ -6,13 +6,9 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-<<<<<<< HEAD
-file.path  = 'D:\Multimodal tracking\20250708\AllSamples';
-path2Cal = 'D:\Multimodal tracking\20250708\2DCal';
-=======
+
 file.path  = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\mSiPEI';
 path2Cal = 'C:\Users\steve\OneDrive\Documenten\TestData Indra\2DCal';
->>>>>>> aa9c70fd3f02db4a0f01db6729409c38137339b1
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
 %% create experiments
