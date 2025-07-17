@@ -952,75 +952,79 @@ classdef MultiModalExperiment < handle
               nfields = numel(fieldsN);
 
               for i = 1:nfields
-                  CurrentTrackMov = TrackObj.trackMovies.(fieldsN{i}); 
-                  CurrentPhaseMov = PhaseObj.PhaseMovies.(fieldsN{i});
-
-                  Traces3D = CurrentTrackMov.traces3D;
-                  CurrentQPMap = 0;
-
-                  f = waitbar(0, 'initializing...');
-
-                  for j = 1:size(Traces3D,1)
-                      CurrentTrace = Traces3D{j, 1};
-                      waitbar(j./size(Traces3D, 1), f, append('Combining phase & tracking - Movie ', num2str(i),...
-                          ' out of ', num2str(nfields)));
-
-                      for k = 1:size(CurrentTrace, 1)
-                          Row = CurrentTrace.rowM(k);
-                          Col = CurrentTrace.colM(k);
-                          z = CurrentTrace.z(k)./1000;
-                          t = CurrentTrace.t(k);
-
-                          if CurrentQPMap ~= ceil(t./100)
-                              QPmap = load(append(CurrentPhaseMov.raw.movInfo.Path, filesep, 'PhaseMovie', filesep,...
-                                  'PhaseMovie', num2str(ceil(t./100)), '.mat'));
-                              QPmap = QPmap.QPmap;
-                              CurrentQPMap = ceil(t./100);
-                          end                         
-
-                          QProw = round(Row) - CurrentPhaseMov.Cropped.StartY;
-                          QPcol = round(Col) - CurrentPhaseMov.Cropped.StartX;
-
-                          PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
-                          [~, idx] = min(abs(PlaneCoords - z));
-                          PlaneCoords(idx) = Inf;
-                          [~, idx2] = min(abs(PlaneCoords - z));
-
-                          test = z./(CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx2) - CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx));
-
-                          Frame = rem(t, 100);
-                          if Frame == 0
-                              Frame = 100;
-                          end
-
-                          if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
-                              CurrentTrace = [];
-                              break
-                          else
-                              PhasePx1 = QPmap(QProw, QPcol, idx, Frame);
-                              PhasePx2 = QPmap(QProw, QPcol, idx2, Frame);
-                              if idx2 > idx
-                                  Phase(k,1) = (PhasePx2 - PhasePx1)*test + PhasePx1;
-                              elseif idx2 < idx
-                                  Phase(k,1) = (PhasePx1 - PhasePx2)*test + PhasePx2;
+                  try
+                      CurrentTrackMov = TrackObj.trackMovies.(fieldsN{i}); 
+                      CurrentPhaseMov = PhaseObj.PhaseMovies.(fieldsN{i});
+    
+                      Traces3D = CurrentTrackMov.traces3D;
+                      CurrentQPMap = 0;
+    
+                      f = waitbar(0, 'initializing...');
+    
+                      for j = 1:size(Traces3D,1)
+                          CurrentTrace = Traces3D{j, 1};
+                          waitbar(j./size(Traces3D, 1), f, append('Combining phase & tracking - Movie ', num2str(i),...
+                              ' out of ', num2str(nfields)));
+    
+                          for k = 1:size(CurrentTrace, 1)
+                              Row = CurrentTrace.rowM(k);
+                              Col = CurrentTrace.colM(k);
+                              z = CurrentTrace.z(k)./1000;
+                              t = CurrentTrace.t(k);
+    
+                              if CurrentQPMap ~= ceil(t./100)
+                                  QPmap = load(append(CurrentPhaseMov.raw.movInfo.Path, filesep, 'PhaseMovie', filesep,...
+                                      'PhaseMovie', num2str(ceil(t./100)), '.mat'));
+                                  QPmap = QPmap.QPmap;
+                                  CurrentQPMap = ceil(t./100);
+                              end
+    
+                              QProw = round(Row) - CurrentPhaseMov.Cropped.StartY;
+                              QPcol = round(Col) - CurrentPhaseMov.Cropped.StartX;
+    
+                              PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
+                              [~, idx] = min(abs(PlaneCoords - z));
+                              PlaneCoords(idx) = Inf;
+                              [~, idx2] = min(abs(PlaneCoords - z));
+    
+                              test = z./(CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx2) - CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx));
+    
+                              Frame = rem(t, 100);
+                              if Frame == 0
+                                  Frame = 100;
+                              end
+    
+                              if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
+                                  CurrentTrace = [];
+                                  break
+                              else
+                                  PhasePx1 = QPmap(QProw, QPcol, idx, Frame);
+                                  PhasePx2 = QPmap(QProw, QPcol, idx2, Frame);
+                                  if idx2 > idx
+                                      Phase(k,1) = (PhasePx2 - PhasePx1)*test + PhasePx1;
+                                  elseif idx2 < idx
+                                      Phase(k,1) = (PhasePx1 - PhasePx2)*test + PhasePx2;
+                                  end
                               end
                           end
+    
+                          if ~isempty(CurrentTrace)
+                              CurrentTrace.Phase = Phase;
+                          end
+                          Traces3D{j, 1} = CurrentTrace;
+                          Phase = [];
                       end
-
-                      if ~isempty(CurrentTrace)
-                          CurrentTrace.Phase = Phase;
-                      end
-                      Traces3D{j, 1} = CurrentTrace;
-                      Phase = [];
+                      Traces3D = Traces3D(~cellfun(@isempty, Traces3D(:,1)), :);
+                      CurrentTrackMov.traces3D = Traces3D;
+                      TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
+    
+                      FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TraceswPhase.mat');
+                      save(FileName, 'Traces3D');
+                      disp(append('== Traces with phase saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
+                      close(f);
+                  catch
+                       disp(append('== Failed phasetracking - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
                   end
-                  Traces3D = Traces3D(~cellfun(@isempty, Traces3D(:,1)), :);
-                  CurrentTrackMov.traces3D = Traces3D;
-                  TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
-
-                  FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TraceswPhase.mat');
-                  save(FileName, 'Traces3D');
-                  disp(append('== Traces with phase saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
-                  close(f);
               end
 
               if strcmp(obj.info.Channel2, 'Translational Tracking')
