@@ -276,6 +276,7 @@ function controls = addChannelControls(layout, type)
             controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
             controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
             controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
+            controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'off');
             controls.euDist = addLabelField(layout, 'euDist (nm)', '1000');
             controls.delta = addLabelField(layout, 'delta', '6');
             controls.chi2 = addLabelField(layout, 'chi2', '50');
