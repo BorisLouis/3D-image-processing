@@ -295,9 +295,11 @@ classdef TrackingExperimentRotational < handle
                 obj.traces3D = allTraces;
             end
             
-            
-            filename = [obj.path filesep 'traces3D.mat'];
-            save(filename,'allTraces');
+            try
+                filename = [obj.path filesep 'traces3D.mat'];
+                save(filename,'allTraces');
+            catch
+            end
             
             
             disp('=================> DONE <===================');
@@ -322,12 +324,12 @@ classdef TrackingExperimentRotational < handle
 
                     filename = append(currentTrackMov.raw.movInfo.Path, filesep, 'Traces3D.mat');
 
-                    % if exist(filename)
-                    % 
-                    %     traces = load(filename);
-                    %     traces = traces.TrackedData';
-                    % else
-                    % 
+                    if exist(filename)
+
+                        traces = load(filename);
+                        traces = traces.TrackedData';
+                    else
+
                         %Molecule detection
                         % if currentTrackMov.info.rotationalCalib == 0
                             currentTrackMov.findCandidatePos(detectParam, q);
@@ -361,7 +363,7 @@ classdef TrackingExperimentRotational < handle
                         currentTrackMov.trackParticle(trackParam,q);
                         
                         [traces] = currentTrackMov.getTraces;
-                    % end
+                    end
         
                     allTraces = [];
                     fileN = cell(length(traces),1);
@@ -397,8 +399,8 @@ classdef TrackingExperimentRotational < handle
             end
             
             
-            filename = [obj.path filesep 'traces3D.mat'];
-            save(filename,'allTraces');
+            % filename = [obj.path filesep 'traces3D.mat'];
+            % save(filename,'allTraces');
             
             
             disp('=================> DONE <===================');
