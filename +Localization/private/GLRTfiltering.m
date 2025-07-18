@@ -71,6 +71,7 @@ sXbar2 = sXbar2(delta+1:1:s1-delta,delta+1:1:s2-delta);
 % calculation of I hat as a convolution of the input image with G bar all
 % divided by the sum of g bar squared
 I_hat = conv2(imIn,G_bar,'valid')./sGbar2;
+I_hat(I_hat < 0) = 0;
 % calculation of the difference betwen the likelihood of having the data
 % explained by random noise or by a gaussian. L(H_0)-L(H_1)
 L0mL1   = ( (Ws^2)/2 ) * (log(1-(((I_hat.^2) .* sGbar2)./sXbar2)));

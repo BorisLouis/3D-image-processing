@@ -1,4 +1,4 @@
-function [ pos, meanFAR, FAR ] = smDetection( im, delta, FWHM_pix, chi2 )
+function [ pos, meanFAR, FAR, rawInt ] = smDetection( im, delta, FWHM_pix, chi2 )
 %smDetection finds the positions where a single molecule is most probably
 %located in the input image using the generalized likelihood ratio test.
 %   These postions should be further tested to ensure that a SM is in fact
@@ -27,5 +27,8 @@ meanFAR    = cat(1,stats.MeanIntensity);
 % way that the first pos index is the first im index. Thus I flip the col.
 
 pos = flip(pos,2);
+
+statsInt = regionprops(L, im, 'MeanIntensity');
+rawInt = cat(1, statsInt.MeanIntensity);
 end
 

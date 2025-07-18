@@ -36,7 +36,6 @@ classdef MPSegmentMovie < Core.MPMovie
                     end
                     out(out < 0.12) = 0;
                     out = imclose(out, strel('square',3));
-                    mask(:,:,j) = out;
                     
 
                    
@@ -62,9 +61,6 @@ classdef MPSegmentMovie < Core.MPMovie
                         testmask(stats(i).PixelIdxList) = true;
                     end
                     testmask = imfill(testmask, "holes");
-                    se = strel('disk', 2);  % adjust radius for smoothing strength
-                    testmask = imopen(testmask, se);
-                    testmask = imclose(testmask, se);
                     mask(:,:,j) = testmask;
                 end
 

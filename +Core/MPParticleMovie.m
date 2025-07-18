@@ -1293,7 +1293,7 @@ classdef MPParticleMovie < Core.MPMovie
                         %localization occurs here
                         switch detectionMethod 
                             case 'MaxLR'
-                                [ pos, meanFAR, ~ ] = Localization.smDetection(currentIM,...
+                                [ pos, meanFAR, ~, rawInt] = Localization.smDetection(currentIM,...
                                     delta, FWHM_pix, chi2 );
                                 if ~isempty(pos)
                                     startIdx = find(position.row==0,1,'First');
@@ -1302,6 +1302,14 @@ classdef MPParticleMovie < Core.MPMovie
                                     end
                                     pos(:,3) = meanFAR;
                                     pos(:,4) = j;
+                                    if strcmp(obj.info.IntCorr, 'on')
+                                        currentIMList = currentIM(:);
+                                        currentIMList(currentIMList == 0) = [];
+                                        MedianInt = median(currentIMList);
+        
+                                        idx = rawInt < MedianInt;
+                                        pos(idx, :) = [];
+                                    end
                                     position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
                                 else
                                 end
