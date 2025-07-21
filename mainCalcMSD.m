@@ -13,6 +13,7 @@ MainFolder([MainFolder.isdir] ~= 1) = [];
 
 AllMovieResults = [];
 for j = 3 : size(MainFolder,1)
+    try
 
     folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
     idx = contains({folder.name},Filename);
@@ -46,6 +47,21 @@ for j = 3 : size(MainFolder,1)
     allMSDY = allMSDX;
     allMSDZ = allMSDY;
     allMSDR = allMSDY;
+    if strcmp(folder(1).folder, 'e0_1')
+        Temp = 303.15;
+    elseif strcmp(folder(1).folder, 'e2_1')
+        Temp = 304.15;
+    elseif strcmp(folder(1).folder, 'e4_1')
+        Temp = 305.15;
+    elseif strcmp(folder(1).folder, 'e6_1')
+        Temp = 306.15;
+    elseif strcmp(folder(1).folder, 'e8_1')
+        Temp = 307.15;
+    elseif strcmp(folder(1).folder, '10_1')
+        Temp = 308.15;
+    elseif strcmp(folder(1).folder, '13_1')
+        Temp = 297.15;
+    end
     for i = 1:length(currMov)
         waitbar(i./length(currMov), f, append('Calculating diffusion & doing microrheology - Movie ', num2str(j-2), ' out of ', num2str(size(MainFolder,1) - 2)));
         currPart = currMov{i};
@@ -80,8 +96,8 @@ for j = 3 : size(MainFolder,1)
             AvStep = MSD.getAvStepSize(coord(:,3)/10^3); 
             msdz = MSD.calc(coord(:,3)/10^3);%convert to um;
             allMSDZ(i,1:length(msdz)) = msdz;
-            DZ   = MSD.getDiffCoeff(msdz,tau,fitRDiff,'1D');
-            nZ   = MSD.getViscosity(DZ,R,T);
+            DZ   = MSD.getDiffCoeff(msdz,tau,DiffFit,'1D');
+            nZ   = MSD.getViscosity(DZ,Radius,Temp);
             %aZ   = MSD.getDiffTypeAlpha(msdz,expTime);
             aZ   = MSD.getDiffTypeAlpha2(msdz,expTime, AvStep);
             vZ   = abs(coord(1,3) - coord(end,3)/10^3/(length(coord)*expTime)); %um/s
@@ -147,7 +163,7 @@ for j = 3 : size(MainFolder,1)
         if strcmp(Experiment, 'Tracking-Segmentation')
             allRes(i).Mask = round(mean(currPart.InSegment));
         elseif strcmp(Experiment, 'Tracking-Phase')
-            allRes(i).Phase = mean(currPart.InSegment);
+            allRes(i).Phase = mean(currPart.Phase);
         end
     end
     
@@ -176,6 +192,8 @@ for j = 3 : size(MainFolder,1)
     disp(append('== Data succesfully saved - movie ', num2str(j-2), ' out of ', num2str(size(MainFolder, 1)-2), ' =='));
 
     AllMovieResults = [AllMovieResults, allRes];
+    catch
+    end
 end
 close(f)
 
