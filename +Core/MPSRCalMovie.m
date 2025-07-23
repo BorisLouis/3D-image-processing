@@ -505,9 +505,9 @@ classdef MPSRCalMovie < Core.MPCalMovie
     methods (Access = private)
         
         function [partData] = extractPartData(obj,q)
-            list = obj.particles{q,1}.List;
-            traces = obj.particles{q,1}.traces;
-            nTraces = obj.particles{q,1}.nTraces;
+            list = obj.particles.List;
+            traces = obj.particles.traces;
+            nTraces = obj.particles.nTraces;
             
             %Allocate Memory
             partData = cell(1,nTraces);

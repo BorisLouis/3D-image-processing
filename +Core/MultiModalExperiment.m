@@ -397,9 +397,9 @@ classdef MultiModalExperiment < handle
           function RunAnalysis(obj)
               %%% first run channel 1 analysis
               if strcmp(obj.info.Channel1, 'Segmentation')
-                    % testMov = obj.MoviesCh1.SegmentMovies.mov1;
-                    % testMov.getSegmentMovie(1, obj.info.TestFrame)
-                    % obj.MoviesCh1.retrieveSegmentMask(1);
+                    testMov = obj.MoviesCh1.SegmentMovies.mov1;
+                    testMov.getSegmentMovie(1, obj.info.TestFrame)
+                    obj.MoviesCh1.retrieveSegmentMask(1);
               elseif strcmp(obj.info.Channel1, 'Phase')
                     obj.MoviesCh1.retrievePhaseMask(1);
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
@@ -421,13 +421,13 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh1.saveData(1);
 
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
-                    frame = obj.info.TestFrame;
-                    testMov = obj.MoviesCh1.trackMovies.mov1;
-                    testMov2 = obj.MoviesCh2.trackMovies.mov1;
-                    testMov.getTransformation(testMov2, frame);
-                    testMov.getROIs;
-                    testMov2.getROIs;
-                    testMov.showCandidate(testMov2, frame);
+                    % frame = obj.info.TestFrame;
+                    % testMov = obj.MoviesCh1.trackMovies.mov1;
+                    % testMov2 = obj.MoviesCh2.trackMovies.mov1;
+                    % testMov.getTransformation(testMov2, frame);
+                    % testMov.getROIs;
+                    % testMov2.getROIs;
+                    % testMov.showCandidate(testMov2, frame);
 
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
@@ -451,21 +451,13 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh2.retrievePhaseMask(2);
               elseif strcmp(obj.info.Channel2, 'Translational Tracking')
                     frame = obj.info.TestFrame;
-                    testMov = obj.MoviesCh2.trackMovies.mov5;
+                    testMov = obj.MoviesCh2.trackMovies.mov1;
                     testMov.findCandidatePos(testMov.info.detectParam,2,frame);
                     testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 2);
-                    testMov = obj.MoviesCh2.trackMovies.mov3;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
                     testMov.showCandidateSingleChan(frame, 1);
-                    testMov = obj.MoviesCh2.trackMovies.mov5;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    % val2Use = 'bestFocus';
-                    % obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-                    % obj.MoviesCh2.saveData(2);
+                    val2Use = 'bestFocus';
+                    obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh2.saveData(2);
               end
 
               if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
@@ -567,131 +559,134 @@ classdef MultiModalExperiment < handle
                 nfields = numel(fieldsN);
                 allTraces = [];
                 for k = 1: nfields
+                    try
                     
-                    disp(['Retrieving data from tracking file ' num2str(k) ' / ' num2str(nfields) ' ...']);
-                    currentTrackMov1 = obj1.trackMovies.(fieldsN{k});
-                    currentTrackMov2 = obj2.trackMovies.(fieldsN{k});
-                    tform = load(append(currentTrackMov1.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
-                    tform = tform.transformation;
-                    f = waitbar(0, 'Initizalizing');
-                    for i = 1:size(currentTrackMov1.particles.List, 2)
-                        D = [];
-                        matches = [];
-                        waitbar(i./size(currentTrackMov1.particles.List, 2), f, 'Consolidating particles in both channels')
-                        ParticlesCh1 = currentTrackMov1.particles.List{1,i};
-                        ParticlesCh2 = currentTrackMov2.particles.List{1,i};
-        
-                        %%% Delete particles that are visible in both channels.
-                        %%% Those will not be passed to the other channel
-                        Coord1 = [];
-                        Coord2 = [];
-                        for j = 1:size(ParticlesCh1,1)
-                            %Coord1(j,:) = table2array(nanmean(ParticlesCh1{j, 1} (:,{'row', 'col'}), 1));
-                            Coord1(j,:) = [table2array(nanmean(ParticlesCh1{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh1{j, 1} (:,{'row'}), 1))];
-                        end
-                        for j = 1:size(ParticlesCh2,1)
-                            %Coord2(j,:) = table2array(nanmean(ParticlesCh2{j, 1} (:,{'row', 'col'}), 1));
-                            Coord2(j,:) = [table2array(nanmean(ParticlesCh2{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh2{j, 1} (:,{'row'}), 1))];
-                        end
-                        if ~or(isempty(Coord2), isempty(Coord1))
-                            % Coord2New = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
-                            Coord2New = transformPointsForward(tform, Coord2);
-                            D = pdist2(Coord1, Coord2New);
-                            [matches, costs] = matchpairs(D, 10);
-        
-                            PlaneCheck = [];
-                            %%%Check if the matched particles have at least a plane in common & if the distance is small:
-                            for k = 1:size(matches, 1)
-                                CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
-                                if numel(CommonPlanes) >= 1
-                                    PlaneCheck(k,1) = 1;
-                                else
-                                    PlaneCheck(k,1) = 0;
-                                end
+                        disp(['Retrieving data from tracking file ' num2str(k) ' / ' num2str(nfields) ' ...']);
+                        currentTrackMov1 = obj1.trackMovies.(fieldsN{k});
+                        currentTrackMov2 = obj2.trackMovies.(fieldsN{k});
+                        tform = load(append(currentTrackMov1.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
+                        tform = tform.transformation;
+                        f = waitbar(0, 'Initizalizing');
+                        for i = 1:size(currentTrackMov1.particles.List, 2)
+                            D = [];
+                            matches = [];
+                            waitbar(i./size(currentTrackMov1.particles.List, 2), f, 'Consolidating particles in both channels')
+                            ParticlesCh1 = currentTrackMov1.particles.List{1,i};
+                            ParticlesCh2 = currentTrackMov2.particles.List{1,i};
+            
+                            %%% Delete particles that are visible in both channels.
+                            %%% Those will not be passed to the other channel
+                            Coord1 = [];
+                            Coord2 = [];
+                            for j = 1:size(ParticlesCh1,1)
+                                %Coord1(j,:) = table2array(nanmean(ParticlesCh1{j, 1} (:,{'row', 'col'}), 1));
+                                Coord1(j,:) = [table2array(nanmean(ParticlesCh1{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh1{j, 1} (:,{'row'}), 1))];
                             end
-                            matches(PlaneCheck == 0, :) = [];
-        
-                            %%%Delete particles that have a partner from the lists
-                            ToRemove1 = zeros(size(ParticlesCh1, 1),1);
-                            ToRemove2 = zeros(size(ParticlesCh2, 1),1);
-                            for l = 1:size(matches, 1)
-                                ToRemove1(matches(l,1),1) = 1;
-                                ToRemove2(matches(l,2),1) = 1;
+                            for j = 1:size(ParticlesCh2,1)
+                                %Coord2(j,:) = table2array(nanmean(ParticlesCh2{j, 1} (:,{'row', 'col'}), 1));
+                                Coord2(j,:) = [table2array(nanmean(ParticlesCh2{j, 1} (:,{'col'}), 1)), table2array(nanmean(ParticlesCh2{j, 1} (:,{'row'}), 1))];
                             end
-                            ParticlesCh1 = ParticlesCh1(ToRemove1 == 0);
-                            ParticlesCh2 = ParticlesCh2(ToRemove2 == 0);
-                        end
-        
-                        %%% Pass particles from Ch1 to Ch2
-                        if ~isempty(ParticlesCh1)
-                            ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
-                            NewParticlesCh2 = [currentTrackMov2.particles.List{1,i}, cell(size(currentTrackMov2.particles.List{1,i}, 1), 1)];
-                            [data] = currentTrackMov2.getFrame(i, 2); % get frame from ch2
-                            sig = [currentTrackMov2.info.sigma_px currentTrackMov2.info.sigma_px];
-                            for l = 1:size(ParticlesCh1, 1)
-                                CurrentParticle = ParticlesCh1{l, 1};
-                                Coord = [CurrentParticle.col, CurrentParticle.row];
-                                %Coord = Transformation.Coords1toCoords2.b*Coord*Transformation.Coords1toCoords2.T + Transformation.Coords1toCoords2.c;
-                                Coord = transformPointsInverse(tform, Coord);
-                                NewParticle = CurrentParticle;
-                                NewParticle.row = Coord(:,2);
-                                NewParticle.col = Coord(:,1);
-                                for m = 1:size(NewParticle, 1)
-                                    if ~isnan(NewParticle.plane(m))
-                                        planeData = data(:,:, NewParticle.plane(m));
-                                        %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
-                                        AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
-                                        [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
-                                                            currentTrackMov2.info.detectParam.delta, size(planeData,2), size(planeData,1));
-                                        ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
-                                        [NewParticle.intensity(m), NewParticle.SNR(m), ~] = currentTrackMov2.getIntensityGauss(ROI,sig);
+                            if ~or(isempty(Coord2), isempty(Coord1))
+                                % Coord2New = Transformation.Coords2toCoords1.b*Coord2*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
+                                Coord2New = transformPointsForward(tform, Coord2);
+                                D = pdist2(Coord1, Coord2New);
+                                [matches, costs] = matchpairs(D, 10);
+            
+                                PlaneCheck = [];
+                                %%%Check if the matched particles have at least a plane in common & if the distance is small:
+                                for k = 1:size(matches, 1)
+                                    CommonPlanes = intersect(ParticlesCh1{matches(k,1)}.plane, ParticlesCh2{matches(k,2)}.plane);
+                                    if numel(CommonPlanes) >= 1
+                                        PlaneCheck(k,1) = 1;
+                                    else
+                                        PlaneCheck(k,1) = 0;
                                     end
                                 end
-                                NewParticlesCh2{end+1,1 } = NewParticle;
-                                NewParticlesCh2{end,2} = 'Passed';
-                            end
-                        else
-                            NewParticlesCh2 = [currentTrackMov2.particles.List{1,i}, cell(size(currentTrackMov2.particles.List{1,i}, 1), 1)];
-                        end
-        
-                        %%% Pass particles from Ch2 to Ch1
-                        if ~isempty(ParticlesCh2)
-                            ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
-                            NewParticlesCh1 = [currentTrackMov1.particles.List{1,i}, cell(size(currentTrackMov1.particles.List{1,i}, 1), 1)];
-                            [data] = currentTrackMov1.getFrame(i, 1); % get frame from ch1
-                            sig = [currentTrackMov1.info.sigma_px currentTrackMov1.info.sigma_px];
-                            for l = 1:size(ParticlesCh2, 1)
-                                CurrentParticle = ParticlesCh2{l, 1};
-                                Coord = [CurrentParticle.col, CurrentParticle.row];
-                                %Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
-                                Coord = transformPointsForward(tform, Coord);
-                                NewParticle = CurrentParticle;
-                                NewParticle.row = Coord(:,2);
-                                NewParticle.col = Coord(:,1);
-                                for m = 1:size(NewParticle, 1)
-                                    if ~isnan(NewParticle.plane(m))
-                                        planeData = data(:,:, NewParticle.plane(m));
-                                        AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
-                                        [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
-                                                            currentTrackMov1.info.detectParam.delta, size(planeData,2), size(planeData,1));
-                                        ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
-                                        [NewParticle.intensity(m), NewParticle.SNR(m), ~] = currentTrackMov1.getIntensityGauss(ROI,sig);
-                                    end
+                                matches(PlaneCheck == 0, :) = [];
+            
+                                %%%Delete particles that have a partner from the lists
+                                ToRemove1 = zeros(size(ParticlesCh1, 1),1);
+                                ToRemove2 = zeros(size(ParticlesCh2, 1),1);
+                                for l = 1:size(matches, 1)
+                                    ToRemove1(matches(l,1),1) = 1;
+                                    ToRemove2(matches(l,2),1) = 1;
                                 end
-                                NewParticlesCh1{end+1, 1} = NewParticle;
-                                NewParticlesCh1{end, 2} = 'Passed';
+                                ParticlesCh1 = ParticlesCh1(ToRemove1 == 0);
+                                ParticlesCh2 = ParticlesCh2(ToRemove2 == 0);
                             end
-                        else
-                            NewParticlesCh1 = [currentTrackMov1.particles.List{1,i}, cell(size(currentTrackMov1.particles.List{1,i}, 1), 1)];
+            
+                            %%% Pass particles from Ch1 to Ch2
+                            if ~isempty(ParticlesCh1)
+                                ParticlesCh1(cellfun(@isempty, ParticlesCh1)) = [];
+                                NewParticlesCh2 = [currentTrackMov2.particles.List{1,i}, cell(size(currentTrackMov2.particles.List{1,i}, 1), 1)];
+                                [data] = currentTrackMov2.getFrame(i, 2); % get frame from ch2
+                                sig = [currentTrackMov2.info.sigma_px currentTrackMov2.info.sigma_px];
+                                for l = 1:size(ParticlesCh1, 1)
+                                    CurrentParticle = ParticlesCh1{l, 1};
+                                    Coord = [CurrentParticle.col, CurrentParticle.row];
+                                    %Coord = Transformation.Coords1toCoords2.b*Coord*Transformation.Coords1toCoords2.T + Transformation.Coords1toCoords2.c;
+                                    Coord = transformPointsInverse(tform, Coord);
+                                    NewParticle = CurrentParticle;
+                                    NewParticle.row = Coord(:,2);
+                                    NewParticle.col = Coord(:,1);
+                                    for m = 1:size(NewParticle, 1)
+                                        if ~isnan(NewParticle.plane(m))
+                                            planeData = data(:,:, NewParticle.plane(m));
+                                            %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
+                                            AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                            [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
+                                                                currentTrackMov2.info.detectParam.delta, size(planeData,2), size(planeData,1));
+                                            ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
+                                            [NewParticle.intensity(m), NewParticle.SNR(m), ~] = currentTrackMov2.getIntensityGauss(ROI,sig);
+                                        end
+                                    end
+                                    NewParticlesCh2{end+1,1 } = NewParticle;
+                                    NewParticlesCh2{end,2} = 'Passed';
+                                end
+                            else
+                                NewParticlesCh2 = [currentTrackMov2.particles.List{1,i}, cell(size(currentTrackMov2.particles.List{1,i}, 1), 1)];
+                            end
+            
+                            %%% Pass particles from Ch2 to Ch1
+                            if ~isempty(ParticlesCh2)
+                                ParticlesCh2(cellfun(@isempty, ParticlesCh2)) = [];
+                                NewParticlesCh1 = [currentTrackMov1.particles.List{1,i}, cell(size(currentTrackMov1.particles.List{1,i}, 1), 1)];
+                                [data] = currentTrackMov1.getFrame(i, 1); % get frame from ch1
+                                sig = [currentTrackMov1.info.sigma_px currentTrackMov1.info.sigma_px];
+                                for l = 1:size(ParticlesCh2, 1)
+                                    CurrentParticle = ParticlesCh2{l, 1};
+                                    Coord = [CurrentParticle.col, CurrentParticle.row];
+                                    %Coord = Transformation.Coords2toCoords1.b*Coord*Transformation.Coords2toCoords1.T + Transformation.Coords2toCoords1.c;
+                                    Coord = transformPointsForward(tform, Coord);
+                                    NewParticle = CurrentParticle;
+                                    NewParticle.row = Coord(:,2);
+                                    NewParticle.col = Coord(:,1);
+                                    for m = 1:size(NewParticle, 1)
+                                        if ~isnan(NewParticle.plane(m))
+                                            planeData = data(:,:, NewParticle.plane(m));
+                                            AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                            [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
+                                                                currentTrackMov1.info.detectParam.delta, size(planeData,2), size(planeData,1));
+                                            ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
+                                            [NewParticle.intensity(m), NewParticle.SNR(m), ~] = currentTrackMov1.getIntensityGauss(ROI,sig);
+                                        end
+                                    end
+                                    NewParticlesCh1{end+1, 1} = NewParticle;
+                                    NewParticlesCh1{end, 2} = 'Passed';
+                                end
+                            else
+                                NewParticlesCh1 = [currentTrackMov1.particles.List{1,i}, cell(size(currentTrackMov1.particles.List{1,i}, 1), 1)];
+                            end
+            
+                            currentTrackMov1.particles.List{1,i} = NewParticlesCh1;
+                            currentTrackMov2.particles.List{1,i} = NewParticlesCh2;
+            
+                            currentTrackMov1.particles.nParticles(1,i) = size(NewParticlesCh1, 1);
+                            currentTrackMov2.particles.nParticles(1,i) = size(NewParticlesCh2, 1);
                         end
-        
-                        currentTrackMov1.particles.List{1,i} = NewParticlesCh1;
-                        currentTrackMov2.particles.List{1,i} = NewParticlesCh2;
-        
-                        currentTrackMov1.particles.nParticles(1,i) = size(NewParticlesCh1, 1);
-                        currentTrackMov2.particles.nParticles(1,i) = size(NewParticlesCh2, 1);
+                        close(f)
+                    catch
                     end
-                    close(f)
                 end
           end
 

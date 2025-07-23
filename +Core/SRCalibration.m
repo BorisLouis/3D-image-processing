@@ -134,13 +134,17 @@ classdef SRCalibration < handle
             end
             for i = 1: nfields
                 disp(['Retrieving data from SRCal file ' num2str(i) ' / ' num2str(nfields) ' ...']);
-               
+                detectParamFull = detectParam;
+                if iscell(detectParamFull)
+                    detectParam = detectParamFull{q};
+                end
+
                 currMov = obj.SRCalMovies.(fieldsN{i});
                 %Molecule detection
-                currMov.findCandidatePos(detectParam);
+                currMov.findCandidatePos(detectParam, q);
 
                  %SR fitting
-                currMov.SRLocalizeCandidate(detectParam);
+                currMov.SRLocalizeCandidate(detectParam, q);
                 
                 %plane consolidation
                 try
@@ -148,11 +152,11 @@ classdef SRCalibration < handle
                 catch
                     frames = 1:currMov.calibrated{1,1}.nFrames;
                 end
-                currMov.consolidatePlanes(frames,detectParam);
+                currMov.consolidatePlanes(frames,detectParam,q);
                 
                 %getting Calibration data
                 [SRCalibData,dataPerPlane] = currMov.getSRCalData(trackParam);
-                
+            
                 %Get data for every particle every planes together stored
                 %in allData.
 

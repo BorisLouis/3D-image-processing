@@ -46,7 +46,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 MeanImage1 = MeanImage1 / max(frames);
                 MeanImage2 = MeanImage2 / max(frames);
 
-                tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "similarity");
+                tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "translation");
                 MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
                 
                 figure()

@@ -131,9 +131,9 @@ for v = 1:length(varNames)
     title([yLabels{v} ' over time']);
     xlabel('Time (minutes)');
     ylabel(yLabels{v});
-    if v == 4
-        ylim([-0.01 0.01])
-    end
+    % if v == 4
+    %     ylim([-0.01 0.01])
+    % end
     grid on;
     hold off;
 end

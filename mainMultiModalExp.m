@@ -3,11 +3,11 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = [];
+path2SRCal = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
 
 %file info
-file.path  = 'D:\Multimodal tracking\20250708\AllSamples';
-path2Cal = 'D:\Multimodal tracking\20250708\2DCal';
+file.path  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\alldata';
+path2Cal = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
 %% create experiments

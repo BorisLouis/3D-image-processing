@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'D:\Multimodal tracking\20250513\2DCal';
+file.path = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'D:\Multimodal tracking\20250513\2DCal';
+path2Cal  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -21,6 +21,7 @@ info.PxSize = 95;
 info.rotationalCalib = 0;
 info.FWHM = 3;
 info.Dimension = '3D';
+info.IntCorr = 'off';
 
 testSRCal = Core.SRCalibration(file,path2Cal,info);
 
