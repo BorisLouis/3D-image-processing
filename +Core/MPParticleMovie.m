@@ -57,7 +57,8 @@ classdef MPParticleMovie < Core.MPMovie
                  folder = append('calibrated', num2str(q));
 
                  path = append(obj.raw.movInfo.Path, filesep, folder);
-                 [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
+                 % [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
+                 [run, candidate] = obj.existCandidate(obj.calibrated{1, 1}.mainPath, '.mat');
                 
                 %if we only ask 1 frame we always run
                 if length(frames) == 1
@@ -77,6 +78,7 @@ classdef MPParticleMovie < Core.MPMovie
                     end
                     
                 elseif ~isempty(candidate)
+                    BgCorrFactor = {};
                 else
                     %help message
                     disp('getCandidatePos is a function that detects features in a movie');
@@ -162,7 +164,7 @@ classdef MPParticleMovie < Core.MPMovie
                     folder = append('calibrated', num2str(q));
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
-                    [run,locPos] = obj.existLocPos(path,'.mat');
+                    [run,locPos] = obj.existLocPos(obj.calibrated{1, 1}.mainPath,'.mat');
                     % run = 1;
                     
                     if run
@@ -1131,7 +1133,7 @@ classdef MPParticleMovie < Core.MPMovie
                         candidate = load([file2Analyze(1).folder filesep 'candidatePos.mat']);
                         candidate = candidate.candidate;
                         
-                        if size(candidate,1)== obj.calibrated.nFrames
+                        if size(candidate,1)== obj.calibrated{1,1}.nFrames
                             run = false;
                         else
                            disp('Detection missing in some frames, rerunning detection');
