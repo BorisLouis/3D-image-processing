@@ -138,24 +138,17 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             end
           
             % correct int
-            if ~strcmp(info.Channel2, 'Phase')
+            if ~strcmp(info.Channel1, 'Phase')
                 waitbar(.5,h,'Channel 2: Correcting plane intensities...')
                 for i = 1:size(chC3,3)
                     data2(:,:,i,:) = chC3(:,:,i,:).*C2(i);
                 end
             end
             
-            if ~strcmp(info.Channel2, 'Phase')
+            if ~strcmp(info.Channel1, 'Phase')
                 waitbar(.7,h,'Channel2: Correcting plane intensities...')
                 for i = 1:size(chC3,3)
                     data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*C2(i+size(chC3,3));
-                end
-            end
-
-            if ~strcmp(info.Channel2, 'Phase')
-                [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1);
-                for i = 1:size(chC1,3)
-                    data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*cal.Icorrf2NoFluo(i+size(chC3,3));
                 end
             end
 

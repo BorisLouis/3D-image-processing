@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'D:\Multimodal tracking\20250513\2DCal';
+file.path  = 'D:\Multimodal tracking\20250724\2DCal';
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)

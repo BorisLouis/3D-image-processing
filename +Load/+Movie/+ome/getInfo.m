@@ -273,7 +273,42 @@ function [frameInfo] = fixCamTiming(frameInfo)
     idxEnd  = find(test<mean(test),1,'last');
     %delete the data
     tmpInfo([1:idxStart-1,idxEnd:end])=[];
-    
+
+    n = 0;
+    for i = 1:2:size(tmpInfo,2)
+        n = n+1;
+        frameidxCh1(n) = str2num(tmpInfo(i).T);
+        frameidxCh2(n) = str2num(tmpInfo(i).T);
+        ChIdxCh1(n) = str2num(tmpInfo(i).C);
+        ChIdxCh2(n) = str2num(tmpInfo(i).C);
+    end
+
+    testFrameIdxCh1 = diff(frameidxCh1);
+    testFrameIdxCh2 = diff(frameidxCh2);
+    testChIdxCh1 = diff(ChIdxCh1);
+    testChIdxCh2 = diff(ChIdxCh2);
+
+    if or(~all(testFrameIdxCh1 == 1), ~all(testFrameIdxCh2 == 1))
+        n = 0;
+        for i = 1:2:size(tmpInfo,2)
+            n = n + 1;
+            tmpInfo(i).T = num2str(n);
+            tmpInfo(i+1).T = num2str(n);
+        end
+    end
+
+    if ~all(testChIdxCh1 == 1)
+        for i = 1:2:size(tmpInfo,2)
+            tmpInfo(i).C = '0';
+        end
+    end
+
+    if ~all(testChIdxCh2 == 1)
+        for i = 2:2:size(tmpInfo,2)
+            tmpInfo(i).C = '1';
+        end
+    end
+
     %check that we kept the same number of frame for the two cameras
     camera = cellfun(@str2num,{tmpInfo.C});  
     assert(sum(camera==0)==sum(camera==1),'Something went wrong when fixing the sync');
@@ -301,7 +336,10 @@ function [frameInfo] = fixCamTiming(frameInfo)
         %find another frame with similar timing
         id = find((abs([tmpInfo.time]-timeCurrRef))<1.2);
         if size(id, 2) < 2
-            id = find((abs([tmpInfo.time]-timeCurrRef))<5);
+            for j = 1:size(tmpInfo, 2)
+                TimeStamp(j) = str2num(tmpInfo(j).T);
+            end
+            id = find(TimeStamp == str2num(currT));
             if size(id, 2) > 2
                 id(3) = [];
             end
