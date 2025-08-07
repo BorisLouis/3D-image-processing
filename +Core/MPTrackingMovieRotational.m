@@ -2,6 +2,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
        
     properties
         traces3D
+        traces3Dcommon
         ROI
         ParticlesROI
         CandidateROI

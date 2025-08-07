@@ -705,16 +705,16 @@ classdef MultiModalExperiment < handle
                         ExpTime = currentTrackMov1.raw.movInfo.expT;
         
                         channel1 = currentTrackMov1.traces3D;
-                        idx = cellfun(@(x) height(x) >= 10, channel1(:,1));
+                        idx = cellfun(@(x) height(x) >= 1, channel1(:,1));
                         channel1 = channel1(idx, :);
         
                         channel2 = currentTrackMov2.traces3D;
-                        idx = cellfun(@(x) height(x) >= 10, channel2(:,1));
+                        idx = cellfun(@(x) height(x) >= 1, channel2(:,1));
                         channel2 = channel2(idx, :);
            
                         numTraces1 = size(channel1, 1);
                         numTraces2 = size(channel2, 1);
-
+                    
                         distances = zeros(numTraces1, numTraces2);
             
                         Transformation = load(append(obj.MoviesCh1.trackMovies.(fieldsN{1}).raw.movInfo.Path, filesep, 'ChannelTransformations.mat'));
