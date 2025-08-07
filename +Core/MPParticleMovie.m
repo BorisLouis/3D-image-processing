@@ -57,7 +57,8 @@ classdef MPParticleMovie < Core.MPMovie
                  folder = append('calibrated', num2str(q));
 
                  path = append(obj.raw.movInfo.Path, filesep, folder);
-                 [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
+                 % [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
+                 [run, candidate] = obj.existCandidate(obj.calibrated{1, 1}.mainPath, '.mat');
                 
                 %if we only ask 1 frame we always run
                 if length(frames) == 1
@@ -77,6 +78,7 @@ classdef MPParticleMovie < Core.MPMovie
                     end
                     
                 elseif ~isempty(candidate)
+                    BgCorrFactor = {};
                 else
                     %help message
                     disp('getCandidatePos is a function that detects features in a movie');
@@ -162,7 +164,7 @@ classdef MPParticleMovie < Core.MPMovie
                     folder = append('calibrated', num2str(q));
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
-                    [run,locPos] = obj.existLocPos(path,'.mat');
+                    [run,locPos] = obj.existLocPos(obj.calibrated{1, 1}.mainPath,'.mat');
                     % run = 1;
                     
                     if run
@@ -254,7 +256,11 @@ classdef MPParticleMovie < Core.MPMovie
                  %Extract the position of the candidate of a given frame
                 [idx] = Core.Movie.checkFrame(frames,obj.raw.maxFrame(1));
                 if isnan(z)
-                    locPos = obj.corrLocPos{q,1}{idx};
+                    try
+                        locPos = obj.corrLocPos{q,1}{idx};
+                    catch
+                        locPos = obj.corrLocPos{idx};
+                    end
                 else
                     locPos = obj.corrLocPos{q,1}{z,1}{idx};
                 end
@@ -729,11 +735,15 @@ classdef MPParticleMovie < Core.MPMovie
                         cellBlock = cell2table(cell(nPlanes, 2), 'VariableNames', strcat("C_", string(1:2)));
                         numericBlock2 = array2table(nan(nPlanes, 2), 'VariableNames', strcat("N2_", string(1:2)));
     
-                        particle = [numericBlock1, numericBlock2, cellBlock];
-    
-                        particle.Properties.VariableNames = currentCand.Properties.VariableNames;
-           
-                        particle(currentCand.plane,:) = currentCand;
+                        try
+                            particle = [numericBlock1, numericBlock2, cellBlock];
+                            particle.Properties.VariableNames = currentCand.Properties.VariableNames;
+                            particle(currentCand.plane,:) = currentCand;
+                        catch
+                            particle = [numericBlock1, cellBlock, numericBlock2];
+                            particle.Properties.VariableNames = currentCand.Properties.VariableNames;         
+                            particle(currentCand.plane,:) = currentCand;
+                        end
     
                         nCheck = length(planes2Check);
                         camConfig = obj.calibrated{1,1}.camConfig;
@@ -1123,7 +1133,7 @@ classdef MPParticleMovie < Core.MPMovie
                         candidate = load([file2Analyze(1).folder filesep 'candidatePos.mat']);
                         candidate = candidate.candidate;
                         
-                        if size(candidate,1)== obj.calibrated.nFrames
+                        if size(candidate,1)== obj.calibrated{1,1}.nFrames
                             run = false;
                         else
                            disp('Detection missing in some frames, rerunning detection');
@@ -1207,6 +1217,9 @@ classdef MPParticleMovie < Core.MPMovie
         function [candidate, BgCorrFactor] = detectCandidate(obj,detectParam,frames,q)
             %Do the actual localization
             assert(~isempty(obj.calibrated),'Data should be calibrated to detect candidate');
+            if iscell(detectParam)
+                detectParam = detectParam{1,q};
+            end
             assert(isstruct(detectParam),'Detection parameter should be a struct with two fields');
             nFrames = length(frames);
 
@@ -1538,7 +1551,7 @@ classdef MPParticleMovie < Core.MPMovie
             cellBlock = cell2table(cell(nPlanes, 2), 'VariableNames', strcat("C_", string(1:2)));
             numericBlock2 = array2table(nan(nPlanes, 2), 'VariableNames', strcat("N2_", string(1:2)));
 
-            newPart = [numericBlock1, numericBlock2, cellBlock];
+            newPart = [numericBlock1, cellBlock, numericBlock2];
             newPart.Properties.VariableNames = particleData.Properties.VariableNames;
      
             %store best focus in center

@@ -15,6 +15,7 @@ classdef MPLocMovie < Core.MPParticleMovie
         function obj = MPLocMovie(raw, MPCal,info, SRCal, zCal, q)
             
             obj  = obj@Core.MPParticleMovie(raw,MPCal,info);
+            obj.info.q = q;
             SRCal = {SRCal, q};
             
             switch nargin
@@ -38,24 +39,23 @@ classdef MPLocMovie < Core.MPParticleMovie
                 SRCal = SRCal{1,1};
             end
             if ~isempty(SRCal)
-                assert(isfolder(SRCal{1}), 'The given path is not a folder');
+                assert(isfolder(SRCal), 'The given path is not a folder');
 
                 %Check Given path
-                q = SRCal{2};
-                    [file2Analyze] = Core.Movie.getFileInPath(SRCal{1}, append('SRCalibration', num2str(q), '.mat'));
-    
-                    if isempty(file2Analyze)
-                        error('No SR calibration file found in the given folder');
-                    else
-                        fileName = [file2Analyze.folder filesep file2Analyze.name];
-                        cal = load(fileName);
-                        field = fieldnames(cal);
-                        cal = cal.(field{1});
-                        assert(and(isstruct(cal), and(isfield(cal,'trans'),isfield(cal,'rot'))),...
-                            'SR calibration is supposed to be a struct with 2 fields');
-    
-                        obj.SRCal = cal; 
-                    end
+                [file2Analyze] = Core.Movie.getFileInPath(SRCal, append('SRCalibration', num2str(obj.info.q), '.mat'));
+
+                if isempty(file2Analyze)
+                    error('No SR calibration file found in the given folder');
+                else
+                    fileName = [file2Analyze.folder filesep file2Analyze.name];
+                    cal = load(fileName);
+                    field = fieldnames(cal);
+                    cal = cal.(field{1});
+                    assert(and(isstruct(cal), and(isfield(cal,'trans'),isfield(cal,'rot'))),...
+                        'SR calibration is supposed to be a struct with 2 fields');
+
+                    obj.SRCal = cal; 
+                end
             else
                 obj.SRCal = [];
             end
