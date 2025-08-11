@@ -180,158 +180,152 @@ classdef MultiModalExperiment < handle
             %Load the movies for planes 1-8
             for i = 3:size(folder2Mov,1)
                 %Check if the directory
-                try
-                    folderPath = [folder2Mov(i).folder filesep folder2Mov(i).name];
-    
-                    file2Analyze = Core.Movie.getFileInPath(folderPath,obj.ext);
-                   
-                    if ~isempty(file2Analyze)
-                        
-                        obj.info.multiModal = 1;
-                        count = 0;
-                        count = count+1;
-                        file.path = file2Analyze.folder;
-                        file.ext  = obj.ext;
-    
-                        tmp = Core.MPMovie(file , obj.cal2D, obj.info);                  
-                        if count == 1
-                            tmp.giveInfo;
-                        else
-                            tmp.info = obj.trackMovies.(['mov' num2str(1)]).getInfo; 
-                        end
-                        if strcmp(obj.info.Dimension, '3D')
-                            tmp.calibrate;
-                        elseif strcmp(obj.info.Dimension, '2D')
-                            tmp.calibrate2DMovie;
-                        end
-    
-                        if strcmp(obj.info.Channel1, 'Rotational Tracking')
-                            Movie1 = Core.MPTrackingMovieRotational(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info, obj.MoviesCh1.SRCal.path, obj.MoviesCh1.ZCal.path, 1);
-                            Movie1.calibrated = tmp.calibrated{1,1};    
-                            if count == 1
-                                Movie1.giveInfo;
-                            else
-                                Movie1.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
-                        elseif strcmp(obj.info.Channel1, 'Translational Tracking')
-                            Movie1 = Core.MPTrackingMovieRotational(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info, obj.MoviesCh1.SRCal.path, obj.MoviesCh1.ZCal.path, 1);
-                            Movie1.calibrated = tmp.calibrated{1,1};    
-                            if count == 1
-                                Movie1.giveInfo;
-                            else
-                                Movie1.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
-                        elseif strcmp(obj.info.Channel1, 'Phase')
-                            Movie1 = Core.MPPhaseMovie(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info);
-                            Movie1.calibrated = tmp.calibrated{1,1};    
-                            if count == 1
-                                Movie1.giveInfo;
-                            else
-                                Movie1.info = obj.MoviesCh1.PhaseMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh1.PhaseMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
-                        elseif strcmp(obj.info.Channel1, 'Segmentation')
-                            Movie1 = Core.MPSegmentMovie(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info);
-                            Movie1.calibrated = tmp.calibrated{1,1};    
-                            if count == 1
-                                Movie1.giveInfo;
-                            else
-                                Movie1.info = obj.MoviesCh1.SegmentMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh1.SegmentMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
-                        end
-    
-                        if strcmp(obj.info.Channel2, 'Rotational Tracking')
-                            Movie2 = Core.MPTrackingMovieRotational(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info, obj.MoviesCh2.SRCal.path, obj.MoviesCh2.ZCal.path, 1);
-                            Movie2.calibrated = tmp.calibrated{1,2};
-                            if count == 1
-                                Movie2.giveInfo;
-                            else
-                                Movie2.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
-                        elseif strcmp(obj.info.Channel2, 'Translational Tracking')
-                            Movie2 = Core.MPTrackingMovieRotational(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info, obj.MoviesCh2.SRCal.path, obj.MoviesCh2.ZCal.path, 1);
-                            Movie2.calibrated = tmp.calibrated{1,2};    
-                            if count == 1
-                                Movie2.giveInfo;
-                            else
-                                Movie2.info = obj.MoviesCh2.trackMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
-                        elseif strcmp(obj.info.Channel2, 'Phase')
-                            Movie2 = Core.MPPhaseMovie(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info);
-                            Movie2.calibrated = tmp.calibrated{1,2};    
-                            if count == 1
-                                Movie2.giveInfo;
-                            else
-                                Movie2.info = obj.MoviesCh2.PhaseMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh2.PhaseMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
-                        elseif strcmp(obj.info.Channel2, 'Segmentation')
-                            Movie2 = Core.MPSegmentMovie(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info);
-                            Movie2.calibrated = tmp.calibrated{1,2};    
-                            if count == 1
-                                Movie2.giveInfo;
-                            else
-                                Movie2.info = obj.MoviesCh2.SegmentMovies.(['mov' num2str(1)]).getInfo; 
-                            end
-                            obj.MoviesCh2.SegmentMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
-                        end
-    
+                folderPath = [folder2Mov(i).folder filesep folder2Mov(i).name];
+
+                file2Analyze = Core.Movie.getFileInPath(folderPath,obj.ext);
+               
+                if ~isempty(file2Analyze)
+                    
+                    obj.info.multiModal = 1;
+                    count = 0;
+                    count = count+1;
+                    file.path = file2Analyze.folder;
+                    file.ext  = obj.ext;
+
+                    tmp = Core.MPMovie(file , obj.cal2D, obj.info);                  
+                    if count == 1
+                        tmp.giveInfo;
                     else
-                        
-                        warning([folder2Mov(i).folder filesep folder2Mov(i).name ' did not contain any ' obj.ext ' file and is therefore ignored']);
-                        
+                        tmp.info = obj.trackMovies.(['mov' num2str(1)]).getInfo; 
                     end
-                catch
-                end                
+                    if strcmp(obj.info.Dimension, '3D')
+                        tmp.calibrate;
+                    elseif strcmp(obj.info.Dimension, '2D')
+                        tmp.calibrate2DMovie;
+                    end
+
+                    if strcmp(obj.info.Channel1, 'Rotational Tracking')
+                        Movie1 = Core.MPTrackingMovieRotational(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info, obj.MoviesCh1.SRCal.path, obj.MoviesCh1.ZCal.path, 1);
+                        Movie1.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie1.giveInfo;
+                        else
+                            Movie1.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
+                    elseif strcmp(obj.info.Channel1, 'Translational Tracking')
+                        Movie1 = Core.MPTrackingMovieRotational(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info, obj.MoviesCh1.SRCal.path, obj.MoviesCh1.ZCal.path, 1);
+                        Movie1.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie1.giveInfo;
+                        else
+                            Movie1.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
+                    elseif strcmp(obj.info.Channel1, 'Phase')
+                        Movie1 = Core.MPPhaseMovie(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info);
+                        Movie1.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie1.giveInfo;
+                        else
+                            Movie1.info = obj.MoviesCh1.PhaseMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.PhaseMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
+                    elseif strcmp(obj.info.Channel1, 'Segmentation')
+                        Movie1 = Core.MPSegmentMovie(file , obj.MoviesCh1.cal2D, obj.MoviesCh1.info);
+                        Movie1.calibrated = tmp.calibrated{1,1};    
+                        if count == 1
+                            Movie1.giveInfo;
+                        else
+                            Movie1.info = obj.MoviesCh1.SegmentMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh1.SegmentMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie1;
+                    end
+
+                    if strcmp(obj.info.Channel2, 'Rotational Tracking')
+                        Movie2 = Core.MPTrackingMovieRotational(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info, obj.MoviesCh2.SRCal.path, obj.MoviesCh2.ZCal.path, 1);
+                        Movie2.calibrated = tmp.calibrated{1,2};
+                        if count == 1
+                            Movie2.giveInfo;
+                        else
+                            Movie2.info = obj.MoviesCh1.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
+                    elseif strcmp(obj.info.Channel2, 'Translational Tracking')
+                        Movie2 = Core.MPTrackingMovieRotational(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info, obj.MoviesCh2.SRCal.path, obj.MoviesCh2.ZCal.path, 1);
+                        Movie2.calibrated = tmp.calibrated{1,2};    
+                        if count == 1
+                            Movie2.giveInfo;
+                        else
+                            Movie2.info = obj.MoviesCh2.trackMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh2.trackMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
+                    elseif strcmp(obj.info.Channel2, 'Phase')
+                        Movie2 = Core.MPPhaseMovie(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info);
+                        Movie2.calibrated = tmp.calibrated{1,2};    
+                        if count == 1
+                            Movie2.giveInfo;
+                        else
+                            Movie2.info = obj.MoviesCh2.PhaseMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh2.PhaseMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
+                    elseif strcmp(obj.info.Channel2, 'Segmentation')
+                        Movie2 = Core.MPSegmentMovie(file , obj.MoviesCh2.cal2D, obj.MoviesCh2.info);
+                        Movie2.calibrated = tmp.calibrated{1,2};    
+                        if count == 1
+                            Movie2.giveInfo;
+                        else
+                            Movie2.info = obj.MoviesCh2.SegmentMovies.(['mov' num2str(1)]).getInfo; 
+                        end
+                        obj.MoviesCh2.SegmentMovies.(['mov' num2str(((i-2)*2)-1)]) = Movie2;
+                    end
+
+                else
+                    
+                    warning([folder2Mov(i).folder filesep folder2Mov(i).name ' did not contain any ' obj.ext ' file and is therefore ignored']);
+                    
+                end
+                
             end   
 
             if obj.info.drawROI == 1
                
 
                 for i = 3:size(folder2Mov,1)
-                    try
-                        if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
-                            disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
-                            LoadMask = load(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'));
-                            mask{i,1} = LoadMask.MaskToSave;
+                    if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
+                        disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
+                        LoadMask = load(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'));
+                        mask{i,1} = LoadMask.MaskToSave;
+                    else
+                        if strcmp(obj.info.Channel1, 'Segmentation')
+                            Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
+                            idx1 = find(contains({Folder1.name}, '.tif'));
+                            Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
+                            Dilation = obj.info1.GlobalBgCorr;
+                        elseif strcmp(obj.info.Channel2, 'Segmentation')
+                            Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
+                            idx2 = find(contains({Folder2.name}, '.tif'));
+                            Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
+                            Dilation = obj.info2.GlobalBgCorr;
                         else
-                            if strcmp(obj.info.Channel1, 'Segmentation')
-                                Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
-                                idx1 = find(contains({Folder1.name}, '.tif'));
-                                Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
-                                Dilation = obj.info1.GlobalBgCorr;
-                            elseif strcmp(obj.info.Channel2, 'Segmentation')
-                                Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
-                                idx2 = find(contains({Folder2.name}, '.tif'));
-                                Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
-                                Dilation = obj.info2.GlobalBgCorr;
-                            else
-                                error('No segmentation channel to draw ROI on');
-                            end 
-        
-                            f = figure;          
-                            imagesc(double(Frame))
-                            colormap("gray");
-                            title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
-        
-                            h = drawfreehand();
-                            Mask = createMask(h);
-                            se = strel('disk', 10);
-                            mask{i, 1} = imdilate(Mask, se);
-                            close(f)
+                            error('No segmentation channel to draw ROI on');
+                        end 
     
-                            MaskToSave = mask{i,1};
-                            save(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'), "MaskToSave");
-                            
+                        f = figure;          
+                        imagesc(double(Frame))
+                        colormap("gray");
+                        title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
     
-                        end
-                    catch
-                        disp(append("Failed to draw ROI on movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
+                        h = drawfreehand();
+                        Mask = createMask(h);
+                        se = strel('disk', 10);
+                        mask{i, 1} = imdilate(Mask, se);
+                        close(f)
+
+                        MaskToSave = mask{i,1};
+                        save(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'), "MaskToSave");
+                        
+
                     end
                 end
 
@@ -341,58 +335,54 @@ classdef MultiModalExperiment < handle
     
                     f = waitbar(0, "initializing");
                     for i = 3:size(folder2Mov,1)
-                        try
-                            Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
-                            idx1 = find(contains({Folder1.name}, '.tif'));
-                            Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
-                            idx2 = find(contains({Folder2.name}, '.tif'));
-        
-                            t1 = Tiff(append(Folder1(idx1).folder, filesep, Folder1(idx1).name), 'r+');
-                            t2 = Tiff(append(Folder2(idx2).folder, filesep, Folder2(idx2).name), 'r+');
-        
-                            if strcmp(obj.info.Channel1, 'Segmentation')
-                                nFrames1 = obj.MoviesCh1.SegmentMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
-                            elseif strcmp(obj.info.Channel1, 'Phase')
-                                nFrames1 = obj.MoviesCh1.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
-                            else
-                                nFrames1 = obj.MoviesCh1.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
-                            end
-        
-                            if strcmp(obj.info.Channel2, 'Segmentation')
-                                nFrames2 = obj.MoviesCh2.SegmentMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
-                            elseif strcmp(obj.info.Channel1, 'Phase')
-                                nFrames2 = obj.MoviesCh2.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
-                            else
-                                nFrames2 = obj.MoviesCh2.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
-                            end
-        
-                            if nFrames1 ~= nFrames2
-                                error('Different number of frames for ch1 and ch2')
-                            else
-                                nFrames = nFrames1;
-                            end
-        
-                            for j = 1:nFrames
-                                waitbar(j./nFrames, f, append("Applying ROI - movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
-                                Frame1 = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),j);
-                                Frame2 = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),j);
-        
-                                Frame1(mask{i,1} == 0) = NaN;
-                                Frame2(mask{i,1} == 0) = NaN;
-        
-                                t1.setDirectory(j);
-                                t2.setDirectory(j);
-        
-                                t1.write(Frame1);
-                                t2.write(Frame2);   
-                            end
-                            t1.close();
-                            t2.close();
-                        catch
-                            disp(append("Failed to apply ROI on movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
+                        Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
+                        idx1 = find(contains({Folder1.name}, '.tif'));
+                        Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
+                        idx2 = find(contains({Folder2.name}, '.tif'));
+    
+                        t1 = Tiff(append(Folder1(idx1).folder, filesep, Folder1(idx1).name), 'r+');
+                        t2 = Tiff(append(Folder2(idx2).folder, filesep, Folder2(idx2).name), 'r+');
+    
+                        if strcmp(obj.info.Channel1, 'Segmentation')
+                            nFrames1 = obj.MoviesCh1.SegmentMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                        elseif strcmp(obj.info.Channel1, 'Phase')
+                            nFrames1 = obj.MoviesCh1.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                        else
+                            nFrames1 = obj.MoviesCh1.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                         end
+    
+                        if strcmp(obj.info.Channel2, 'Segmentation')
+                            nFrames2 = obj.MoviesCh2.SegmentMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                        elseif strcmp(obj.info.Channel1, 'Phase')
+                            nFrames2 = obj.MoviesCh2.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                        else
+                            nFrames2 = obj.MoviesCh2.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                        end
+    
+                        if nFrames1 ~= nFrames2
+                            error('Different number of frames for ch1 and ch2')
+                        else
+                            nFrames = nFrames1;
+                        end
+    
+                        for j = 1:nFrames
+                            waitbar(j./nFrames, f, append("Applying ROI - movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
+                            Frame1 = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),j);
+                            Frame2 = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),j);
+    
+                            Frame1(mask{i,1} == 0) = NaN;
+                            Frame2(mask{i,1} == 0) = NaN;
+    
+                            t1.setDirectory(j);
+                            t2.setDirectory(j);
+    
+                            t1.write(Frame1);
+                            t2.write(Frame2);   
+                        end
+                        t1.close();
+                        t2.close();
                     end
-                    close(f);             
+                    close(f);
                 end
             end
 
