@@ -256,14 +256,15 @@ for j = 3 : size(MainFolder,1)
             
             meanMSDR = nanmean(allMSDR,1);
             tau = (1:length(meanMSDR))'*expTime;
-            DR   = nanmean([allRes.Dr]);
-            nR   = nanmean([allRes.nr]);
+            DR   = MSD.Rotational.getDiffCoeff(meanMSDR,tau,DiffFit,'3D');
+            nR   = MSD.Rotational.getViscosity(DR,Radius,ParticleType,Temp);
             disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
                 'the viscosity is ' num2str(nR) ' cp' '\n' ...
-                'for movie '  MainFolder(j).name]);
+                'for movie ']);
             %%
             filename = [folder.folder filesep 'msadRes.mat'];
             save(filename,'allRes');
+            h = msgbox('Data succesfully saved');
 
             AllMovieResults = [AllMovieResults, allRes];
         end

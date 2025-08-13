@@ -17,12 +17,8 @@ function Dr = getDiffCoeff(msad,tau,fitRange,dim)
         % figure()
         % plot(f, tau(1,:)', msad(1,:)');
 
-        if gov.rsquare > 0.5
-            g = coeffvalues(f);
-            Dr = g(1)/2;
-        else
-            Dr = NaN;
-        end
+        g = coeffvalues(f);
+        Dr = g(1)/2;
     catch
         Dr = NaN;
     end
