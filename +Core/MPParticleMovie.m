@@ -1551,6 +1551,7 @@ classdef MPParticleMovie < Core.MPMovie
             cellBlock = cell2table(cell(nPlanes, 2), 'VariableNames', strcat("C_", string(1:2)));
             numericBlock2 = array2table(nan(nPlanes, 2), 'VariableNames', strcat("N2_", string(1:2)));
 
+<<<<<<< HEAD
             try
                 newPart = [numericBlock1, cellBlock, numericBlock2];
                 newPart.Properties.VariableNames = particleData.Properties.VariableNames;
@@ -1579,21 +1580,57 @@ classdef MPParticleMovie < Core.MPMovie
                 end
             end
 
+=======
+>>>>>>> 9c9597cb6a3320a69ce3c2621df0ad48da541342
             try
+                newPart = [numericBlock1, cellBlock, numericBlock2];
+                newPart.Properties.VariableNames = particleData.Properties.VariableNames;
+         
+                %store best focus in center
+                [~,idx] = nanmax(particleData.fMetric);
+                if idx-2 > 0
+                    newPart(1,:) = particleData(idx-2,:);
+                end
+                
+                if idx-1 > 0
+                    newPart(2,:) = particleData(idx-1,:);
+                end
+
                 newPart(3,:) = particleData(idx,:);
+            
+                if idx+1 <= 8 && idx+1<= height(particleData)
+                    newPart(4,:) = particleData(idx+1,:);
+                end
+                
+                if idx+2 <= 8 && idx+2 <= height(particleData)
+                    newPart(5,:) = particleData(idx+2,:);
+                end
             catch
                 newPart = [numericBlock1, numericBlock2, cellBlock];
                 newPart.Properties.VariableNames = particleData.Properties.VariableNames;
+                
+                %store best focus in center
+                [~,idx] = nanmax(particleData.fMetric);
+                if idx-2 > 0
+                    newPart(1,:) = particleData(idx-2,:);
+                end
+                
+                if idx-1 > 0
+                    newPart(2,:) = particleData(idx-1,:);
+                end
+
                 newPart(3,:) = particleData(idx,:);
+            
+                if idx+1 <= 8 && idx+1<= height(particleData)
+                    newPart(4,:) = particleData(idx+1,:);
+                end
+                
+                if idx+2 <= 8 && idx+2 <= height(particleData)
+                    newPart(5,:) = particleData(idx+2,:);
+                end
             end
             
-            if idx+1 <= 8 && idx+1<= height(particleData)
-                newPart(4,:) = particleData(idx+1,:);
-            end
             
-            if idx+2 <= 8 && idx+2 <= height(particleData)
-                newPart(5,:) = particleData(idx+2,:);
-            end
         
         end
        

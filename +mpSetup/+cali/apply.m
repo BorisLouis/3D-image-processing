@@ -81,7 +81,7 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
         end
 
         if ~strcmp(info.Channel1, 'Phase')
-            [cal.Icorrf1NoFluo, IntCh1] = mpSetup.cali.findChIntNoFluo(data1, cal.inFocus1,1);
+            [cal.Icorrf1NoFluo, IntCh1] = mpSetup.cali.findChIntNoFluo(data1, cal.inFocus1,1,1);
             for i = 1:size(chC1,3)
                 data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*cal.Icorrf1NoFluo(i+size(chC1,3));
             end
@@ -169,7 +169,7 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             end
 
             if ~strcmp(info.Channel2, 'Phase')
-                [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1);
+                [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1, 2);
                 for i = 1:size(chC1,3)
                     data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*cal.Icorrf2NoFluo(i+size(chC3,3));
                 end
@@ -177,7 +177,7 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
 
             if info.rotational == 1
                 waitbar(.7,h,'Channel2: Correcting channel intensities rot tracking...')
-                [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1);
+                [cal.Icorrf2NoFluo, IntCh2] = mpSetup.cali.findChIntNoFluo(data2, cal.inFocus2,1, 2);
                 [cal.Icorrf2NoFluo] = mpSetup.cali.findChIntChannels(cal.Icorrf1NoFluo, cal.Icorrf2NoFluo, IntCh1, IntCh2);
                 for i = 1:size(chC1,3)
                     data1(:,:,i, :) = chC2(:,:,i,:).*cal.Icorrf1NoFluo(i);

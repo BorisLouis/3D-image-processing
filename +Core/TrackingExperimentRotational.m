@@ -330,11 +330,19 @@ classdef TrackingExperimentRotational < handle
 
                     filename = append(currentTrackMov.raw.movInfo.Path, filesep, 'Traces3D.mat');
 
-                    if exist(filename)
-
-                        traces = load(filename);
-                        traces = traces.TrackedData';
+                    if strcmp(obj.info.runMethod, 'load')
+                        if exist(filename)
+    
+                            traces = load(filename);
+                            traces = traces.TrackedData';
+                        else 
+                            run = 1;
+                        end
                     else
+                        run = 1;
+                    end
+
+                    if run == 1
 
                         %Molecule detection
                         % if currentTrackMov.info.rotationalCalib == 0
@@ -398,6 +406,7 @@ classdef TrackingExperimentRotational < handle
                     currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
                     obj.traces3D = allTraces;
                     obj.trackMovies.(fieldsN{i}) = currentTrackMov;
+       
             
                 catch
                     disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);

@@ -1,4 +1,5 @@
-FolderName = 'D:\Multimodal tracking\20250708\AllSamples';
+FolderName = 'D:\Multimodal tracking\20250724\alldata';
+OutputFolder = 'D:\Multimodal tracking\20250724\Old_phase_analysis';
 Folder = dir(FolderName);
 
 Diff0 = [];
@@ -35,37 +36,37 @@ for i = 3:size(Folder, 1)
         File = append(FolderName, filesep, Folder(i).name);
         if Folder(i).isdir == 1
             load(append(File, filesep, 'msdResPhase.mat'));
-            if strcmp(File(end-3:end), 'e0_1')
+            if strcmp(File(end-4:end), 'n0__1')
                 Diff0 = [Diff0; [allRes.DR]'];
                 a0 = [a0; [allRes.aR]'];
                 n0 = [n0; [allRes.nR]'];
                 phase0 = [phase0; [allRes.Phase]'];
-            elseif strcmp(File(end-3:end), 'e2_1')
+            elseif strcmp(File(end-4:end), 'n2__1')
                 Diff2 = [Diff2; [allRes.DR]'];
                 a2 = [a2; [allRes.aR]'];
                 n2 = [n2; [allRes.nR]'];
                 phase2 = [phase2; [allRes.Phase]'];
-            elseif strcmp(File(end-3:end), 'e4_1')
+            elseif strcmp(File(end-4:end), 'n4__1')
                 Diff4 = [Diff4; [allRes.DR]'];
                 a4 = [a4; [allRes.aR]'];
                 n4 = [n4; [allRes.nR]'];
                 phase4 = [phase4; [allRes.Phase]'];
-            elseif strcmp(File(end-3:end), 'e6_1')
+            elseif strcmp(File(end-4:end), 'n6__1')
                 Diff6 = [Diff6; [allRes.DR]'];
                 a6 = [a6; [allRes.aR]'];
                 n6 = [n6; [allRes.nR]'];
                 phase6 = [phase6; [allRes.Phase]'];
-            elseif strcmp(File(end-3:end), 'e8_1')
+            elseif strcmp(File(end-4:end), 'n8__1')
                 Diff8 = [Diff8; [allRes.DR]'];
                 a8 = [a8; [allRes.aR]'];
                 n8 = [n8; [allRes.nR]'];
                 phase8 = [phase8; [allRes.Phase]'];
-            elseif strcmp(File(end-3:end), '10_1')
+            elseif strcmp(File(end-4:end), '10__1')
                 Diff10 = [Diff10; [allRes.DR]'];
                 a10 = [a10; [allRes.aR]'];
                 n10 = [n10; [allRes.nR]'];
                 phase10 = [phase10; [allRes.Phase]'];
-            elseif strcmp(File(end-3:end), '13_1')
+            elseif strcmp(File(end-4:end), '13__1')
                 Diff13 = [Diff13; [allRes.DR]'];
                 a13 = [a13; [allRes.aR]'];
                 n13 = [n13; [allRes.nR]'];
@@ -110,7 +111,7 @@ varNames = {'Diff', 'a', 'n', 'phase'};
 yLabels = {'Diffusion', 'Anomalous exponent', 'Viscosity', 'Phase'};
 
 for v = 1:length(varNames)
-    figure;
+    Fig = figure;
     hold on;
     means = zeros(size(timepoints));
     
@@ -136,6 +137,9 @@ for v = 1:length(varNames)
     % end
     grid on;
     hold off;
+    
+    saveas(Fig, append(OutputFolder, filesep, varNames{v}, '.png'))
+
 end
 
 
@@ -157,6 +161,7 @@ xlabel('Phase');
 ylabel('Diffusion');
 title('Diffusion vs. Phase (All Timepoints Combined)');
 grid on;
+saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhase.png'))
 
 
 
@@ -179,4 +184,5 @@ ylabel('Diffusion');
 title('Diffusion vs. Phase (by Timepoint)');
 legend(legendEntries);
 grid on;
+saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhasePerTimepoint.png'))
 hold off;

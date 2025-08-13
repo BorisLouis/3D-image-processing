@@ -1,4 +1,4 @@
-function [ totCor, Icor ] = findChInt( data, inFocus, doFigure )
+function [ totCor, Icor ] = findChInt( data, inFocus, doFigure, q)
 
 switch nargin
     case 3
@@ -89,7 +89,7 @@ if doFigure
     xlabel('Frame')
     ylabel('Mean intensity of frame')
 
-    sgtitle('Corrected to plane 1')
+    sgtitle(append('Channel ', num2str(q), ' : Corrected to plane 1'));
 
 end
 
