@@ -63,12 +63,20 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             for i = 1:size(chC1,3)
                 data1(:,:,i,:) = chC1(:,:,i,:).*C(i);
             end
+        else
+            for i = 1:size(chC1,3)
+                data1(:,:,i,:) = chC1(:,:,i,:);
+            end
         end
         
         if ~strcmp(info.Channel1, 'Phase')
             waitbar(.7,h,'Correcting plane intensities...')
             for i = 1:size(chC1,3)
                 data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:).*C(i+size(chC1,3));
+            end
+        else
+            for i = 1:size(chC1,3)
+                data1(:,:,i+size(chC1,3),:) = chC2(:,:,i,:);
             end
         end
 
@@ -143,12 +151,20 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
                 for i = 1:size(chC3,3)
                     data2(:,:,i,:) = chC3(:,:,i,:).*C2(i);
                 end
+            else
+                for i = 1:size(chC3,3)
+                    data2(:,:,i,:) = chC3(:,:,i,:);
+                end
             end
             
             if ~strcmp(info.Channel2, 'Phase')
                 waitbar(.7,h,'Channel2: Correcting plane intensities...')
                 for i = 1:size(chC3,3)
                     data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:).*C2(i+size(chC3,3));
+                end
+            else
+                for i = 1:size(chC3,3)
+                    data2(:,:,i+size(chC3,3),:) = chC4(:,:,i,:);
                 end
             end
 
