@@ -7,8 +7,8 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'E:\Data Indra\MultiColor - lysosome tracking\20250710\All data\Dna_NB';
-path2Cal = 'E:\Data Indra\MultiColor - lysosome tracking\20250710\2DCal';
+file.path  = 'D:\Multimodal tracking\20250724\alldata\testsample';
+path2Cal = 'D:\Multimodal tracking\20250724\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

@@ -999,65 +999,118 @@ classdef MultiModalExperiment < handle
                       CurrentPhaseMov = PhaseObj.PhaseMovies.(fieldsN{i});
     
                       Traces3D = CurrentTrackMov.traces3D;
+                      keepMask = cellfun(@(t) height(t) > 4, Traces3D(:,1));
+                      Traces3Dshort = Traces3D(keepMask,:);
                       CurrentQPMap = 0;
     
                       f = waitbar(0, 'initializing...');
     
-                      for j = 1:size(Traces3D,1)
-                          CurrentTrace = Traces3D{j, 1};
-                          waitbar(j./size(Traces3D, 1), f, append('Combining phase & tracking - Movie ', num2str(i),...
+                      for j = 1:size(Traces3Dshort,1)
+
+                          CurrentTrace = Traces3Dshort{j, 1};
+                          waitbar(j./size(Traces3Dshort, 1), f, append('Combining phase & tracking - Movie ', num2str(i),...
                               ' out of ', num2str(nfields)));
+                          if size(CurrentTrace, 1) > 3
+                              for k = 1:size(CurrentTrace, 1)
+                                  Row = CurrentTrace.rowM(k);
+                                  Col = CurrentTrace.colM(k);
+                                  z = CurrentTrace.z(k)./1000;
+                                  t = CurrentTrace.t(k);
+        
+                                  if CurrentQPMap ~= ceil(t./100)
+                                      QPmap = load(append(CurrentPhaseMov.raw.movInfo.Path, filesep, 'PhaseMovie', filesep,...
+                                          'PhaseMovie', num2str(ceil(t./100)), '.mat'));
+                                      QPmap = QPmap.QPmap;
+                                      RawData = CurrentPhaseMov.getFrame(t, 1);
+                                      for s = 1:size(RawData, 3)
+                                        [GradientMagnitude(:,:,s), ~] = imgradient(RawData(:,:,s, r), 'sobel');
+                                        LocalVariance(:,:,s) = stdfilt(RawData(:,:,s, r), true(3));
+                                        SharpnessLaplacian(:,:,s) = imfilter(RawData(:,:,s, r), fspecial('laplacian', 0.2), 'replicate');
+                                      end
     
-                          for k = 1:size(CurrentTrace, 1)
-                              Row = CurrentTrace.rowM(k);
-                              Col = CurrentTrace.colM(k);
-                              z = CurrentTrace.z(k)./1000;
-                              t = CurrentTrace.t(k);
+                                      CurrentQPMap = ceil(t./100);
+                                  end
+        
+                                  QProw = round(Row) - CurrentPhaseMov.Cropped.StartY;
+                                  QPcol = round(Col) - CurrentPhaseMov.Cropped.StartX;
+        
+                                  PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
+                                  [~, idx] = min(abs(PlaneCoords - z));
+                                  PlaneCoords(idx) = Inf;
+                                  [~, idx2] = min(abs(PlaneCoords - z));
+        
+                                  test = z./(CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx2) - CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx));
+        
+                                  Frame = rem(t, 100);
+                                  if Frame == 0
+                                      Frame = 100;
+                                  end
+        
+                                  if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
+                                      CurrentTrace = [];
+                                      break
+                                  else
+                                      PhasePx1 = QPmap(QProw, QPcol, idx, Frame);
+                                      PhasePx2 = QPmap(QProw, QPcol, idx2, Frame);
+                                      if idx2 > idx
+                                          Phase(k,1) = (PhasePx2 - PhasePx1)*test + PhasePx1;
+                                      elseif idx2 < idx
+                                          Phase(k,1) = (PhasePx1 - PhasePx2)*test + PhasePx2;
+                                      end
     
-                              if CurrentQPMap ~= ceil(t./100)
-                                  QPmap = load(append(CurrentPhaseMov.raw.movInfo.Path, filesep, 'PhaseMovie', filesep,...
-                                      'PhaseMovie', num2str(ceil(t./100)), '.mat'));
-                                  QPmap = QPmap.QPmap;
-                                  CurrentQPMap = ceil(t./100);
-                              end
+                                      IntPx1 = RawData(QProw, QPcol, idx);
+                                      IntPx2 = RawData(QProw, QPcol, idx);
+                                      if idx2 > idx
+                                          IntPhaseCh(k,1) = (IntPx2 - IntPx1)*test + IntPx1;
+                                      elseif idx2 < idx
+                                          IntPhaseCh(k,1) = (IntPx1 - IntPx2)*test + IntPx1;
+                                      end
     
-                              QProw = round(Row) - CurrentPhaseMov.Cropped.StartY;
-                              QPcol = round(Col) - CurrentPhaseMov.Cropped.StartX;
+                                      GradMagPx1 = GradientMagnitude(QProw, QPcol, idx);
+                                      GradMagPx2 = GradientMagnitude(QProw, QPcol, idx);
+                                      if idx2 > idx
+                                          GradMag(k,1) = (GradMagPx2 - GradMagPx1)*test + GradMagPx1;
+                                      elseif idx2 < idx
+                                          GradMag(k,1) = (GradMagPx1 - GradMagPx2)*test + GradMagPx1;
+                                      end
     
-                              PlaneCoords = CurrentTrackMov.calibrated{1, 1}.oRelZPos;
-                              [~, idx] = min(abs(PlaneCoords - z));
-                              PlaneCoords(idx) = Inf;
-                              [~, idx2] = min(abs(PlaneCoords - z));
+                                      LocVarPx1 = LocalVariance(QProw, QPcol, idx);
+                                      LocVarPx2 = LocalVariance(QProw, QPcol, idx);
+                                      if idx2 > idx
+                                          LocVar(k,1) = (LocVarPx2 - LocVarPx1)*test + LocVarPx1;
+                                      elseif idx2 < idx
+                                          LocVar(k,1) = (LocVarPx1 - LocVarPx2)*test + LocVarPx1;
+                                      end
     
-                              test = z./(CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx2) - CurrentTrackMov.calibrated{1, 1}.oRelZPos(idx));
-    
-                              Frame = rem(t, 100);
-                              if Frame == 0
-                                  Frame = 100;
-                              end
-    
-                              if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
-                                  CurrentTrace = [];
-                                  break
-                              else
-                                  PhasePx1 = QPmap(QProw, QPcol, idx, Frame);
-                                  PhasePx2 = QPmap(QProw, QPcol, idx2, Frame);
-                                  if idx2 > idx
-                                      Phase(k,1) = (PhasePx2 - PhasePx1)*test + PhasePx1;
-                                  elseif idx2 < idx
-                                      Phase(k,1) = (PhasePx1 - PhasePx2)*test + PhasePx2;
+                                      SharpnessLaplPx1 = SharpnessLaplacian(QProw, QPcol, idx);
+                                      SharpnessLaplPx2 = SharpnessLaplacian(QProw, QPcol, idx);
+                                      if idx2 > idx
+                                          SharpnessLapl(k,1) = (SharpnessLaplPx2 - SharpnessLaplPx1)*test + SharpnessLaplPx1;
+                                      elseif idx2 < idx
+                                          SharpnessLapl(k,1) = (SharpnessLaplPx1 - SharpnessLaplPx2)*test + SharpnessLaplPx1;
+                                      end
                                   end
                               end
+        
+                              if ~isempty(CurrentTrace)
+                                  CurrentTrace.Phase = Phase;
+                                  CurrentTrace.IntPhaseCh = IntPhaseCh;
+                                  CurrentTrace.GradientMagnitude = GradMag;
+                                  CurrentTrace.LocalVariance = LocVar;
+                                  CurrentTrace.SharpnessLaplacian = SharpnessLapl;
+                              end
+                              Traces3Dshort{j, 1} = CurrentTrace;
+                              Phase = [];
+                              IntPhaseCh = [];
+                              GradMag = [];
+                              LocVar = [];
+                              SharpnessLapl = [];
+                          else
                           end
-    
-                          if ~isempty(CurrentTrace)
-                              CurrentTrace.Phase = Phase;
-                          end
-                          Traces3D{j, 1} = CurrentTrace;
-                          Phase = [];
                       end
-                      Traces3D = Traces3D(~cellfun(@isempty, Traces3D(:,1)), :);
-                      CurrentTrackMov.traces3D = Traces3D;
+                      Traces3Dshort = Traces3Dshort(~cellfun(@isempty, Traces3Dshort(:,1)), :);
+                      CurrentTrackMov.traces3D = Traces3Dshort;
+                      Traces3D = Traces3Dshort;
                       TrackObj.trackMovies.(fieldsN{i}) = CurrentTrackMov;
     
                       FileName = append(CurrentTrackMov.raw.movInfo.Path, filesep, 'TraceswPhase.mat');
