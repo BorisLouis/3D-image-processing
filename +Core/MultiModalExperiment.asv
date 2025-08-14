@@ -449,7 +449,7 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
                     obj.MoviesCh1.saveData(1);
                     obj.MoviesCh2.saveData(2);
-                    
+
                     obj.ConsolidateChannels3;
                     if obj.info.rotationalCalib == 1
                         obj.RotationalCalibration;
@@ -1007,9 +1007,10 @@ classdef MultiModalExperiment < handle
     
                       for j = 1:size(Traces3Dshort,1)
 
+                          try
                           CurrentTrace = Traces3Dshort{j, 1};
                           waitbar(j./size(Traces3Dshort, 1), f, append('Combining phase & tracking - Movie ', num2str(i),...
-                              ' out of ', num2str(nfields)));
+                              ' out of ', num2str(nfields), ' - Trace ', num2str(j), ' out of ', num2str(size(Traces3Dshort,1))));
                           if size(CurrentTrace, 1) > 3
                               for k = 1:size(CurrentTrace, 1)
                                   Row = CurrentTrace.rowM(k);
@@ -1023,9 +1024,9 @@ classdef MultiModalExperiment < handle
                                       QPmap = QPmap.QPmap;
                                       RawData = CurrentPhaseMov.getFrame(t, 1);
                                       for s = 1:size(RawData, 3)
-                                        [GradientMagnitude(:,:,s), ~] = imgradient(RawData(:,:,s, r), 'sobel');
-                                        LocalVariance(:,:,s) = stdfilt(RawData(:,:,s, r), true(3));
-                                        SharpnessLaplacian(:,:,s) = imfilter(RawData(:,:,s, r), fspecial('laplacian', 0.2), 'replicate');
+                                        [GradientMagnitude(:,:,s), ~] = imgradient(RawData(:,:,s), 'sobel');
+                                        LocalVariance(:,:,s) = stdfilt(RawData(:,:,s), true(3));
+                                        SharpnessLaplacian(:,:,s) = imfilter(RawData(:,:,s), fspecial('laplacian', 0.2), 'replicate');
                                       end
     
                                       CurrentQPMap = ceil(t./100);
