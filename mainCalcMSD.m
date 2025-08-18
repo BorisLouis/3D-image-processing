@@ -273,8 +273,7 @@ for j = 3 : size(MainFolder,1)
 end
 close(f)
 
-FileName = append(FilePath, filesep, name);
-save(FileName, "AllMovieResults");
+save(FilePath, "AllMovieResults");
 
 if strcmp(Experiment, 'Tracking-Segmentation')
     name = 'msdResSegmentation';
