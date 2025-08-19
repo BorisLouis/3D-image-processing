@@ -1,7 +1,7 @@
 FolderName = 'D:\Multimodal tracking\20250724\alldata';
-OutputFolder = 'D:\Multimodal tracking\20250724\Analysis\SharpnessLaplacian';
+OutputFolder = 'D:\Multimodal tracking\20250724\IntCh_analysis';
 Folder = dir(FolderName);
-Parameter = 'SharpnessLaplacian';
+Parameter = 'IntPhaseCh';
 
 Diff0 = [];
 a0 = [];
@@ -178,19 +178,18 @@ end
 timepoints = [0 2 4 6 8 10 13];
 
 % Define variable base names and labels
-
-if strcmp(Parameter, 'Phase')
-    PhaseLabel = 'Phase';
-elseif strcmp(Parameter, 'IntPhaseCh')
-    PhaseLabel = 'IntPhaseCh';
-elseif strcmp(Parameter, 'GradientMagnitude')
-    PhaseLabel = 'GradientMagnitude';
-elseif strcmp(Parameter, 'LocalVariance')
-    PhaseLabel = 'LocalVariance';
-elseif strcmp(Parameter, 'SharpnessLaplacian')
-    PhaseLabel = 'SharpnessLaplacian';
-end
 varNames = {'Diff', 'a', 'n', 'phase'};
+if strcmp(Parameter, 'Phase')
+    xlabel('Phase');
+elseif strcmp(Parameter, 'IntPhaseCh')
+    xlabel('IntPhaseCh');
+elseif strcmp(Parameter, 'GradientMagnitude')
+    xlabel('GradientMagnitude');
+elseif strcmp(Parameter, 'LocalVariance')
+    xlabel('LocalVariance');
+elseif strcmp(Parameter, 'SharpnessLaplacian')
+    xlabel('SharpnessLaplacian');
+end
 yLabels = {'Diffusion', 'Anomalous exponent', 'Viscosity', PhaseLabel};
 
 for v = 1:length(varNames)
@@ -238,7 +237,7 @@ for i = 1:length(timepoints)
     allPhase = [allPhase; p];
 end
 
-Fig = figure;
+figure;
 scatter(allPhase, allDiff, 20, 'filled');
 if strcmp(Parameter, 'Phase')
     xlabel('Phase');
@@ -259,7 +258,7 @@ saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhase.png'))
 
 
 
-Fig = figure;
+figure;
 hold on;
 
 colors = lines(length(timepoints));
