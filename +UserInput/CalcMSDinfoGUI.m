@@ -1,4 +1,4 @@
-function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = CalcMSDinfoGUI()
+function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = CalcMSDinfoGUI()
     % Initialize default outputs
     FilePath = '';
     Experiment = '';
@@ -6,6 +6,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Diff
     ExpTime = NaN;
     Temp = NaN;
     Radius = NaN;
+    Radius2 = NaN;
     DiffFit = NaN;
     MinSize = NaN;
     Ext = '';
@@ -14,9 +15,9 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Diff
 
     % Create UI Figure
     fig = uifigure('Name', 'Parameter Input', ...
-                   'Position', [100 100 450 650]);
+                   'Position', [100 100 450 700]);
 
-    y = 600; dy = 40;
+    y = 650; dy = 40;
 
     % FilePath
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'File Path:');
@@ -26,7 +27,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Diff
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Experiment:');
     dropdownExperiment = uidropdown(fig, 'Position', [130 y 280 22], ...
-        'Items', {'Tracking', 'Tracking-Segmentation', 'Tracking-Phase', 'Rotational Tracking'}, ...
+        'Items', {'Tracking', 'Tracking-Segmentation', 'Tracking-Phase', 'Rotational Tracking', 'Dual color tracking'}, ...
         'Value', 'Tracking-Segmentation');
 
     % Filename
@@ -59,6 +60,11 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Diff
     labelRadius = uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Radius (µm):');
     editRadiusNumeric = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0.020);
     editRadiusArray   = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', '[184 92]', 'Visible', 'off');
+
+    % Radius2 (for Dual color tracking, hidden initially)
+    y = y - dy;
+    labelRadius2 = uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Radius 2 (µm):', 'Visible', 'off');
+    editRadius2 = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0, 'Visible', 'off');
 
     % DiffFit
     y = y - dy;
@@ -94,26 +100,43 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Diff
         'ButtonPushedFcn', @(btn,event) submitCallback());
 
     % Show/hide extra fields when Experiment changes
-    dropdownExperiment.ValueChangedFcn = @(dd,event) toggleRotationalFields();
+    dropdownExperiment.ValueChangedFcn = @(dd,event) toggleExperimentFields();
 
     % Toggle function
-    function toggleRotationalFields()
-        if strcmp(dropdownExperiment.Value, 'Rotational Tracking')
-            labelParticleType.Visible = 'on';
-            dropdownParticleType.Visible = 'on';
-            labelPath2RotCal.Visible = 'on';
-            editPath2RotCal.Visible = 'on';
-            editRadiusNumeric.Visible = 'off';
-            editRadiusArray.Visible = 'on';
-            labelRadius.Text = 'Radius array:';
-        else
-            labelParticleType.Visible = 'off';
-            dropdownParticleType.Visible = 'off';
-            labelPath2RotCal.Visible = 'off';
-            editPath2RotCal.Visible = 'off';
-            editRadiusNumeric.Visible = 'on';
-            editRadiusArray.Visible = 'off';
-            labelRadius.Text = 'Radius (µm):';
+    function toggleExperimentFields()
+        switch dropdownExperiment.Value
+            case 'Rotational Tracking'
+                labelParticleType.Visible = 'on';
+                dropdownParticleType.Visible = 'on';
+                labelPath2RotCal.Visible = 'on';
+                editPath2RotCal.Visible = 'on';
+                editRadiusNumeric.Visible = 'off';
+                editRadiusArray.Visible = 'on';
+                labelRadius.Text = 'Radius array:';
+                labelRadius2.Visible = 'off';
+                editRadius2.Visible = 'off';
+
+            case 'Dual color tracking'
+                labelParticleType.Visible = 'off';
+                dropdownParticleType.Visible = 'off';
+                labelPath2RotCal.Visible = 'off';
+                editPath2RotCal.Visible = 'off';
+                editRadiusNumeric.Visible = 'on';
+                editRadiusArray.Visible = 'off';
+                labelRadius.Text = 'Radius (µm):';
+                labelRadius2.Visible = 'on';
+                editRadius2.Visible = 'on';
+
+            otherwise
+                labelParticleType.Visible = 'off';
+                dropdownParticleType.Visible = 'off';
+                labelPath2RotCal.Visible = 'off';
+                editPath2RotCal.Visible = 'off';
+                editRadiusNumeric.Visible = 'on';
+                editRadiusArray.Visible = 'off';
+                labelRadius.Text = 'Radius (µm):';
+                labelRadius2.Visible = 'off';
+                editRadius2.Visible = 'off';
         end
     end
 
@@ -136,8 +159,13 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Diff
             ParticleType = dropdownParticleType.Value;
             path2RotCal = editPath2RotCal.Value;
             Radius = str2num(editRadiusArray.Value); %#ok<ST2NM>
+            Radius2 = NaN;
+        elseif strcmp(Experiment, 'Dual color tracking')
+            Radius = editRadiusNumeric.Value;
+            Radius2 = editRadius2.Value;
         else
             Radius = editRadiusNumeric.Value;
+            Radius2 = NaN;
         end
 
         uiresume(fig);
