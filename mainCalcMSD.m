@@ -3,7 +3,7 @@ clear ;
 close all;
 
 %% USER INPUT
-[FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = UserInput.CalcMSDinfoGUI;
+[FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = UserInput.CalcMSDinfoGUI;
 
 %% Loading
 f = waitbar(0, 'Initializing...');
@@ -13,17 +13,29 @@ MainFolder([MainFolder.isdir] ~= 1) = [];
 
 AllMovieResults = [];
 for j = 3 : size(MainFolder,1)
-    try
+    % try
         folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
-        idx = contains({folder.name},Filename);
+        idx = contains({folder.name},FilenameRaw);
         folder(~idx) = [];
-        
-        f2Load = [folder(1).folder filesep folder(1).name];
-        Path = folder(1).folder;
-        
-        tmpData = load(f2Load);
-        name = fieldnames(tmpData);
-        data = tmpData.(name{1});
+
+        if strcmp(Experiment, 'Dual color tracking')
+            Loop = 2;
+        else
+            Loop = 1;
+        end
+        for l = 1:Loop
+            if l == 1
+                Filename = append(FilenameRaw, '1');
+            elseif l == 2
+                Filename = append(FilenameRaw, '2');
+            end
+    
+            f2Load = [folder(1).folder filesep Filename '.mat'];
+            Path = folder(1).folder;
+            
+            tmpData = load(f2Load);
+            name = fieldnames(tmpData);
+            data = tmpData.(name{1});
 
         % if strcmp(Path(end-4:end), 'n0_1')
         %     Temp = 303.15;
@@ -42,19 +54,7 @@ for j = 3 : size(MainFolder,1)
         % end
         
         %% Processing
-        if ~strcmp(Experiment, 'Rotational Tracking')
-            if strcmp(Experiment, 'Dual color tracking')
-                Loop = 2;
-            else
-                Loop = 1;
-            end
-
-            for l = 1:Loop
-                if Loop == 1
-                    Filename = append(Filename, '1');
-                elseif Loop == 2
-                    Filename = append(Filename, '2');
-                end
+            if ~strcmp(Experiment, 'Rotational Tracking')
                 try
                     allHeight = cellfun(@height,data.traces(:,1));
                     idx = allHeight>MinSize;
@@ -206,109 +206,119 @@ for j = 3 : size(MainFolder,1)
                     name = append('msdResPhase', Ext);
                 elseif strcmp(Experiment, 'Tracking')
                     name = append('msdRes', Filename(end), Ext);
+                elseif strcmp(Experiment, 'Dual color tracking')
+                    name = append('msdRes', Filename(end), Ext);
                 else
                     error('Please specify type of experiment: Tracking, Tracking-Segmentation, Tracking-Phase');
                 end
             
-                FileName = append(Path, filesep, name);
-                save(FileName,'allRes');
+                FileNameToSave = append(Path, filesep, name);
+                save(FileNameToSave,'allRes');
                 disp(append('== Data succesfully saved - movie ', num2str(j-2), ' out of ', num2str(size(MainFolder, 1)-2), ' =='));
             
                 AllMovieResults = [AllMovieResults, allRes];
-            end
-        else
-            %% This is for rotational tracking
-            allHeight = cellfun(@height,data.Coord1);
-            idx = allHeight>MinSize;
-            currMov = data(idx,:);
-            allRes = struct('msadTheta',0,'msadPhi',0,'msadr',0,'tau',0,'DTheta',0,'DPhi',0,'Dr',0,...
-                'nTheta',0,'nPhi',0,'nr',0,'vTheta',0,'vPhi',0,'vr',0);
-            allRes(size(currMov, 1)).masdTheta = [];
-            maxLength = max(allHeight);
-            allmsadTheta = zeros(size(currMov, 1),maxLength-1);
-            allmsadPhi = allmsadTheta;
-            allmsad = allmsadPhi;
-
-            calibration = load(append(Path2Rotcal, filesep, 'RotCalib.mat'));
-            name = fieldnames(calibration);
-            calibration = calibration.(name{1,1});
-            
-            for i = 1:size(currMov,1)
-                currPart = currMov(i,:);
-            
-                %%% calculate angels
-                TotInt = currPart.Int1{1,1} + currPart.Int2{1,1};
-                I1 = currPart.Int1{1,1}./TotInt;
-                I2 = currPart.Int2{1,1}./TotInt;
-                Diff = I1 - I2;
-            
-                Theta = 0.5*real(acos(Diff./calibration.I0_mean));
-                Phi = real(acos(sqrt(TotInt./calibration.TotI0_mean)));
-            
-                coord = [Theta, Phi];
-            
-                tau = currPart.Time{1,1};
-
-                %For Theta
-                msadTheta = MSD.Rotational.calc(coord(:,1), tau, expTime);
-                allmsadTheta(i,1:size(msadTheta, 2)) = msadTheta(1,:);
-                DTheta   = MSD.Rotational.getDiffCoeff(msadTheta,tau,DiffFit,'2D');
-                nTheta   = MSD.Rotational.getViscosity(DTheta,Radius,ParticleType, Temp);
-                vTheta   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
-            
-                %For Phi
-                msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
-                allmsadPhi(i,1:size(msadPhi, 2)) = msadPhi(1,:);
-                DPhi   = MSD.Rotational.getDiffCoeff(msadPhi,tau,DiffFit,'2D');
-                nPhi   = MSD.Rotational.getViscosity(DPhi,Radius,ParticleType, Temp);
-                vPhi   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
-            
-                %For both
-                msadr = MSD.Rotational.calc(coord, tau, expTime);%convert to um;
-                allMSDR(i,1:size(msadr,2)) = msadr(1,:);
-                DR   = MSD.Rotational.getDiffCoeff(msadr,tau,DiffFit,'3D');
-                nR   = MSD.Rotational.getViscosity(DR,Radius,ParticleType,Temp);
-                dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
-                vR = dR/10^3/(length(coord)*expTime); %rad/s
-            
-                allRes(i).msadTheta = msadTheta;% in rad^2 
-                allRes(i).msadPhi = msadPhi;
-                allRes(i).msadr = msadr;
-                allRes(i).tau = tau; % in sec
-            
-                allRes(i).DTheta   = DTheta;% in rad^2 /sec
-                allRes(i).DPhi   = DPhi;% in rad^2 /sec
-                allRes(i).Dr  = DR;% in rad^2 /sec
-            
-                allRes(i).nTheta   = nTheta;
-                allRes(i).nPhi   = nPhi;
-                allRes(i).nr   = nR;
+            else
+                %% This is for rotational tracking
+                allHeight = cellfun(@height,data.Coord1);
+                idx = allHeight>MinSize;
+                currMov = data(idx,:);
+                allRes = struct('msadTheta',0,'msadPhi',0,'msadr',0,'tau',0,'DTheta',0,'DPhi',0,'Dr',0,...
+                    'nTheta',0,'nPhi',0,'nr',0,'vTheta',0,'vPhi',0,'vr',0);
+                allRes(size(currMov, 1)).masdTheta = [];
+                maxLength = max(allHeight);
+                allmsadTheta = zeros(size(currMov, 1),maxLength-1);
+                allmsadPhi = allmsadTheta;
+                allmsad = allmsadPhi;
+    
+                calibration = load(append(Path2Rotcal, filesep, 'RotCalib.mat'));
+                name = fieldnames(calibration);
+                calibration = calibration.(name{1,1});
                 
-                allRes(i).vTheta   = vTheta;
-                allRes(i).vPhi   = vPhi;
-                allRes(i).vr   = vR;
+                for i = 1:size(currMov,1)
+                    currPart = currMov(i,:);
                 
-                allRes(i).num  = length(msadTheta);
+                    %%% calculate angels
+                    TotInt = currPart.Int1{1,1} + currPart.Int2{1,1};
+                    I1 = currPart.Int1{1,1}./TotInt;
+                    I2 = currPart.Int2{1,1}./TotInt;
+                    Diff = I1 - I2;
+                
+                    Theta = 0.5*real(acos(Diff./calibration.I0_mean));
+                    Phi = real(acos(sqrt(TotInt./calibration.TotI0_mean)));
+                
+                    coord = [Theta, Phi];
+                
+                    tau = currPart.Time{1,1};
+    
+                    %For Theta
+                    msadTheta = MSD.Rotational.calc(coord(:,1), tau, expTime);
+                    allmsadTheta(i,1:size(msadTheta, 2)) = msadTheta(1,:);
+                    DTheta   = MSD.Rotational.getDiffCoeff(msadTheta,tau,DiffFit,'2D');
+                    nTheta   = MSD.Rotational.getViscosity(DTheta,Radius,ParticleType, Temp);
+                    vTheta   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
+                
+                    %For Phi
+                    msadPhi = MSD.Rotational.calc(coord(:,2), tau, expTime);
+                    allmsadPhi(i,1:size(msadPhi, 2)) = msadPhi(1,:);
+                    DPhi   = MSD.Rotational.getDiffCoeff(msadPhi,tau,DiffFit,'2D');
+                    nPhi   = MSD.Rotational.getViscosity(DPhi,Radius,ParticleType, Temp);
+                    vPhi   = coord(1,1) - coord(end,1)/(length(coord)*expTime)*180/pi; %degrees/s
+                
+                    %For both
+                    msadr = MSD.Rotational.calc(coord, tau, expTime);%convert to um;
+                    allMSDR(i,1:size(msadr,2)) = msadr(1,:);
+                    DR   = MSD.Rotational.getDiffCoeff(msadr,tau,DiffFit,'3D');
+                    nR   = MSD.Rotational.getViscosity(DR,Radius,ParticleType,Temp);
+                    dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
+                    vR = dR/10^3/(length(coord)*expTime); %rad/s
+                
+                    allRes(i).msadTheta = msadTheta;% in rad^2 
+                    allRes(i).msadPhi = msadPhi;
+                    allRes(i).msadr = msadr;
+                    allRes(i).tau = tau; % in sec
+                
+                    allRes(i).DTheta   = DTheta;% in rad^2 /sec
+                    allRes(i).DPhi   = DPhi;% in rad^2 /sec
+                    allRes(i).Dr  = DR;% in rad^2 /sec
+                
+                    allRes(i).nTheta   = nTheta;
+                    allRes(i).nPhi   = nPhi;
+                    allRes(i).nr   = nR;
+                    
+                    allRes(i).vTheta   = vTheta;
+                    allRes(i).vPhi   = vPhi;
+                    allRes(i).vr   = vR;
+                    
+                    allRes(i).num  = length(msadTheta);
+                end
+                
+                %%
+                
+                meanMSDR = nanmean(allMSDR,1);
+                tau = (1:length(meanMSDR))'*expTime;
+                DR   = nanmean([allRes.DR]);
+                nR   = nanmean([allRes.nR]);
+                disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
+                    'the viscosity is ' num2str(nR) ' cp' '\n' ...
+                    'for movie '  MainFolder(j).name]);
+                %%
+                if strcmp(Experiment, 'Dual color tracking')
+                    if l == 1
+                        filenameAllRes = [folder(1).folder filesep 'msadRes1.mat'];
+                    elseif l == 2
+                        filenameAllRes = [folder(1).folder filesep 'msadRes2.mat'];
+                    end
+                else
+                    filenameAllRes = [folder(1).folder filesep 'msadRes.mat'];
+                end
+                save(filenameAllRes,'allRes');
+    
+                AllMovieResults = [AllMovieResults, allRes];
             end
-            
-            %%
-            
-            meanMSDR = nanmean(allMSDR,1);
-            tau = (1:length(meanMSDR))'*expTime;
-            DR   = nanmean([allRes.Dr]);
-            nR   = nanmean([allRes.nr]);
-            disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
-                'the viscosity is ' num2str(nR) ' cp' '\n' ...
-                'for movie '  MainFolder(j).name]);
-            %%
-            filename = [folder.folder filesep 'msadRes.mat'];
-            save(filename,'allRes');
-
-            AllMovieResults = [AllMovieResults, allRes];
         end
-    catch
-        disp(append('Failed to calculate movie ', MainFolder(j).name));
-    end
+    % catch
+    %     disp(append('Failed to calculate movie ', MainFolder(j).name));
+    % end
 end
 close(f)
 
