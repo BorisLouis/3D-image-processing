@@ -3,7 +3,7 @@ clear ;
 close all;
 
 %% USER INPUT
-[FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = UserInput.CalcMSDinfoGUI;
+[FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = UserInput.CalcMSDinfoGUI;
 
 %% Loading
 f = waitbar(0, 'Initializing...');
@@ -13,7 +13,7 @@ MainFolder([MainFolder.isdir] ~= 1) = [];
 
 AllMovieResults = [];
 for j = 3 : size(MainFolder,1)
-    % try
+    try
         folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
         idx = contains({folder.name},FilenameRaw);
         folder(~idx) = [];
@@ -26,8 +26,10 @@ for j = 3 : size(MainFolder,1)
         for l = 1:Loop
             if l == 1
                 Filename = append(FilenameRaw, '1');
+                Radius = Radius1;
             elseif l == 2
                 Filename = append(FilenameRaw, '2');
+                Radius = Radius2;
             end
     
             f2Load = [folder(1).folder filesep Filename '.mat'];
@@ -316,9 +318,9 @@ for j = 3 : size(MainFolder,1)
                 AllMovieResults = [AllMovieResults, allRes];
             end
         end
-    % catch
-    %     disp(append('Failed to calculate movie ', MainFolder(j).name));
-    % end
+    catch
+        disp(append('Failed to calculate movie ', MainFolder(j).name));
+    end
 end
 close(f)
 
