@@ -266,6 +266,7 @@ classdef TrackingExperimentRotational < handle
                     %superResolve
                     currentTrackMov.superResolve(q);
                     
+                    currentTrackMov.correctDrift;
                     %tracking occurs here
                     currentTrackMov.trackParticle(trackParam,q);
                     
@@ -370,9 +371,11 @@ classdef TrackingExperimentRotational < handle
                         end
                         currentTrackMov.consolidatePlanes(frames,detectParam,q)
         
+                        
                         %superResolve
                         currentTrackMov.superResolve(q);
                         
+                        currentTrackMov.correctDrift;
                         %tracking occurs here
                         currentTrackMov.trackParticle(trackParam,q);
                         

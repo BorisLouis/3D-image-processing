@@ -218,8 +218,8 @@ function [info, info1, info2, file] = infoGUI(file)
             info1.detectParam.consThresh = info1.consThresh;
             info1.trackParam.radius = info1.track_radius;
             info1.trackParam.memory = info1.track_memory;
-
             info1 = rmfield(info1, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
+
         elseif contains(info.Channel1, 'Phase')
             info1.optics.dz = info1.dz;
             info1.optics.NA = info1.NA;
@@ -244,7 +244,6 @@ function [info, info1, info2, file] = infoGUI(file)
             info2.detectParam.consThresh = info2.consThresh;
             info2.trackParam.radius = info2.track_radius;
             info2.trackParam.memory = info2.track_memory;
-
             info2 = rmfield(info2, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'}); 
         elseif contains(info.Channel1, 'Phase')
             info2.optics.dz = info2.dz;
@@ -283,6 +282,7 @@ function controls = addChannelControls(layout, type)
             controls.consThresh = addLabelField(layout, 'consThresh', '4');
             controls.track_radius = addLabelField(layout, 'track.radius (nm)', '2500');
             controls.track_memory = addLabelField(layout, 'track.memory (frames)', '3');
+            controls.CorrectDrift = addDropdown(layout, 'Correct Drift', {'on', 'off'}, 'on');
 
         case 'Segmentation'
             controls.GlobalBgCorr = addLabelField(layout, ...
