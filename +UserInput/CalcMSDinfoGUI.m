@@ -1,4 +1,4 @@
-function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal] = CalcMSDinfoGUI()
+function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces] = CalcMSDinfoGUI()
     % Initialize default outputs
     FilePath = '';
     Experiment = '';
@@ -12,6 +12,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     Ext = '';
     ParticleType = '';
     path2RotCal = '';
+    CutTraces = NaN;
 
     % Create UI Figure
     fig = uifigure('Name', 'Parameter Input', ...
@@ -75,6 +76,11 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'MinSize:');
     editMinSize = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 20);
+
+    % CutTraces
+    y = y - dy;
+    uilabel(fig, 'Position', [20 y 100 22], 'Text', 'CutTraces:');
+    editCutTraces = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0);
 
     % Extension
     y = y - dy;
@@ -154,6 +160,10 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
         DiffFit = editDiffFit.Value;
         MinSize = editMinSize.Value;
         Ext = dropdownExt.Value;
+        CutTraces = editCutTraces.Value;
+        if CutTraces == 0
+            CutTraces = NaN;
+        end
 
         if strcmp(Experiment, 'Rotational Tracking')
             ParticleType = dropdownParticleType.Value;
