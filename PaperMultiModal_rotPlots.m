@@ -1,29 +1,23 @@
 close all
 FolderName = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol';
-OutputFolder = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol';
+OutputFolder = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\fig';
 
 FileNames = {'glycerol_80', 'glycerol_85', 'glycerol_90', 'glycerol_95'};
 Labels = {'80', '85', '90', '95'};
 
 allVals = [];     % all viscosity values
 groups  = [];     % group labels
-
-idx{1} = [6 7];
-idx{2} = [6 7];
-idx{3} = [3 4 5];
-idx{4} = [5 6];
-
 MeanViscs = [88.056 177.842 198.656 275.412];
 for i = 1:numel(FileNames)
     % Load .mat file
     Folder = dir(append(FolderName, filesep, FileNames{i}));
 
     Viscosity = [];
-    for j = idx{i}
+    for j = 3:7
         try
             load(append(Folder(j).folder, filesep, Folder(j).name, filesep, 'msadRes.mat'));
             Viscosity = [Viscosity; [allRes.nr]'];
-            disp(append('Mean Viscosity in 3D is ', num2str(nanmean([allRes.nr]))));
+            disp(append('Median Viscosity in 3D is ', num2str(nanmedian([allRes.nr]))));
             
         catch
             disp(append('Failed to load data from ',Folder(j).folder, filesep, Folder(j).name, filesep, 'msadRes.mat' ));
@@ -42,7 +36,7 @@ boxplot(allVals, groups, 'Labels', Labels, 'Symbol', "");
 xlabel('Glycerol content (v/v %)','FontSize',12,'FontWeight','bold');
 ylabel('Viscosity (cP)','FontSize',12,'FontWeight','bold');
 title('Comparison of Viscosities')
-set(gca, 'YScale', 'log');
+% set(gca, 'YScale', 'log');
 set(gca,'FontSize',11,'LineWidth',1.2); 
 
 
@@ -51,7 +45,7 @@ figure('Color','w');  % white background
 % Make boxplot
 boxplot(allVals, groups, 'Labels', Labels, ...
     'Whisker', 1.5, ...             % standard whisker length
-    'Symbol', 'o', ...              % outlier marker
+    'Symbol', '', ...              % outlier marker
     'Widths', 0.6, ...              % box width
     'Colors', lines(numel(FileNames)));  % use a colormap for boxes
 
@@ -61,8 +55,8 @@ ylabel('Viscosity (cP)','FontSize',12,'FontWeight','bold');
 title('Comparison of Viscosities','FontSize',14);
 
 % Log scale
-set(gca,'YScale','log');
-
+% set(gca,'YScale','log');
+ylim([0 1200])
 % Aesthetics
 set(gca,'FontSize',11,'LineWidth',1.2);   % thicker axis lines
 % grid on;                                  % light grid for readability
@@ -107,7 +101,7 @@ for i = 1:numel(FileNames)
             disp(append('Failed to load data from ', Folder(j).folder, filesep, Folder(j).name, filesep, 'msadRes.mat'));
         end
         hold on
-        disp(num2str(mean(y)))
+        disp(num2str(median(y)))
     end
     hold on
     FileNames{1,i} = replace(FileNames{1,i}, "_", " ");
@@ -117,7 +111,7 @@ set(gca, 'XTick', 1:numel(FileNames), 'XTickLabel', Labels, 'XLim', [0.5 numel(F
 xlabel('Glycerol content (v/v %)','FontSize',12,'FontWeight','bold');
 ylabel('Viscosity (cP)','FontSize',12,'FontWeight','bold');
 title('Viscosity scatter across conditions')
-set(gca,'YScale','log');
+% set(gca,'YScale','log');
 set(gca,'FontSize',11,'LineWidth',1.2); 
 box on
 

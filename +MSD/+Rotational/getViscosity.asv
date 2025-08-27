@@ -12,11 +12,11 @@ function [nr] = getViscosity(D,r, partType, T, Angle)
     L = r(1)*10^-9;
     switch partType
         case 'Bipyramid'
-            if strcmp(Angle, 'Theta')
-                W = ((2*p^2 - 1)*log(p + sqrt(p^2 -1))-p*sqrt(p^2-1))./(p^2 - 1);
-            elseif strcmp(Angle, 'Phi')
-                W = (p*sqrt(p^2 - 1)-log(p + sqrt(p^2 -1)))./(p^2 - 1);
-            end
+            % if strcmp(Angle, 'Theta')
+            %     W = ((2*p^2 - 1)*log(p + sqrt(p^2 -1))-p*sqrt(p^2-1))./(p^2 - 1);
+            % elseif strcmp(Angle, 'Phi')
+            %     W = (p*sqrt(p^2 - 1)-log(p + sqrt(p^2 -1)))./(p^2 - 1);
+            % end
 
              
         case 'Rod'
@@ -30,6 +30,6 @@ function [nr] = getViscosity(D,r, partType, T, Angle)
             error('Unknown dim, dim needs to be provided as 1D 2D or 3D')
     end
 
-    %nr = (1.380649*10^(-23)*T*W)/(8*pi*D*L^3)*1000;%in cp
-    nr = (3*1.380649*10^(-23)*T*log(p))./(pi*D*L^3)*1000;
+    % nr = (1.380649*10^(-23)*T*W)/(8*pi*D*L^3)*1000;%in cp
+    
 end

@@ -1,4 +1,4 @@
-function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces] = CalcMSDinfoGUI()
+function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModal] = CalcMSDinfoGUI()
     % Initialize default outputs
     FilePath = '';
     Experiment = '';
@@ -100,6 +100,13 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     labelPath2RotCal = uilabel(fig, 'Position', [20 y 100 22], 'Text', 'path2RotCal:', 'Visible', 'off');
     editPath2RotCal = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', '', 'Visible', 'off');
 
+    % ExpModal (hidden initially)
+    y = y - dy;
+    labelExpModal = uilabel(fig, 'Position', [20 y 140 22], 'Text', 'ExpModal:', 'Visible', 'off');
+    dropdownExpModal = uidropdown(fig, 'Position', [160 y 250 22], ...
+        'Items', {'Test', 'Single Exponential', 'Bi Exponential', 'Stretched Exponential'}, ...
+        'Value', 'Single Exponential', 'Visible', 'off');
+
     % OK button
     btnOK = uibutton(fig, 'push', 'Text', 'OK', ...
         'Position', [170 y - 50 100 30], ...
@@ -116,6 +123,8 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
                 dropdownParticleType.Visible = 'on';
                 labelPath2RotCal.Visible = 'on';
                 editPath2RotCal.Visible = 'on';
+                labelExpModal.Visible = 'on';
+                dropdownExpModal.Visible = 'on';
                 editRadiusNumeric.Visible = 'off';
                 editRadiusArray.Visible = 'on';
                 labelRadius.Text = 'Radius array:';
@@ -127,6 +136,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
                 dropdownParticleType.Visible = 'off';
                 labelPath2RotCal.Visible = 'off';
                 editPath2RotCal.Visible = 'off';
+                labelExpModal.Visible = 'off';
                 editRadiusNumeric.Visible = 'on';
                 editRadiusArray.Visible = 'off';
                 labelRadius.Text = 'Radius (µm):';
@@ -138,6 +148,8 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
                 dropdownParticleType.Visible = 'off';
                 labelPath2RotCal.Visible = 'off';
                 editPath2RotCal.Visible = 'off';
+                labelExpModal.Visible = 'off';
+                dropdownExpModal.Visible = 'off';
                 editRadiusNumeric.Visible = 'on';
                 editRadiusArray.Visible = 'off';
                 labelRadius.Text = 'Radius (µm):';
@@ -170,12 +182,15 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
             path2RotCal = editPath2RotCal.Value;
             Radius = str2num(editRadiusArray.Value); %#ok<ST2NM>
             Radius2 = NaN;
+            ExpModal = dropdownExpModal.Value;
         elseif strcmp(Experiment, 'Dual color tracking')
             Radius = editRadiusNumeric.Value;
             Radius2 = editRadius2.Value;
+            ExpModal = '';  % no value
         else
             Radius = editRadiusNumeric.Value;
             Radius2 = NaN;
+            ExpModal = '';  % no value
         end
 
         uiresume(fig);

@@ -12,10 +12,8 @@ name = append(Experiment, Ext);
 MainFolder([MainFolder.isdir] ~= 1) = [];
 
 AllMovieResults = [];
-CorrectionsTheta = [];
-CorrectionsPhi = [];
 for j = 3 : size(MainFolder,1)
-    % try
+    try
         folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
         idx = contains({folder.name},FilenameRaw);
         folder(~idx) = [];
@@ -276,9 +274,7 @@ for j = 3 : size(MainFolder,1)
                 allGTheta = zeros(size(currMov, 1),maxLength-1);
                 allGPhi = allGTheta;
                 
-                
                 for i = 1:size(currMov,1)
-                    waitbar(i./size(currMov,1), f, append('Diffusion & microrheology - Movie ', num2str(j-2), ' out of ', num2str(size(MainFolder,1) - 2)));
                     Diff = [];
                     TotInt = [];
                     GTheta = [];
@@ -292,17 +288,14 @@ for j = 3 : size(MainFolder,1)
                     I2 = currPart.Int2{1,1} ./ TotInt;
                     Diff = I1 - I2; 
 
-                    eta_truth = 484;
                     %%% for Theta
                     [GTheta,tau] = MSD.Rotational.GetAutoCorrelation(Diff,100);
                     allGTheta(i,1:size(GTheta, 1)) = GTheta';
                     if strcmp(ExpModel, 'Test')
                         [Model] = MSD.Rotational.TestModels(GTheta, tau);
-                        %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model,0);
-                        [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta');
+                        [DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model,0);
                     else
-                        %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel,0);
-                        [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta');
+                        [DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel,0);
                     end
                     nTheta  = MSD.Rotational.getViscosity(DTheta,Radius1,ParticleType, Temp, 'Theta');
                     vTheta = MSD.Rotational.GetRotationalSpeed(GTheta, tau);
@@ -312,11 +305,9 @@ for j = 3 : size(MainFolder,1)
                     allGPhi(i,1:size(GPhi, 1)) = GPhi';
                     if strcmp(ExpModel, 'Test')
                         [Model] = MSD.Rotational.TestModels(GPhi, tau);
-                        %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, Model,0);
-                        [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta');
+                        [DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, Model,0);
                     else
-                        %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, ExpModel,0);
-                        [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta');
+                        [DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, ExpModel,0);
                     end
                     nPhi  = MSD.Rotational.getViscosity(DPhi,Radius1,ParticleType, Temp, 'Phi');
                     vPhi = MSD.Rotational.GetRotationalSpeed(GPhi, tau);
@@ -344,31 +335,36 @@ for j = 3 : size(MainFolder,1)
                     allRes(i).vr   = vr;
                     
                     allRes(i).num  = length(GTheta);
-
-                    CorrectionsTheta = [CorrectionsTheta; corrParamsTheta];
-                    CorrectionsPhi = [CorrectionsPhi; corrParamsPhi];
                 end
                 
                 %%
                 
-                DR   = nanmean([allRes.Dr]);
-                nR   = nanmean([allRes.nr]);
+                meanMSDR = nanmean(allMSDR,1);
+                tau = (1:length(meanMSDR))'*expTime;
+                DR   = nanmean([allRes.DR]);
+                nR   = nanmean([allRes.nR]);
                 disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
                     'the viscosity is ' num2str(nR) ' cp' '\n' ...
                     'for movie '  MainFolder(j).name]);
                 %%
-                filenameAllRes = [folder(1).folder filesep 'msadRes.mat'];
+                if strcmp(Experiment, 'Dual color tracking')
+                    if l == 1
+                        filenameAllRes = [folder(1).folder filesep 'msadRes1.mat'];
+                    elseif l == 2
+                        filenameAllRes = [folder(1).folder filesep 'msadRes2.mat'];
+                    end
+                else
+                    filenameAllRes = [folder(1).folder filesep 'msadRes.mat'];
+                end
                 save(filenameAllRes,'allRes');
     
                 AllMovieResults = [AllMovieResults, allRes];
             end
         end
-    % catch
-    %     disp(append('Failed to calculate movie ', MainFolder(j).name));
-    % end
+    catch
+        disp(append('Failed to calculate movie ', MainFolder(j).name));
+    end
 end
-mean(CorrectionsTheta,1)
-mean(CorrectionsPhi,1)
 close(f)
 
 save(FilePath, "AllMovieResults");
