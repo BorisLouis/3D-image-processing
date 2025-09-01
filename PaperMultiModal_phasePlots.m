@@ -1,7 +1,7 @@
 FolderName = 'D:\Multimodal tracking\20250724\alldata';
-OutputFolder = 'D:\Multimodal tracking\20250724\Analysis\SharpnessLaplacian';
+OutputFolder = 'D:\Multimodal tracking\20250724\Analysis\Gradient';
 Folder = dir(FolderName);
-Parameter = 'SharpnessLaplacian';
+Parameter = 'GradientMagnitude';
 
 Diff0 = [];
 a0 = [];

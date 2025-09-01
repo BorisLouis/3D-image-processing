@@ -1024,9 +1024,9 @@ classdef MultiModalExperiment < handle
                                           QPmap = QPmap.QPmap;
                                           RawData = CurrentPhaseMov.getFrame(t, 1);
                                           for s = 1:size(RawData, 3)
-                                            [GradientMagnitude(:,:,s), ~] = imgradient(RawData(:,:,s), 'sobel');
-                                            LocalVariance(:,:,s) = stdfilt(RawData(:,:,s), true(3));
-                                            SharpnessLaplacian(:,:,s) = imfilter(RawData(:,:,s), fspecial('laplacian', 0.2), 'replicate');
+                                            [GradientMagnitude(:,:,s), ~] = imgradient(QPmap(:,:,s,t), 'sobel');
+                                            LocalVariance(:,:,s) = stdfilt(QPmap(:,:,s,t), true(3));
+                                            SharpnessLaplacian(:,:,s) = imfilter(QPmap(:,:,s,t), fspecial('laplacian', 0.2), 'replicate');
                                           end
         
                                           CurrentQPMap = ceil(t./100);

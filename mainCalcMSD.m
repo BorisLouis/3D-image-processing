@@ -24,12 +24,17 @@ for j = 3 : size(MainFolder,1)
             Loop = 1;
         end
         for l = 1:Loop
-            if l == 1
-                Filename = append(FilenameRaw, '1');
+            if Loop == 2
+                if l == 1
+                    Filename = append(FilenameRaw, '1');
+                    Radius = Radius1;
+                elseif l == 2
+                    Filename = append(FilenameRaw, '2');
+                    Radius = Radius2;
+                end
+            else
+                Filename = FilenameRaw;
                 Radius = Radius1;
-            elseif l == 2
-                Filename = append(FilenameRaw, '2');
-                Radius = Radius2;
             end
     
             f2Load = [folder(1).folder filesep Filename '.mat'];
@@ -39,21 +44,21 @@ for j = 3 : size(MainFolder,1)
             name = fieldnames(tmpData);
             data = tmpData.(name{1});
 
-        % if strcmp(Path(end-4:end), 'n0_1')
-        %     Temp = 303.15;
-        % elseif strcmp(Path(end-4:end), 'n2_1')
-        %     Temp = 304.15;
-        % elseif strcmp(Path(end-4:end), 'n4_1')
-        %     Temp = 305.15;
-        % elseif strcmp(Path(end-4:end), 'n6_1')
-        %     Temp = 306.15;
-        % elseif strcmp(Path(end-4:end), 'n8_1')
-        %     Temp = 307.15;
-        % elseif strcmp(Path(end-4:end), '10_1')
-        %     Temp = 308.15;
-        % elseif strcmp(Path(end-4:end), '13_1')
-        %     Temp = 296.15;
-        % end
+            if strcmp(Path(end-4:end), 'n0_1')
+                Temp = 303.15;
+            elseif strcmp(Path(end-4:end), 'n2_1')
+                Temp = 304.15;
+            elseif strcmp(Path(end-4:end), 'n4_1')
+                Temp = 305.15;
+            elseif strcmp(Path(end-4:end), 'n6_1')
+                Temp = 306.15;
+            elseif strcmp(Path(end-4:end), 'n8_1')
+                Temp = 307.15;
+            elseif strcmp(Path(end-4:end), '10_1')
+                Temp = 308.15;
+            elseif strcmp(Path(end-4:end), '13_1')
+                Temp = 296.15;
+            end
         
         %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
@@ -62,9 +67,9 @@ for j = 3 : size(MainFolder,1)
                     idx = allHeight>MinSize;
                     currMov = data(idx, 1);
                 catch
-                    allHeight = cellfun(@height,data.traces(:,1));
+                    allHeight = cellfun(@height,data(:,1));
                     idx = allHeight>MinSize;
-                    currMov = data.traces(idx, 1);
+                    currMov = data(idx, 1);
                 end
                 if isempty(currMov)
                     error(append('No traces found that are longer than MinSize (', num2str(MinSize), ' datapoints)'))

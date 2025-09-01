@@ -51,12 +51,11 @@ classdef MPPhaseMovie < Core.MPMovie
                         [Stack, StartX, StartY] = QP_package.cropXY(Stack);
                         PadValues = [134.27, 134.18, 134.42, 116.71, 117.52, 99.19, 117.63, 115.69];
                         for l = 1:size(Stack, 3)
-                            StackPadded(:,:,l) = padarray(Stack(:,:,l), [50 50], PadValues(l));
+                            StackPadded(:,:,l) = padarray(Stack(:,:,l), [15 15], PadValues(l));
                         end
                         QPmap(:,:,:,i-Startidx) = QP_package.getQP(StackPadded,s);
                         n = n+1;
                     end
-                    QPmap = QPmap(51:end-50, 51:end-50, :,:);
                     Filename = append(obj.raw.movInfo.Path, filesep, 'PhaseMovie', filesep, 'PhaseMovie', num2str(Step), '.mat');
                     save(Filename, 'QPmap');
                     QPmap = [];
