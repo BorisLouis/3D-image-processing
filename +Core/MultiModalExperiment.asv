@@ -433,13 +433,13 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh1.saveData(1);
 
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
-                    % frame = obj.info.TestFrame;
-                    % testMov = obj.MoviesCh1.trackMovies.mov1;
-                    % testMov2 = obj.MoviesCh2.trackMovies.mov1;
-                    % testMov.getTransformation(testMov2, frame);
-                    % testMov.getROIs;
-                    % testMov2.getROIs;
-                    % testMov.showCandidate(testMov2, frame);
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh1.trackMovies.mov1;
+                    testMov2 = obj.MoviesCh2.trackMovies.mov1;
+                    testMov.getTransformation(testMov2, frame);
+                    testMov.getROIs;
+                    testMov2.getROIs;
+                    testMov.showCandidate(testMov2, frame);
 
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
@@ -645,7 +645,7 @@ classdef MultiModalExperiment < handle
                                         if ~isnan(NewParticle.plane(m))
                                             planeData = data(:,:, NewParticle.plane(m));
                                             %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
-                                            AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                            AdjCoord = transformPointsInverse(tform, [NewParticle.col(m), NewParticle.row(m)]);
                                             [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
                                                                 currentTrackMov2.info.detectParam.delta, size(planeData,2), size(planeData,1));
                                             ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
@@ -676,7 +676,7 @@ classdef MultiModalExperiment < handle
                                     for m = 1:size(NewParticle, 1)
                                         if ~isnan(NewParticle.plane(m))
                                             planeData = data(:,:, NewParticle.plane(m));
-                                            AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                            AdjCoord = transformPointsForward(tform, [NewParticle.col(m), NewParticle.row(m)]);
                                             [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
                                                                 currentTrackMov1.info.detectParam.delta, size(planeData,2), size(planeData,1));
                                             ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
@@ -770,7 +770,7 @@ classdef MultiModalExperiment < handle
                         % Threshold = obj.MoviesCh1.trackMovies.mov1.info.detectParam.delta^2*obj.MoviesCh1.trackMovies.mov1.info.PxSize;
                         % Threshold2 = sqrt(2* obj.MoviesCh1.trackMovies.mov1.info.detectParam.delta^2)*obj.MoviesCh1.trackMovies.mov1.info.PxSize;
                         % distances(distances > Threshold) = Inf;
-                        Threshold2  = 10000;
+                        Threshold2  = currentTrackMov1.info.euDist;
             
                         [closest_indices, ~] = matchpairs(distances, Threshold2);
                         row = closest_indices(:,2);
@@ -1024,9 +1024,9 @@ classdef MultiModalExperiment < handle
                                           QPmap = QPmap.QPmap;
                                           RawData = CurrentPhaseMov.getFrame(t, 1);
                                           for s = 1:size(RawData, 3)
-                                            [GradientMagnitude(:,:,s), ~] = imgradient(QPmap(:,:,s), 'sobel');
-                                            LocalVariance(:,:,s) = stdfilt(RawData(:,:,s), true(3));
-                                            SharpnessLaplacian(:,:,s) = imfilter(RawData(:,:,s), fspecial('laplacian', 0.2), 'replicate');
+                                            [GradientMagnitude(:,:,s), ~] = imgradient(QPmap(:,:,s,t), 'sobel');
+                                            LocalVariance(:,:,s) = stdfilt(QPmap(:,:,s,t), true(3));
+                                            SharpnessLaplacian(:,:,s) = imfilter(QPmap(:,:,s,t), fspecial('laplacian', 0.2), 'replicate');
                                           end
         
                                           CurrentQPMap = ceil(t./100);
@@ -1126,6 +1126,7 @@ classdef MultiModalExperiment < handle
                       save(FileName, 'Traces3D');
                       disp(append('== Traces with phase saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
                       close(f);
+                      Traces3Dshort = [];
                   catch
                        disp(append('== Failed phasetracking - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
                   end

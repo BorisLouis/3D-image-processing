@@ -336,6 +336,7 @@ classdef TrackingExperimentRotational < handle
     
                             traces = load(filename);
                             traces = traces.TrackedData';
+                            run = 0;
                         else 
                             run = 1;
                         end
@@ -355,6 +356,31 @@ classdef TrackingExperimentRotational < handle
         
                         %SR fitting
                         currentTrackMov.SRLocalizeCandidate(detectParam, q);
+                        
+                    else 
+                    
+                        if isempty(currentTrackMov.calibrated{1,1})
+                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
+                                'calibrated', num2str(q), '.mat'));
+                            currentTrackMov.calibrated{1,1} = calib;
+                        end
+                        if isempty(currentTrackMov.candidatePos)
+                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
+                                'candidatePos.mat'));
+                            currentTrackMov.candidatePos = candidate;
+                        end
+                        if isempty(currentTrackMov.particles)
+                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
+                                'candidatePos.mat'));
+                            currentTrackMov.particles = candidate;
+                        end
+                        if isempty(currentTrackMov.corrLocPos)
+                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
+                                'SRLocPos.mat'));
+                            currentTrackMov.corrLocPos = locPos;
+                            currentTrackMov.unCorrLocPos = locPos;
+                        end
+                    end
                         refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                         rot = true;
                         %apply SRCal
@@ -380,7 +406,7 @@ classdef TrackingExperimentRotational < handle
                         currentTrackMov.trackParticle(trackParam,q);
                         
                         [traces] = currentTrackMov.getTraces;
-                    end
+                        traces = traces(cellfun(@(t) height(t) > 50, traces));
                 catch
                     disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);
                 end
