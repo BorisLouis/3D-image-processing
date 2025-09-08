@@ -31,24 +31,23 @@ for i = 1:numel(FileNames)
 end
 
 % Make boxplot
-figure;
-boxplot(allVals, groups, 'Labels', Labels, 'Symbol', "");
-xlabel('Glycerol content (v/v %)','FontSize',12,'FontWeight','bold');
-ylabel('Viscosity (cP)','FontSize',12,'FontWeight','bold');
-title('Comparison of Viscosities')
+% figure;
+% boxplot(allVals, groups, 'Labels', Labels, 'Symbol', "");
+% xlabel('Glycerol content (v/v %)','FontSize',12,'FontWeight','bold');
+% ylabel('Viscosity (cP)','FontSize',12,'FontWeight','bold');
+% title('Comparison of Viscosities')
 % set(gca, 'YScale', 'log');
-set(gca,'FontSize',11,'LineWidth',1.2); 
+% set(gca,'FontSize',11,'LineWidth',1.2); 
+% saveas()
 
 
-figure('Color','w');  % white background
-
+Fig = figure('Color','w');  % white background
 % Make boxplot
 boxplot(allVals, groups, 'Labels', Labels, ...
     'Whisker', 1.5, ...             % standard whisker length
     'Symbol', '', ...              % outlier marker
     'Widths', 0.6, ...              % box width
     'Colors', lines(numel(FileNames)));  % use a colormap for boxes
-
 % Labeling
 xlabel('Glycerol content (v/v %)','FontSize',12,'FontWeight','bold');
 ylabel('Viscosity (cP)','FontSize',12,'FontWeight','bold');
@@ -69,8 +68,8 @@ for j=1:length(h)
     patch(get(h(j),'XData'), get(h(j),'YData'), colors(j,:), ...
           'FaceAlpha',0.4, 'EdgeColor',colors(j,:));
 end
-
-
+saveas(Fig, append('S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\Figures', filesep, 'ViscGLycerol.png'));
+saveas(Fig, append('S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\Figures', filesep, 'ViscGLycerol.svg'));
 % Preallocate arrays
 allVals  = [];
 groups   = [];

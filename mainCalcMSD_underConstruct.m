@@ -36,6 +36,7 @@ for j = 3 : size(MainFolder,1)
                 end
             else
                 Filename = FilenameRaw;
+                Radius = Radius1;
             end
     
             f2Load = [folder(1).folder filesep Filename '.mat'];
@@ -45,22 +46,22 @@ for j = 3 : size(MainFolder,1)
             name = fieldnames(tmpData);
             data = tmpData.(name{1});
 
-        % if strcmp(Path(end-4:end), 'n0_1')
-        %     Temp = 303.15;
-        % elseif strcmp(Path(end-4:end), 'n2_1')
-        %     Temp = 304.15;
-        % elseif strcmp(Path(end-4:end), 'n4_1')
-        %     Temp = 305.15;
-        % elseif strcmp(Path(end-4:end), 'n6_1')
-        %     Temp = 306.15;
-        % elseif strcmp(Path(end-4:end), 'n8_1')
-        %     Temp = 307.15;
-        % elseif strcmp(Path(end-4:end), '10_1')
-        %     Temp = 308.15;
-        % elseif strcmp(Path(end-4:end), '13_1')
-        %     Temp = 296.15;
-        % end
-        
+            if strcmp(Path(end-4:end), 'n0_1')
+                Temp = 303.15;
+            elseif strcmp(Path(end-4:end), 'n2_1')
+                Temp = 304.15;
+            elseif strcmp(Path(end-4:end), 'n4_1')
+                Temp = 305.15;
+            elseif strcmp(Path(end-4:end), 'n6_1')
+                Temp = 306.15;
+            elseif strcmp(Path(end-4:end), 'n8_1')
+                Temp = 307.15;
+            elseif strcmp(Path(end-4:end), '10_1')
+                Temp = 308.15;
+            elseif strcmp(Path(end-4:end), '13_1')
+                Temp = 296.15;
+            end
+            
         %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
                 %%% cut up traces
@@ -78,7 +79,11 @@ for j = 3 : size(MainFolder,1)
                         dataMatrix{step, 1} = CurrTraceCell;
                     end
                 else
-                    dataMatrix{1,1} = data.traces;
+                    try
+                        dataMatrix{1,1} = data.traces;
+                    catch
+                        dataMatrix{1,1} = data;
+                    end
                 end
 
                 for k = 1:size(dataMatrix, 1)
@@ -109,7 +114,7 @@ for j = 3 : size(MainFolder,1)
                         allMSDZ = allMSDY;
                         allMSDR = allMSDY;
                         for i = 1:length(currMov)
-                            waitbar(i./length(currMov), f, append('Diffusion & microrheology - Movie ', num2str(j-2), ' out of ', num2str(size(MainFolder,1) - 2), ' step ', num2str(k)));
+                            waitbar(i./length(currMov), f, append('Diffusion & microrheology - Movie ', num2str(j-2), ' out of ', num2str(size(MainFolder,1) - 2), ' step ', num2str(l)));
                             currPart = currMov{i};
                         
                             coord = [currPart.col, currPart.row, currPart.z];
@@ -294,7 +299,7 @@ for j = 3 : size(MainFolder,1)
 
                     eta_truth = 484;
                     %%% for Theta
-                    [GTheta,tau] = MSD.Rotational.GetAutoCorrelation(Diff,100);
+                    [GTheta,tau] = MSD.Rotational.GetAutoCorrelation(Diff,100,expTime);
                     allGTheta(i,1:size(GTheta, 1)) = GTheta';
                     if strcmp(ExpModel, 'Test')
                         [Model] = MSD.Rotational.TestModels(GTheta, tau);
@@ -308,7 +313,7 @@ for j = 3 : size(MainFolder,1)
                     vTheta = MSD.Rotational.GetRotationalSpeed(GTheta, tau);
 
                     %%% for Phi
-                    [GPhi,tau] = MSD.Rotational.GetAutoCorrelation(TotInt,100);
+                    [GPhi,tau] = MSD.Rotational.GetAutoCorrelation(TotInt,100,expTime);
                     allGPhi(i,1:size(GPhi, 1)) = GPhi';
                     if strcmp(ExpModel, 'Test')
                         [Model] = MSD.Rotational.TestModels(GPhi, tau);

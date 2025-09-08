@@ -1,9 +1,9 @@
 function [vR] = GetRotationalSpeed(Gr, tau)
 
-    [peaks,locs] = findpeaks(Gr, tau);
+    [peaks,locs, w, p] = findpeaks(medfilt1(Gr, 100), tau,'MinPeakProminence',0.1);
     if length(locs) >= 2
-        period = mean(diff(locs));
-        vR = 2*pi/period; % rad/s
+        period = median(diff(locs));
+        vR = 360/(period*4); % grad/s
     else
         vR = NaN; % no clear oscillation
     end

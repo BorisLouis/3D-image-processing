@@ -237,9 +237,9 @@ for j = 3 : size(MainFolder,1)
                 allmsadPhi = allmsadTheta;
                 allmsad = allmsadPhi;
     
-                calibration = load(append(Path2Rotcal, filesep, 'RotCalib.mat'));
-                name = fieldnames(calibration);
-                calibration = calibration.(name{1,1});
+                % calibration = load(append(Path2Rotcal, filesep, 'RotCalib.mat'));
+                % name = fieldnames(calibration);
+                % calibration = calibration.(name{1,1});
                 
                 for i = 1:size(currMov,1)
                     currPart = currMov(i,:);

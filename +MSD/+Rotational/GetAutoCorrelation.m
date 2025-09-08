@@ -1,4 +1,4 @@
-function [Gr,tau] = GetAutoCorrelation(Diff,fs)
+function [Gr,tau] = GetAutoCorrelation(Diff,fs, ExpTime)
     T_win = 1; 
     N_win = round(fs*T_win);  
 
@@ -9,7 +9,7 @@ function [Gr,tau] = GetAutoCorrelation(Diff,fs)
     %%% autocorrelation
     [acf, lags] = xcorr(r, 'unbiased');
     acf = acf(lags>=0);
-    tau = lags(lags>=0)/fs;
+    tau = [ExpTime:ExpTime:size(acf,1)*ExpTime];
     Gr = acf./acf(1);
 end
 

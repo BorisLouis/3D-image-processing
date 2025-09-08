@@ -1,7 +1,7 @@
 clc
 close all
 
-MainFolder = 'S:\Dual Color\20250121_dualcolor\PS_286g_136r\Gelation\17_min\Cutted';
+MainFolder = 'S:\Dual Color\20250121_dualcolor\PS_286g_136r';
 Folder = dir(MainFolder);
 Folder([Folder.isdir] ~= 1) = [];
 
@@ -12,7 +12,7 @@ end
 
 colors = lines(20);
 jitterWidth = 0.3;
-timePoints = [17.000 17.016, 17.032, 17.050, 17.062, 17.078, 17.083, 17.100]; % x-axis labels
+timePoints = [0, 3, 5, 7, 9, 11, 13, 15, 17]; % x-axis labels
 
 % Preallocate storage for boxplots
 AllDiff = cell(2, numel(timePoints));
@@ -30,12 +30,12 @@ legendLabels  = {};
 
 for k = 1:2
 
-    for figIdx = 1:7
-        figure(100*k + figIdx); hold on;
-    end
+    % for figIdx = 1:7
+    %     figure(100*k + figIdx); hold on;
+    % end
     
-    for i = 3:size(Folder, 1)-2
-        Order = [3, 4, 5, 6, 7, 8, 9, 10];
+    for i = 3:size(Folder, 1)-3
+        Order = [3, 8, 9, 10, 11, 4, 5, 6, 7];
         tpIndex = i-2; % 1...9
         tpMin = timePoints(tpIndex);
         
@@ -47,7 +47,7 @@ for k = 1:2
             try
                 SampleFolder = dir(fullfile(TimeFolder(j).folder, TimeFolder(j).name));
 
-                load(fullfile(SampleFolder(1).folder, ['msdRes_', Folder(Order(i-2)).name, '_', num2str(k), '.mat']));
+                load(fullfile(SampleFolder(1).folder, ['msdRes', num2str(k), '.mat']));
                 % load(fullfile(SampleFolder(1).folder, ['trackResults', Folder(Order(i-2)).name, '_', num2str(k), '.mat']));
 
                 %% Process traces
@@ -99,14 +99,14 @@ for k = 1:2
                 % figure(100*k+2); scatter(xjit(numel(yStd)), yStd, 30, col);
                 % figure(100*k+3); scatter(xjit(numel(zStd)), zStd, 30, col);
                 % figure(100*k+4); scatter(xjit(numel(rStd)), rStd, 30, col);
-                figure(100*k+5); scatter(xjit(numel(Diff)), Diff, 30, col);
-                figure(100*k+6); scatter(xjit(numel(AnExp)), AnExp, 30, col);
-                figure(100*k+7); scatter(xjit(numel(Visc)), Visc, 30, col);
+                % figure(100*k+5); scatter(xjit(numel(Diff)), Diff, 30, col);
+                % figure(100*k+6); scatter(xjit(numel(AnExp)), AnExp, 30, col);
+                % figure(100*k+7); scatter(xjit(numel(Visc)), Visc, 30, col);
 
-                if k==1 && i==3   % first time we encounter each sample
-                    legendHandles(end+1) = scatter(nan, nan, 30, col, 'filled');
-                    legendLabels{end+1} = sprintf('Sample %d', j-2);
-                end
+                % if k==1 && i==3   % first time we encounter each sample
+                %     legendHandles(end+1) = scatter(nan, nan, 30, col, 'filled');
+                %     legendLabels{end+1} = sprintf('Sample %d', j-2);
+                % end
 
             catch
             end
@@ -133,7 +133,7 @@ labels = string(timePoints);
 
 function plotBox(allData, ttl, ylbl, logY, timePoints, labels, boxColors, fillColors)
     figure; hold on; title(ttl, 'FontSize', 14, 'FontWeight', 'bold');
-    offset = [-0.002, +0.002]; % shift boxes for k=1 and k=2 so they don't overlap
+    offset = [-0.2, +0.2]; % shift boxes for k=1 and k=2 so they don't overlap
 
     for k=1:2
         data = allData(k,:);
@@ -149,7 +149,7 @@ function plotBox(allData, ttl, ylbl, logY, timePoints, labels, boxColors, fillCo
 
         % Make grouped boxplot
         b = boxplot(vals, pos, 'Colors', boxColors(k,:), 'Symbol','', ...
-                    'Widths', 0.004, 'Positions', pos, 'Labels', []);
+                    'Widths', 0.4, 'Positions', pos, 'Labels', []);
         set(b,{'LineWidth'},{1.2});
 
         % Fill boxes with softer colors
@@ -181,14 +181,12 @@ function plotBox(allData, ttl, ylbl, logY, timePoints, labels, boxColors, fillCo
     if logY, set(gca,'YScale','log'); end
     grid on; box on;
     legend({'PS 300 nm','', '', '', '', '', '', '', '', '', '', '', '', 'PS 100 nm'}, 'Location','best');
-    xlim([16.999 17.101])
-    ylim([0 150])
 end
 
 % Call plotting function
 plotBox(AllDiff, 'Diffusion vs Time', 'Diffusion coefficient (µm^2/s)', false, timePoints, labels, boxColors, fillColors);
 plotBox(AllAnExp, 'Anomalous exponent vs Time', 'Anomalous exponent', false, timePoints, labels, boxColors, fillColors);
-plotBox(AllVisc, 'Viscosity vs Time', 'Viscosity (cP)', false, timePoints, labels, boxColors, fillColors);
+plotBox(AllVisc, 'Viscosity vs Time', 'Viscosity (cP)', true, timePoints, labels, boxColors, fillColors);
 plotBox(AllxStd, 'xStd spread vs Time', 'xStd', false, timePoints, labels, boxColors, fillColors);
 plotBox(AllyStd, 'yStd spread vs Time', 'yStd', false, timePoints, labels, boxColors, fillColors);
 plotBox(AllzStd, 'zStd spread vs Time', 'zStd', false, timePoints, labels, boxColors, fillColors);
@@ -199,7 +197,8 @@ figHandles = findall(0,'Type','figure');
 for f = 1:numel(figHandles)
     fig = figHandles(f);
     name = get(get(fig,'CurrentAxes'),'Title');
-    if (name == ""), name = sprintf('Figure%d', f); else, name = name.String; end
+    if name == "", name = sprintf('Figure%d', f); else, name = name.String; end
+    if name == "", name = sprintf('Figure%d', f); end
     safeName = regexprep(name,'\W','_');
     saveas(fig, fullfile(OutputFolder, [safeName '.png']));
     saveas(fig, fullfile(OutputFolder, [safeName '.svg']));
