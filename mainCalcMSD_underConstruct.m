@@ -61,7 +61,11 @@ for j = 3 : size(MainFolder,1)
             elseif strcmp(Path(end-4:end), '13_1')
                 Temp = 296.15;
             end
+<<<<<<< HEAD
             
+=======
+        
+>>>>>>> 7ba36d3e0b2fb3ac97a33b26453cf20189948e15
         %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
                 %%% cut up traces

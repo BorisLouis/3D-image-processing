@@ -565,8 +565,8 @@ classdef MPParticleMovie < Core.MPMovie
                         end
                     end
                                                
-                    rowPos    = candidate.rowNotCorr;
-                    colPos    = candidate.colNotCorr;
+                    rowPos    = candidate.row;
+                    colPos    = candidate.col;
                     planeIdx  = candidate.plane;
                     if ismember('ParticlePassed', candidate.Properties.VariableNames)
                         passed    = candidate.ParticlePassed;

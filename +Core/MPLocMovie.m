@@ -216,22 +216,18 @@ classdef MPLocMovie < Core.MPParticleMovie
     
                         for i = 1:size(PassedPart,1)
                             Coords = [PassedPart.col(i) PassedPart.row(i)];
-                            CoordsNotCorr = [PassedPart.colNotCorr(i) PassedPart.rowNotCorr(i)];
+                            CoordsNotCorr = [PassedPart.col(i) PassedPart.row(i)];
 
                             if q == 1
                                 Coordsnew = transformPointsForward(tform, Coords);
-                                CoordsnewNotCorr = transformPointsForward(tform, CoordsNotCorr);
    
                             elseif q == 2
                                 Coordsnew = transformPointsInverse(tform, Coords);
-                                CoordsnewNotCorr = transformPointsInverse(tform, CoordsNotCorr);
 
                             end
                             PassedPart.col(i) = Coordsnew(:,1);
                             PassedPart.row(i) = Coordsnew(:,2);
 
-                            PassedPart.colNotCorr(i) = CoordsnewNotCorr(:,1);
-                            PassedPart.rowNotCorr(i) = CoordsnewNotCorr(:,2);
                         end
     
                         CombinedLoc(CombinedLoc.OriginChannel == 1, :) = PassedPart;

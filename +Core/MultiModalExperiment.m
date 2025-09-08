@@ -408,69 +408,69 @@ classdef MultiModalExperiment < handle
 
           function RunAnalysis(obj)
               %%% first run channel 1 analysis
-              if strcmp(obj.info.Channel1, 'Segmentation')
-                    testMov = obj.MoviesCh1.SegmentMovies.mov1;
-                    testMov.getSegmentMovie(1, obj.info.TestFrame)
-                    obj.MoviesCh1.retrieveSegmentMask(1);
-              elseif strcmp(obj.info.Channel1, 'Phase')
-                    obj.MoviesCh1.retrievePhaseMask(1);
-              elseif strcmp(obj.info.Channel1, 'Translational Tracking')
-                    frame = obj.info.TestFrame;
-                    testMov = obj.MoviesCh1.trackMovies.mov1;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    testMov = obj.MoviesCh1.trackMovies.mov3;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    testMov = obj.MoviesCh1.trackMovies.mov5;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    val2Use = 'bestFocus';
-                    obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-                    obj.MoviesCh1.saveData(1);
-
-              elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
-                    % frame = obj.info.TestFrame;
-                    % testMov = obj.MoviesCh1.trackMovies.mov1;
-                    % testMov2 = obj.MoviesCh2.trackMovies.mov1;
-                    % testMov.getTransformation(testMov2, frame);
-                    % testMov.getROIs;
-                    % testMov2.getROIs;
-                    % testMov.showCandidate(testMov2, frame);
-
-                    val2Use = 'bestFocus';
-                    obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-                    obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-                    obj.PartChannelConsolidation(obj.MoviesCh1, obj.MoviesCh2);
-                    obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
-                    obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
-                    obj.MoviesCh1.saveData(1);
-                    obj.MoviesCh2.saveData(2);
-
-                    obj.ConsolidateChannels3;
-                    if obj.info.rotationalCalib == 1
-                        obj.RotationalCalibration;
-                    end
-              end
-
-              %%% then run channel 2 analysis
-              if strcmp(obj.info.Channel2, 'Segmentation')
-                    obj.MoviesCh2.retrieveSegmentMask(2);
-              elseif strcmp(obj.info.Channel2, 'Phase')
-                    obj.MoviesCh2.retrievePhaseMask(2);
-              elseif strcmp(obj.info.Channel2, 'Translational Tracking')
-                    frame = obj.info.TestFrame;
-                    testMov = obj.MoviesCh2.trackMovies.mov1;
-                    testMov.findCandidatePos(testMov.info.detectParam,2,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    val2Use = 'bestFocus';
-                    obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-                    obj.MoviesCh2.saveData(2);
-              end
+              % if strcmp(obj.info.Channel1, 'Segmentation')
+              %       testMov = obj.MoviesCh1.SegmentMovies.mov1;
+              %       testMov.getSegmentMovie(1, obj.info.TestFrame)
+              %       obj.MoviesCh1.retrieveSegmentMask(1);
+              % elseif strcmp(obj.info.Channel1, 'Phase')
+                      obj.MoviesCh1.retrievePhaseMask(1);
+              % elseif strcmp(obj.info.Channel1, 'Translational Tracking')
+              %       frame = obj.info.TestFrame;
+              %       testMov = obj.MoviesCh1.trackMovies.mov1;
+              %       testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+              %       testMov.getROIs;
+              %       testMov.showCandidateSingleChan(frame, 1);
+              %       testMov = obj.MoviesCh1.trackMovies.mov3;
+              %       testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+              %       testMov.getROIs;
+              %       testMov.showCandidateSingleChan(frame, 1);
+              %       testMov = obj.MoviesCh1.trackMovies.mov5;
+              %       testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+              %       testMov.getROIs;
+              %       testMov.showCandidateSingleChan(frame, 1);
+              %       val2Use = 'bestFocus';
+              %       obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
+              %       obj.MoviesCh1.saveData(1);
+              % 
+              % elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
+              %       frame = obj.info.TestFrame;
+              %       testMov = obj.MoviesCh1.trackMovies.mov1;
+              %       testMov2 = obj.MoviesCh2.trackMovies.mov1;
+              %       testMov.getTransformation(testMov2, frame);
+              %       testMov.getROIs;
+              %       testMov2.getROIs;
+              %       testMov.showCandidate(testMov2, frame);
+              % 
+              %       val2Use = 'bestFocus';
+              %       obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
+              %       obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+              %       obj.PartChannelConsolidation(obj.MoviesCh1, obj.MoviesCh2);
+              %       obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
+              %       obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
+              %       obj.MoviesCh1.saveData(1);
+              %       obj.MoviesCh2.saveData(2);
+              % 
+              %       obj.ConsolidateChannels3;
+              %       if obj.info.rotationalCalib == 1
+              %           obj.RotationalCalibration;
+              %       end
+              % end
+              % 
+              % %%% then run channel 2 analysis
+              % if strcmp(obj.info.Channel2, 'Segmentation')
+              %       obj.MoviesCh2.retrieveSegmentMask(2);
+              % elseif strcmp(obj.info.Channel2, 'Phase')
+              %       obj.MoviesCh2.retrievePhaseMask(2);
+              % elseif strcmp(obj.info.Channel2, 'Translational Tracking')
+              %       frame = obj.info.TestFrame;
+              %       testMov = obj.MoviesCh2.trackMovies.mov1;
+              %       testMov.findCandidatePos(testMov.info.detectParam,2,frame);
+              %       testMov.getROIs;
+              %       testMov.showCandidateSingleChan(frame, 1);
+              %       val2Use = 'bestFocus';
+              %       obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+              %       obj.MoviesCh2.saveData(2);
+              % end
 
               if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
                   obj.PhaseTracking;
@@ -645,7 +645,7 @@ classdef MultiModalExperiment < handle
                                         if ~isnan(NewParticle.plane(m))
                                             planeData = data(:,:, NewParticle.plane(m));
                                             %AdjCoord = Transformation.Coords1toCoords2NotCorr.b*[NewParticle.rowNotCorr(m), NewParticle.colNotCorr(m)]*Transformation.Coords1toCoords2NotCorr.T + Transformation.Coords1toCoords2NotCorr.c;
-                                            AdjCoord = transformPointsInverse(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                            AdjCoord = transformPointsInverse(tform, [NewParticle.col(m), NewParticle.row(m)]);
                                             [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
                                                                 currentTrackMov2.info.detectParam.delta, size(planeData,2), size(planeData,1));
                                             ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
@@ -676,7 +676,7 @@ classdef MultiModalExperiment < handle
                                     for m = 1:size(NewParticle, 1)
                                         if ~isnan(NewParticle.plane(m))
                                             planeData = data(:,:, NewParticle.plane(m));
-                                            AdjCoord = transformPointsForward(tform, [NewParticle.colNotCorr(m), NewParticle.rowNotCorr(m)]);
+                                            AdjCoord = transformPointsForward(tform, [NewParticle.col(m), NewParticle.row(m)]);
                                             [NewParticle.roiLims{m}] = EmitterSim.getROI(AdjCoord(1), AdjCoord(2),...
                                                                 currentTrackMov1.info.detectParam.delta, size(planeData,2), size(planeData,1));
                                             ROI = planeData(NewParticle.roiLims{m}(3):NewParticle.roiLims{m}(4), NewParticle.roiLims{m}(1):NewParticle.roiLims{m}(2));
@@ -770,7 +770,7 @@ classdef MultiModalExperiment < handle
                         % Threshold = obj.MoviesCh1.trackMovies.mov1.info.detectParam.delta^2*obj.MoviesCh1.trackMovies.mov1.info.PxSize;
                         % Threshold2 = sqrt(2* obj.MoviesCh1.trackMovies.mov1.info.detectParam.delta^2)*obj.MoviesCh1.trackMovies.mov1.info.PxSize;
                         % distances(distances > Threshold) = Inf;
-                        Threshold2  = 10000;
+                        Threshold2  = currentTrackMov1.info.euDist;
             
                         [closest_indices, ~] = matchpairs(distances, Threshold2);
                         row = closest_indices(:,2);
@@ -999,7 +999,11 @@ classdef MultiModalExperiment < handle
                       CurrentPhaseMov = PhaseObj.PhaseMovies.(fieldsN{i});
     
                       Traces3D = CurrentTrackMov.traces3D;
-                      keepMask = cellfun(@(t) height(t) > 4, Traces3D(:,1));
+                      if isempty(Traces3D)
+                          load(append(CurrentTrackMov.raw.movInfo.Path, filesep, 'Traces3D.mat'));
+                          Traces3D = TrackedData';
+                      end
+                      keepMask = cellfun(@(t) height(t) > 20, Traces3D(:,1));
                       Traces3Dshort = Traces3D(keepMask,:);
                       CurrentQPMap = 0;
     
@@ -1024,9 +1028,9 @@ classdef MultiModalExperiment < handle
                                           QPmap = QPmap.QPmap;
                                           RawData = CurrentPhaseMov.getFrame(t, 1);
                                           for s = 1:size(RawData, 3)
-                                            [GradientMagnitude(:,:,s), ~] = imgradient(QPmap(:,:,s,t), 'sobel');
-                                            LocalVariance(:,:,s) = stdfilt(QPmap(:,:,s,t), true(3));
-                                            SharpnessLaplacian(:,:,s) = imfilter(QPmap(:,:,s,t), fspecial('laplacian', 0.2), 'replicate');
+                                            [GradientMagnitude(:,:,s), ~] = imgradient(QPmap(:,:,s,rem(t,100)), 'sobel');
+                                            LocalVariance(:,:,s) = stdfilt(QPmap(:,:,s,rem(t,100)), true(3));
+                                            SharpnessLaplacian(:,:,s) = imfilter(QPmap(:,:,s,rem(t,100)), fspecial('laplacian', 0.2), 'replicate');
                                           end
         
                                           CurrentQPMap = ceil(t./100);
@@ -1048,8 +1052,11 @@ classdef MultiModalExperiment < handle
                                       end
             
                                       if any([QPcol < 1, QProw < 1, QProw > size(QPmap,1), QPcol > size(QPmap, 2)])
-                                          CurrentTrace = [];
-                                          break
+                                          Phase(k,1) = NaN;
+                                          IntPhaseCh(k,1) = NaN;
+                                          GradMag(k,1) = NaN;
+                                          LocVar(k,1) = NaN;
+                                          SharpnessLapl(k,1) = NaN;
                                       else
                                           PhasePx1 = QPmap(QProw, QPcol, idx, Frame);
                                           PhasePx2 = QPmap(QProw, QPcol, idx2, Frame);
@@ -1126,6 +1133,7 @@ classdef MultiModalExperiment < handle
                       save(FileName, 'Traces3D');
                       disp(append('== Traces with phase saved - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
                       close(f);
+                      Traces3Dshort = [];
                   catch
                        disp(append('== Failed phasetracking - Movie ', num2str(i), ' out of ', num2str(nfields), ' =='));
                   end

@@ -71,10 +71,11 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         
         function trackParticle(obj,trackParam,q)
                  %track the particle in the Z direction (3rd dimension here)
+
                 assert(~isempty(obj.calibrated{1,1}),'Data should be calibrated to do ZzCalibrationration');
                 assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before zzCalibrationration');
                 assert(~isempty(obj.particles), 'No particles found, please run superResConsolidate method before doing ZzCalibrationration');
-                assert(~isempty(obj.corrected),'Data needs to be corrected before tracking');
+                % assert(~isempty(obj.corrected),'Data needs to be corrected before tracking');
                 
                 if or(~and(obj.corrected.XY,obj.corrected.Z),isempty(obj.SRCal))
                     
