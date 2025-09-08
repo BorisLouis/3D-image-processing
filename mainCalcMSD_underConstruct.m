@@ -36,6 +36,7 @@ for j = 3 : size(MainFolder,1)
                 end
             else
                 Filename = FilenameRaw;
+                Radius = Radius1;
             end
     
             f2Load = [folder(1).folder filesep Filename '.mat'];
@@ -45,21 +46,21 @@ for j = 3 : size(MainFolder,1)
             name = fieldnames(tmpData);
             data = tmpData.(name{1});
 
-        % if strcmp(Path(end-4:end), 'n0_1')
-        %     Temp = 303.15;
-        % elseif strcmp(Path(end-4:end), 'n2_1')
-        %     Temp = 304.15;
-        % elseif strcmp(Path(end-4:end), 'n4_1')
-        %     Temp = 305.15;
-        % elseif strcmp(Path(end-4:end), 'n6_1')
-        %     Temp = 306.15;
-        % elseif strcmp(Path(end-4:end), 'n8_1')
-        %     Temp = 307.15;
-        % elseif strcmp(Path(end-4:end), '10_1')
-        %     Temp = 308.15;
-        % elseif strcmp(Path(end-4:end), '13_1')
-        %     Temp = 296.15;
-        % end
+            if strcmp(Path(end-4:end), 'n0_1')
+                Temp = 303.15;
+            elseif strcmp(Path(end-4:end), 'n2_1')
+                Temp = 304.15;
+            elseif strcmp(Path(end-4:end), 'n4_1')
+                Temp = 305.15;
+            elseif strcmp(Path(end-4:end), 'n6_1')
+                Temp = 306.15;
+            elseif strcmp(Path(end-4:end), 'n8_1')
+                Temp = 307.15;
+            elseif strcmp(Path(end-4:end), '10_1')
+                Temp = 308.15;
+            elseif strcmp(Path(end-4:end), '13_1')
+                Temp = 296.15;
+            end
         
         %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
@@ -78,7 +79,11 @@ for j = 3 : size(MainFolder,1)
                         dataMatrix{step, 1} = CurrTraceCell;
                     end
                 else
-                    dataMatrix{1,1} = data.traces;
+                    try
+                        dataMatrix{1,1} = data.traces;
+                    catch
+                        dataMatrix{1,1} = data;
+                    end
                 end
 
                 for k = 1:size(dataMatrix, 1)

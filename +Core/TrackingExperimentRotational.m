@@ -406,7 +406,7 @@ classdef TrackingExperimentRotational < handle
                         currentTrackMov.trackParticle(trackParam,q);
                         
                         [traces] = currentTrackMov.getTraces;
-                        traces = traces(cellfun(@(t) height(t) > 50, traces));
+                       
                 catch
                     disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);
                 end
