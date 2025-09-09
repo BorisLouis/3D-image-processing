@@ -836,9 +836,9 @@ classdef MPLocMovie < Core.MPParticleMovie
                 colM = partData.col(3);
 
             end
-            [~, IntensityIdx] = maxk(partData.fMetric, 3);
+            IntensityIdx = 
             Int = sum(partData.intensity(IntensityIdx));
-            SNR = mean(partData.SNR(IntensityIdx));
+            SNR = partData.SNR(bestFocusIdx);
             %store the data
             data = table(row,col,z,rowM,colM,zM,adjR,Int, SNR,...
                    'VariableNames',{'row','col','z','rowM','colM','zM','adjR', 'Int', 'SNR'});

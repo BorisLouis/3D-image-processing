@@ -7,8 +7,8 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'D:\Multimodal tracking\20250724\alldata';
-path2Cal = 'D:\Multimodal tracking\20250724\2DCal';
+file.path  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA';
+path2Cal = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
