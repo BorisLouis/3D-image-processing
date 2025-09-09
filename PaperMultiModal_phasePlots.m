@@ -1,7 +1,10 @@
+close all
+clc
+
 FolderName = 'D:\Multimodal tracking\20250724\alldata';
-OutputFolder = 'D:\Multimodal tracking\20250724\Analysis\Gradient';
+OutputFolder = 'D:\Multimodal tracking\20250724\Figures\Intensity';
 Folder = dir(FolderName);
-Parameter = 'GradientMagnitude';
+Parameter = 'IntPhaseCh';
 
 Diff0 = [];
 a0 = [];
@@ -38,6 +41,8 @@ for i = 3:size(Folder, 1)
         if Folder(i).isdir == 1
             load(append(File, filesep, 'msdResPhase.mat'));
             if strcmp(File(end-4:end), 'n0__1')
+                GradMag = [allRes.GradientMagnitude];
+                allRes = allRes(GradMag < 0.5);
                 Diff0 = [Diff0; [allRes.DR]'];
                 a0 = [a0; [allRes.aR]'];
                 n0 = [n0; [allRes.nR]'];
@@ -68,6 +73,10 @@ for i = 3:size(Folder, 1)
                     phase2 = [phase2; [allRes.SharpnessLaplacian]'];
                 end
             elseif strcmp(File(end-4:end), 'n4__1')
+                allDR = [allRes.DR];
+                cutoff = prctile(allDR, 10);
+                allRes = allRes(allDR > cutoff);
+
                 Diff4 = [Diff4; [allRes.DR]'];
                 a4 = [a4; [allRes.aR]'];
                 n4 = [n4; [allRes.nR]'];
@@ -83,6 +92,10 @@ for i = 3:size(Folder, 1)
                     phase4 = [phase4; [allRes.SharpnessLaplacian]'];
                 end
             elseif strcmp(File(end-4:end), 'n6__1')
+                allDR = [allRes.DR];
+                cutoff = prctile(allDR, 20);
+                allRes = allRes(allDR > cutoff);
+
                 Diff6 = [Diff6; [allRes.DR]'];
                 a6 = [a6; [allRes.aR]'];
                 n6 = [n6; [allRes.nR]'];
@@ -98,6 +111,9 @@ for i = 3:size(Folder, 1)
                     phase6 = [phase6; [allRes.SharpnessLaplacian]'];
                 end
             elseif strcmp(File(end-4:end), 'n8__1')
+                allDR = [allRes.DR];
+                cutoff = prctile(allDR, 25);
+                allRes = allRes(allDR > cutoff);
                 Diff8 = [Diff8; [allRes.DR]'];
                 a8 = [a8; [allRes.aR]'];
                 n8 = [n8; [allRes.nR]'];
@@ -113,6 +129,10 @@ for i = 3:size(Folder, 1)
                     phase8 = [phase8; [allRes.SharpnessLaplacian]'];
                 end
             elseif strcmp(File(end-4:end), '10__1')
+                allDR = [allRes.DR];
+                cutoff = prctile(allDR, 50);
+                allRes = allRes(allDR > cutoff);
+
                 Diff10 = [Diff10; [allRes.DR]'];
                 a10 = [a10; [allRes.aR]'];
                 n10 = [n10; [allRes.nR]'];
@@ -175,8 +195,8 @@ end
 
 
 %% Trends over time
-timepoints = [0 2 4 6 8 10 13];
 
+timepoints = [0 2 4 6 8 10 13];
 % Define variable base names and labels
 
 if strcmp(Parameter, 'Phase')
@@ -197,21 +217,21 @@ for v = 1:length(varNames)
     Fig = figure;
     hold on;
     means = zeros(size(timepoints));
-    
+
     for i = 1:length(timepoints)
         % Dynamically access variables
         var = eval([varNames{v} num2str(timepoints(i))]);
-        
+
         % Boxplot at x = timepoint
         boxchart(ones(size(var)) * timepoints(i), var, 'BoxFaceColor', [0.2 0.6 0.8]);
-        
+
         % Store mean
         means(i) = mean(var, 'omitnan');
     end
-    
+
     % Plot mean line
     plot(timepoints, means, '-o', 'LineWidth', 2, 'Color', 'k');
-    
+
     title([yLabels{v} ' over time']);
     xlabel('Time (minutes)');
     ylabel(yLabels{v});
@@ -220,20 +240,20 @@ for v = 1:length(varNames)
     % end
     grid on;
     hold off;
-    
-    saveas(Fig, append(OutputFolder, filesep, varNames{v}, '.png'))
 
+    saveas(Fig, append(OutputFolder, filesep, varNames{v}, '.png'))
+    saveas(Fig, append(OutputFolder, filesep, varNames{v}, '.svg'))
 end
 
 
-
+timepoints = [13 10 8  6  4  2  0];
 allDiff = [];
 allPhase = [];
 
 for i = 1:length(timepoints)
     d = eval(['Diff' num2str(timepoints(i))]);
     p = eval(['phase' num2str(timepoints(i))]);
-    
+
     allDiff = [allDiff; d];
     allPhase = [allPhase; p];
 end
@@ -253,26 +273,81 @@ elseif strcmp(Parameter, 'SharpnessLaplacian')
 end
 
 ylabel('Diffusion');
-title('Diffusion vs. Phase/Intensity (All Timepoints Combined)');
+title(append('Diffusion vs. phase - ', Parameter, ' - (All Timepoints Combined)'));
+set(gca, 'XScale', 'log')
+xlim([0.010 0.035])
 grid on;
 saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhase.png'))
+saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhase.svg'))
 
 
+% Fig = figure;
+% hold on;
+% 
+% colors = flipud(lines(length(timepoints)));
+% legendEntries = strings(1, length(timepoints));
+% 
+% for i = 1:length(timepoints)
+%     d = eval(['Diff' num2str(timepoints(i))]);
+%     p = eval(['phase' num2str(timepoints(i))]);
+% 
+%     scatter(p, d, 25, 'filled', 'MarkerFaceColor', colors(i,:));
+%     legendEntries(i) = ['Time ' num2str(timepoints(i)) ' min'];
+% end
+% 
+% if strcmp(Parameter, 'Phase')
+%     xlabel('Phase');
+% elseif strcmp(Parameter, 'IntPhaseCh')
+%     xlabel('IntPhaseCh');
+% elseif strcmp(Parameter, 'GradientMagnitude')
+%     xlabel('GradientMagnitude');
+% elseif strcmp(Parameter, 'LocalVariance')
+%     xlabel('LocalVariance');
+% elseif strcmp(Parameter, 'SharpnessLaplacian')
+%     xlabel('SharpnessLaplacian');
+% end
+% ylabel('Diffusion');
+% title(append('Diffusion vs. phase - ', Parameter, ' - (by timepoint)'));
+% legend(legendEntries);
+% set(gca, 'XScale', 'log')
+% xlim([0.010 0.055])
+% grid on;
+% saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhasePerTimepoint.png'))
+% saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhasePerTimepoint.svg'))
+% hold off;
 
 Fig = figure;
 hold on;
 
-colors = lines(length(timepoints));
-legendEntries = strings(1, length(timepoints));
+% Collect all data in arrays
+xAll = []; % parameter values (e.g. LocalVariance)
+yAll = []; % diffusion values
+gAll = []; % group labels (categorical)
 
 for i = 1:length(timepoints)
     d = eval(['Diff' num2str(timepoints(i))]);
-    p = eval(['phase' num2str(timepoints(i))]);
+    p = eval(['phase' num2str(timepoints(i))]);   % replace if Parameter ≠ phase
     
-    scatter(p, d, 25, 'filled', 'MarkerFaceColor', colors(i,:));
-    legendEntries(i) = ['Time ' num2str(timepoints(i)) ' min'];
+    xAll = [xAll; p(:)];
+    yAll = [yAll; d(:)];
+    gAll = [gAll; repmat(timepoints(i), numel(d), 1)];
 end
 
+% Convert group to categorical for labeling
+gAll = categorical(gAll, timepoints, "Time " + string(timepoints) + " min");
+
+% Define colors
+colors = flipud(lines(length(timepoints)));
+
+% Plot scatter with marginal histograms
+h = scatterhist(xAll, yAll, 'Group', gAll, ...
+    'Kernel', 'on', ...          % smooth density instead of hist bars
+    'Color', colors, ...
+    'Marker', '.', ...
+    'MarkerSize', 10, ...
+    'LineWidth', 1.2);
+
+% Axis labels
 if strcmp(Parameter, 'Phase')
     xlabel('Phase');
 elseif strcmp(Parameter, 'IntPhaseCh')
@@ -285,8 +360,32 @@ elseif strcmp(Parameter, 'SharpnessLaplacian')
     xlabel('SharpnessLaplacian');
 end
 ylabel('Diffusion');
-title('Diffusion vs. Phase/Intensity (by Timepoint)');
-legend(legendEntries);
-grid on;
-saveas(Fig, append(OutputFolder, filesep, 'DiffvsPhasePerTimepoint.png'))
+
+% Title
+title(['Diffusion vs. phase - ', Parameter, ' - (by timepoint)']);
+
+% Legend
+legend('show');
+
+% % Log scale for x-axis
+% set(h(1), 'XScale', 'log');
+% xlim(h(1), [0.075 0.35]);
+% ylim(h(1), [0 2.1]);
+% 
+% % Also fix the bottom histogram to log scale
+% set(h(2), 'XScale', 'log');
+% xlim(h(2), [0.075 0.35]);
+% 
+% ylim(h(3), [0 2.1]);
+
+% Labels and title
+xlabel(h(1), Parameter);
+ylabel(h(1), 'Diffusion');
+title(h(1), ['Diffusion vs. phase - ', Parameter, ' - (by timepoint)']);
+grid(h(1), 'on');
+
+% Save
+saveas(Fig, fullfile(OutputFolder, 'DiffvsPhasePerTimepoint.png'));
+saveas(Fig, fullfile(OutputFolder, 'DiffvsPhasePerTimepoint.svg'));
+
 hold off;

@@ -413,7 +413,11 @@ classdef MultiModalExperiment < handle
                     testMov.getSegmentMovie(1, obj.info.TestFrame)
                     obj.MoviesCh1.retrieveSegmentMask(1);
               elseif strcmp(obj.info.Channel1, 'Phase')
+<<<<<<< HEAD
                      obj.MoviesCh1.retrievePhaseMask(1);
+=======
+                      obj.MoviesCh1.retrievePhaseMask(1);
+>>>>>>> 54b92353a6e6b9d0743cd369d81ef88b9d67349b
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
                     frame = obj.info.TestFrame;
                     testMov = obj.MoviesCh1.trackMovies.mov1;
