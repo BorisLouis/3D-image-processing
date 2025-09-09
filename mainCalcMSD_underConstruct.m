@@ -4,7 +4,7 @@ close all;
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
-
+FilenameRaw = append(FilenameRaw, 'Corr');
 %% Loading
 f = waitbar(0, 'Initializing...');
 MainFolder = dir(FilePath);
@@ -15,7 +15,7 @@ AllMovieResults = [];
 CorrectionsTheta = [];
 CorrectionsPhi = [];
 for j = 3 : size(MainFolder,1)
-    % try
+    try
         folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
         idx = contains({folder.name},FilenameRaw);
         folder(~idx) = [];
@@ -61,11 +61,7 @@ for j = 3 : size(MainFolder,1)
             elseif strcmp(Path(end-4:end), '13_1')
                 Temp = 296.15;
             end
-<<<<<<< HEAD
-            
-=======
-        
->>>>>>> 7ba36d3e0b2fb3ac97a33b26453cf20189948e15
+
         %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
                 %%% cut up traces
@@ -218,11 +214,19 @@ for j = 3 : size(MainFolder,1)
                             if strcmp(Experiment, 'Tracking-Segmentation')
                                 allRes(i).Mask = round(mean(currPart.InSegment));
                             elseif strcmp(Experiment, 'Tracking-Phase')
-                                allRes(i).Phase = mean(currPart.Phase);
-                                allRes(i).IntPhaseCh = mean(currPart.IntPhaseCh);
-                                allRes(i).GradientMagnitude = mean(currPart.GradientMagnitude);
-                                allRes(i).LocalVariance = mean(currPart.LocalVariance);
-                                allRes(i).SharpnessLaplacian = mean(currPart.SharpnessLaplacian);
+                                try
+                                    allRes(i).Phase = nanmean(currPart.Phase);
+                                    allRes(i).IntPhaseCh = nanmean(currPart.IntPhaseCh);
+                                    allRes(i).GradientMagnitude = nanmean(currPart.GradientMagnitude);
+                                    allRes(i).LocalVariance = nanmean(currPart.LocalVariance);
+                                    allRes(i).SharpnessLaplacian = nanmean(currPart.SharpnessLaplacian);
+                                catch
+                                    allRes(i).Phase = NaN;
+                                    allRes(i).IntPhaseCh = NaN;
+                                    allRes(i).GradientMagnitude = NaN;
+                                    allRes(i).LocalVariance = NaN;
+                                    allRes(i).SharpnessLaplacian = NaN;
+                                end
                             end
                         end
                     
@@ -372,12 +376,12 @@ for j = 3 : size(MainFolder,1)
                 AllMovieResults = [AllMovieResults, allRes];
             end
         end
-    % catch
-    %     disp(append('Failed to calculate movie ', MainFolder(j).name));
-    % end
+    catch
+        disp(append('Failed to calculate movie ', MainFolder(j).name));
+    end
 end
-mean(CorrectionsTheta,1)
-mean(CorrectionsPhi,1)
+% mean(CorrectionsTheta,1)
+% mean(CorrectionsPhi,1)
 close(f)
 
 save(FilePath, "AllMovieResults");

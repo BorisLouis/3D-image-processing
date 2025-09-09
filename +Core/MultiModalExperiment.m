@@ -407,70 +407,70 @@ classdef MultiModalExperiment < handle
           end
 
           function RunAnalysis(obj)
-              %%% first run channel 1 analysis
-              % if strcmp(obj.info.Channel1, 'Segmentation')
-              %       testMov = obj.MoviesCh1.SegmentMovies.mov1;
-              %       testMov.getSegmentMovie(1, obj.info.TestFrame)
-              %       obj.MoviesCh1.retrieveSegmentMask(1);
-              % elseif strcmp(obj.info.Channel1, 'Phase')
+              %% first run channel 1 analysis
+              if strcmp(obj.info.Channel1, 'Segmentation')
+                    testMov = obj.MoviesCh1.SegmentMovies.mov1;
+                    testMov.getSegmentMovie(1, obj.info.TestFrame)
+                    obj.MoviesCh1.retrieveSegmentMask(1);
+              elseif strcmp(obj.info.Channel1, 'Phase')
                       obj.MoviesCh1.retrievePhaseMask(1);
-              % elseif strcmp(obj.info.Channel1, 'Translational Tracking')
-              %       frame = obj.info.TestFrame;
-              %       testMov = obj.MoviesCh1.trackMovies.mov1;
-              %       testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-              %       testMov.getROIs;
-              %       testMov.showCandidateSingleChan(frame, 1);
-              %       testMov = obj.MoviesCh1.trackMovies.mov3;
-              %       testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-              %       testMov.getROIs;
-              %       testMov.showCandidateSingleChan(frame, 1);
-              %       testMov = obj.MoviesCh1.trackMovies.mov5;
-              %       testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-              %       testMov.getROIs;
-              %       testMov.showCandidateSingleChan(frame, 1);
-              %       val2Use = 'bestFocus';
-              %       obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-              %       obj.MoviesCh1.saveData(1);
-              % 
-              % elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
-              %       frame = obj.info.TestFrame;
-              %       testMov = obj.MoviesCh1.trackMovies.mov1;
-              %       testMov2 = obj.MoviesCh2.trackMovies.mov1;
-              %       testMov.getTransformation(testMov2, frame);
-              %       testMov.getROIs;
-              %       testMov2.getROIs;
-              %       testMov.showCandidate(testMov2, frame);
-              % 
-              %       val2Use = 'bestFocus';
-              %       obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-              %       obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-              %       obj.PartChannelConsolidation(obj.MoviesCh1, obj.MoviesCh2);
-              %       obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
-              %       obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
-              %       obj.MoviesCh1.saveData(1);
-              %       obj.MoviesCh2.saveData(2);
-              % 
-              %       obj.ConsolidateChannels3;
-              %       if obj.info.rotationalCalib == 1
-              %           obj.RotationalCalibration;
-              %       end
-              % end
-              % 
-              % %%% then run channel 2 analysis
-              % if strcmp(obj.info.Channel2, 'Segmentation')
-              %       obj.MoviesCh2.retrieveSegmentMask(2);
-              % elseif strcmp(obj.info.Channel2, 'Phase')
-              %       obj.MoviesCh2.retrievePhaseMask(2);
-              % elseif strcmp(obj.info.Channel2, 'Translational Tracking')
-              %       frame = obj.info.TestFrame;
-              %       testMov = obj.MoviesCh2.trackMovies.mov1;
-              %       testMov.findCandidatePos(testMov.info.detectParam,2,frame);
-              %       testMov.getROIs;
-              %       testMov.showCandidateSingleChan(frame, 1);
-              %       val2Use = 'bestFocus';
-              %       obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-              %       obj.MoviesCh2.saveData(2);
-              % end
+              elseif strcmp(obj.info.Channel1, 'Translational Tracking')
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh1.trackMovies.mov1;
+                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+                    testMov.getROIs;
+                    testMov.showCandidateSingleChan(frame, 1);
+                    testMov = obj.MoviesCh1.trackMovies.mov3;
+                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+                    testMov.getROIs;
+                    testMov.showCandidateSingleChan(frame, 1);
+                    testMov = obj.MoviesCh1.trackMovies.mov5;
+                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+                    testMov.getROIs;
+                    testMov.showCandidateSingleChan(frame, 1);
+                    val2Use = 'bestFocus';
+                    obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh1.saveData(1);
+
+              elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh1.trackMovies.mov1;
+                    testMov2 = obj.MoviesCh2.trackMovies.mov1;
+                    testMov.getTransformation(testMov2, frame);
+                    testMov.getROIs;
+                    testMov2.getROIs;
+                    testMov.showCandidate(testMov2, frame);
+
+                    val2Use = 'bestFocus';
+                    obj.MoviesCh1.retrieveTrackDataPart1(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh2.retrieveTrackDataPart1(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+                    obj.PartChannelConsolidation(obj.MoviesCh1, obj.MoviesCh2);
+                    obj.MoviesCh1.retrieveTrackDataPart2(obj.MoviesCh1.info.trackParam, 1);
+                    obj.MoviesCh2.retrieveTrackDataPart2(obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh1.saveData(1);
+                    obj.MoviesCh2.saveData(2);
+
+                    obj.ConsolidateChannels3;
+                    if obj.info.rotationalCalib == 1
+                        obj.RotationalCalibration;
+                    end
+              end
+
+              %%% then run channel 2 analysis
+              if strcmp(obj.info.Channel2, 'Segmentation')
+                    obj.MoviesCh2.retrieveSegmentMask(2);
+              elseif strcmp(obj.info.Channel2, 'Phase')
+                    obj.MoviesCh2.retrievePhaseMask(2);
+              elseif strcmp(obj.info.Channel2, 'Translational Tracking')
+                    frame = obj.info.TestFrame;
+                    testMov = obj.MoviesCh2.trackMovies.mov1;
+                    testMov.findCandidatePos(testMov.info.detectParam,2,frame);
+                    testMov.getROIs;
+                    testMov.showCandidateSingleChan(frame, 1);
+                    val2Use = 'bestFocus';
+                    obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
+                    obj.MoviesCh2.saveData(2);
+              end
 
               if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
                   obj.PhaseTracking;
