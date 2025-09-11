@@ -383,8 +383,8 @@ classdef MPParticleMovie < Core.MPMovie
                         
                         folder = append('calibrated', num2str(q));
 
-                        % fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
-                        % save(fileName,'particle');
+                        fileName = sprintf('%s%s%s%sparticle.mat',obj.raw.movInfo.Path,'\', folder, '\');
+                        save(fileName,'particle');
                         obj.particles = particle;
                         
                     elseif run == 0

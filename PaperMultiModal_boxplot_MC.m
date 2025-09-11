@@ -58,7 +58,7 @@ end
 
 
 
-for i = 1:3
+mean(nRfor i = 1:3
     % Create a single figure with three subplots.
     fig1 = figure('Name', 'Dual Color MSD Results', 'Color', 'w', 'Position', [100 100 1200 600]);
     
@@ -186,13 +186,17 @@ for sampleNum = 1:5
                                     % Plot the matched traces.
                                     disp(['Found co-localized trace pair: Channel 1 Trace ' num2str(j) ' and Channel 2 Trace ' num2str(k)]);
                                     
+                                    traceColor = rand(1,3);  % generate random RGB color
+
+                                    plot3(x1, y1, z1, 'Color', traceColor, 'LineWidth', 1, 'Parent', ax1);
+                                    plot3(x2, y2, z2, 'Color', traceColor, 'LineWidth', 1, 'Parent', ax2);
                                     % Plot Channel 1 trace.
-                                    plot3(x1, y1, z1, 'Parent', ax1)
-                                    patch([x1(:)' nan],[y1(:)' nan],[z1(:)' nan],[t1(:)' nan],'EdgeColor','interp','FaceColor','none','LineWidth',1 , 'Parent', ax1)
+                                    % plot3(x1, y1, z1, 'Parent', ax1)
+                                    % patch([x1(:)' nan],[y1(:)' nan],[z1(:)' nan],[t1(:)' nan],'EdgeColor','interp','FaceColor','none','LineWidth',1 , 'Parent', ax1)
                                     hold(ax1,'on')
                                     % Plot Channel 2 trace.
-                                    plot3(x2, y2, z2, 'Parent', ax2)
-                                    patch([x2(:)' nan],[y2(:)' nan],[z2(:)' nan],[t2(:)' nan],'EdgeColor','interp','FaceColor','none','LineWidth',1 , 'Parent', ax2)
+                                    % plot3(x2, y2, z2, 'Parent', ax2)
+                                    % patch([x2(:)' nan],[y2(:)' nan],[z2(:)' nan],[t2(:)' nan],'EdgeColor','interp','FaceColor','none','LineWidth',1 , 'Parent', ax2)
                                     hold(ax2,'on')
                                     break; % Break from the inner loop after finding a match.
                                 catch

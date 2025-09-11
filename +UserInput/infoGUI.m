@@ -17,26 +17,26 @@ function [info, info1, info2, file] = infoGUI(file)
     
 
 
-    state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.his');
+    state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.ome.tif');
     state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
-    state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
+    state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'load');
     state.calibrate = addDropdown(col1, 'calibrate', {'true', 'false'}, 'false');
-    state.drawROI = addDropdown(col1, 'draw ROI', {'on', 'off'}, 'on');
+    state.drawROI = addDropdown(col1, 'draw ROI', {'on', 'off'}, 'off');
 
-    state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '2D');
+    state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
     state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'on');
     ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Translational Tracking');
+        'Rotational Tracking');
     ch2Dropdown = addDropdown(col1, 'Channel 2:', ...
         {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Segmentation');
+        'Rotational Tracking');
 
     state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
     state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
     
     state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
-    state.TestFrame = addLabelField(col1, 'Test Frame:', '1');
+    state.TestFrame = addLabelField(col1, 'Test Frame:', '10');
 
     state.Rotational = addDropdown(col1, 'Rotational:', {'on', 'off'}, 'on');
     state.Bipyramid = addLabelField(col1, 'Bipyramid (nm):', '[184 92]');
@@ -275,14 +275,14 @@ function controls = addChannelControls(layout, type)
             controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
             controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
             controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
-            controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'off');
-            controls.euDist = addLabelField(layout, 'euDist (nm)', '1000');
-            controls.delta = addLabelField(layout, 'delta', '6');
-            controls.chi2 = addLabelField(layout, 'chi2', '50');
+            controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'on');
+            controls.euDist = addLabelField(layout, 'euDist (nm)', '1500');
+            controls.delta = addLabelField(layout, 'delta', '10');
+            controls.chi2 = addLabelField(layout, 'chi2', '35');
             controls.consThresh = addLabelField(layout, 'consThresh', '4');
-            controls.track_radius = addLabelField(layout, 'track.radius (nm)', '2500');
-            controls.track_memory = addLabelField(layout, 'track.memory (frames)', '3');
-            controls.CorrectDrift = addDropdown(layout, 'Correct Drift', {'on', 'off'}, 'on');
+            controls.track_radius = addLabelField(layout, 'track.radius (nm)', '1500');
+            controls.track_memory = addLabelField(layout, 'track.memory (frames)', '15');
+            controls.CorrectDrift = addDropdown(layout, 'Correct Drift', {'on', 'off'}, 'off');
 
         case 'Segmentation'
             controls.GlobalBgCorr = addLabelField(layout, ...

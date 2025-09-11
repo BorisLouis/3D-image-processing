@@ -23,50 +23,69 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         end
 
         function getTransformation(obj, obj2, frame)
-                f = waitbar(0,'Please wait...');
-                if strcmp(obj.info.frame2Load, 'all')
-                    frames = 1:obj.raw.maxFrame(1);
+                if strcmp(obj.info.runMethod, 'load')
+                    if exist(append(obj.raw.movInfo.Path, filesep, 'ChannelTransformations.mat'))
+                        run = 0;
+                    else
+                        run = 1;
+                    end
                 else
-                    frames = obj.info.frame2Load;
+                    run = 1;
                 end
-                MeanImage1 = 0;
-                MeanImage2 = 0;
-
-                for i = frames
-                    waitbar(i./max(frames),f, append('averaging frame ', num2str(i), '/', num2str(max(frames))));
-                    % allFrames1(:,:,:,i) = obj.getFrame(i, 1);
-                    % allFrames2(:,:,:,i) = obj.getFrame(i, 2);
-                    frame1 = double(obj.getFrame(i, 1));
-                    frame2 = double(obj2.getFrame(i, 1));
-
-                    MeanImage1 = MeanImage1 + frame1;
-                    MeanImage2 = MeanImage2 + frame2;
+                if run == 1
+                    f = waitbar(0,'Please wait...');
+                    if strcmp(obj.info.frame2Load, 'all')
+                        frames = 1:obj.raw.maxFrame(1);
+                    else
+                        frames = obj.info.frame2Load;
+                    end
+                    MeanImage1 = 0;
+                    MeanImage2 = 0;
+    
+                    for i = frames
+                        waitbar(i./max(frames),f, append('averaging frame ', num2str(i), '/', num2str(max(frames))));
+                        % allFrames1(:,:,:,i) = obj.getFrame(i, 1);
+                        % allFrames2(:,:,:,i) = obj.getFrame(i, 2);
+                        frame1 = double(obj.getFrame(i, 1));
+                        frame2 = double(obj2.getFrame(i, 1));
+    
+                        MeanImage1 = MeanImage1 + frame1;
+                        MeanImage2 = MeanImage2 + frame2;
+                    end
+    
+                    close(f);
+                    MeanImage1 = MeanImage1 / max(frames);
+                    MeanImage2 = MeanImage2 / max(frames);
+    
+                    tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "translation");
+                    MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
+                    
+                    figure()
+                    subplot(1,2,1)
+                    imshowpair(MeanImage1(:,:,4), MeanImage2(:,:,4))
+                    title('Overlay meanImage before corr')
+                    subplot(1,2,2)
+                    imshowpair(MeanImage1(:,:,4), MeanImage2New)
+                    title('Overlay meanImage after corr')
+    
+    
+    
+                    obj.findCandidatePos(obj.info.detectParam,1,frame);
+                    obj2.findCandidatePos(obj2.info.detectParam,2,frame);
+                    obj.SRLocalizeCandidate(obj.info.detectParam,1,frame);
+                    obj2.SRLocalizeCandidate(obj2.info.detectParam,2,frame);
+                    obj.applySRCal(1,round(obj.calibrated{1,1}.nPlanes/2));
+                    obj2.applySRCal(1,round(obj2.calibrated{1,1}.nPlanes/2));
+                    obj.CalcChannelTransition(obj2, tform, frame);
+                else
+                    disp('Found already channeltransformationfile - loading it')
+                    obj.findCandidatePos(obj.info.detectParam,1,frame);
+                    obj2.findCandidatePos(obj2.info.detectParam,2,frame);
+                    obj.SRLocalizeCandidate(obj.info.detectParam,1,frame);
+                    obj2.SRLocalizeCandidate(obj2.info.detectParam,2,frame);
+                    obj.applySRCal(1,round(obj.calibrated{1,1}.nPlanes/2));
+                    obj2.applySRCal(1,round(obj2.calibrated{1,1}.nPlanes/2));
                 end
-
-                close(f);
-                MeanImage1 = MeanImage1 / max(frames);
-                MeanImage2 = MeanImage2 / max(frames);
-
-                tform = imregcorr(MeanImage2(:,:,4), MeanImage1(:,:,4), "translation");
-                MeanImage2New = imwarp(MeanImage2(:,:,4),tform,"OutputView",imref2d(size(MeanImage2(:,:,4))));
-                
-                figure()
-                subplot(1,2,1)
-                imshowpair(MeanImage1(:,:,4), MeanImage2(:,:,4))
-                title('Overlay meanImage before corr')
-                subplot(1,2,2)
-                imshowpair(MeanImage1(:,:,4), MeanImage2New)
-                title('Overlay meanImage after corr')
-
-
-
-                obj.findCandidatePos(obj.info.detectParam,1,frame);
-                obj2.findCandidatePos(obj2.info.detectParam,2,frame);
-                obj.SRLocalizeCandidate(obj.info.detectParam,1,frame);
-                obj2.SRLocalizeCandidate(obj2.info.detectParam,2,frame);
-                obj.applySRCal(1,round(obj.calibrated{1,1}.nPlanes/2));
-                obj2.applySRCal(1,round(obj2.calibrated{1,1}.nPlanes/2));
-                obj.CalcChannelTransition(obj2, tform, frame);
         end
         
         function trackParticle(obj,trackParam,q)
