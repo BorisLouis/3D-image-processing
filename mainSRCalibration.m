@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
+file.path = 'D:\Polymer Dynamics\20250911\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
+path2Cal  = 'D:\Polymer Dynamics\20250911\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -22,6 +22,8 @@ info.rotationalCalib = 0;
 info.FWHM = 3;
 info.Dimension = '3D';
 info.IntCorr = 'off';
+info.Channel1 = 'Translational Tracking';
+info.Channel2 = 'Translational Tracking';
 
 testSRCal = Core.SRCalibration(file,path2Cal,info);
 

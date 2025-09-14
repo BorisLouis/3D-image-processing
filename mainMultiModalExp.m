@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = [];
+path2SRCal = 'D:\Polymer Dynamics\20250911\2DCal';
 
 %file info
 
-file.path  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA';
-path2Cal = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
+file.path  = 'D:\Polymer Dynamics\20250911\AllData\PAA_93kPa_normal';
+path2Cal = 'D:\Polymer Dynamics\20250911\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
