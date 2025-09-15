@@ -4,7 +4,7 @@ close all;
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
-FilenameRaw = append(FilenameRaw, 'Corr');
+
 %% Loading
 f = waitbar(0, 'Initializing...');
 MainFolder = dir(FilePath);
@@ -45,22 +45,22 @@ for j = 3 : size(MainFolder,1)
             tmpData = load(f2Load);
             name = fieldnames(tmpData);
             data = tmpData.(name{1});
-
-            if strcmp(Path(end-4:end), 'n0_1')
-                Temp = 303.15;
-            elseif strcmp(Path(end-4:end), 'n2_1')
-                Temp = 304.15;
-            elseif strcmp(Path(end-4:end), 'n4_1')
-                Temp = 305.15;
-            elseif strcmp(Path(end-4:end), 'n6_1')
-                Temp = 306.15;
-            elseif strcmp(Path(end-4:end), 'n8_1')
-                Temp = 307.15;
-            elseif strcmp(Path(end-4:end), '10_1')
-                Temp = 308.15;
-            elseif strcmp(Path(end-4:end), '13_1')
-                Temp = 296.15;
-            end
+            % 
+            % if strcmp(Path(end-4:end), 'n0_1')
+            %     Temp = 303.15;
+            % elseif strcmp(Path(end-4:end), 'n2_1')
+            %     Temp = 304.15;
+            % elseif strcmp(Path(end-4:end), 'n4_1')
+            %     Temp = 305.15;
+            % elseif strcmp(Path(end-4:end), 'n6_1')
+            %     Temp = 306.15;
+            % elseif strcmp(Path(end-4:end), 'n8_1')
+            %     Temp = 307.15;
+            % elseif strcmp(Path(end-4:end), '10_1')
+            %     Temp = 308.15;
+            % elseif strcmp(Path(end-4:end), '13_1')
+            %     Temp = 296.15;
+            % end
 
         %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
@@ -289,6 +289,25 @@ for j = 3 : size(MainFolder,1)
                 allGTheta = zeros(size(currMov, 1),maxLength-1);
                 allGPhi = allGTheta;
                 
+                if strcmp(MainFolder(j).name(1:4), '3min')
+                    CorrFactor = 31;
+                elseif strcmp(MainFolder(j).name(1:4), '5min')
+                    CorrFactor = 37;
+                elseif strcmp(MainFolder(j).name(1:4), '7min')
+                    CorrFactor = 29;
+                elseif strcmp(MainFolder(j).name(1:4), '8min')
+                    CorrFactor = 1;
+                elseif strcmp(MainFolder(j).name(1:4), '11mi')
+                    CorrFactor = 1.7;
+                elseif strcmp(MainFolder(j).name(1:4), '13mi')
+                    CorrFactor = 2.5;
+                elseif strcmp(MainFolder(j).name(1:4), '15mi')
+                    CorrFactor = 12;
+                elseif strcmp(MainFolder(j).name(1:4), '17mi')
+                    CorrFactor = 19;
+                elseif strcmp(MainFolder(j).name(1:4), '19mi')
+                    CorrFactor = 22.5;
+                end
                 
                 for i = 1:size(currMov,1)
                     waitbar(i./size(currMov,1), f, append('Diffusion & microrheology - Movie ', num2str(j-2), ' out of ', num2str(size(MainFolder,1) - 2)));
@@ -307,32 +326,64 @@ for j = 3 : size(MainFolder,1)
 
                     eta_truth = 484;
                     %%% for Theta
-                    [GTheta,tau] = MSD.Rotational.GetAutoCorrelation(Diff,100,expTime);
-                    allGTheta(i,1:size(GTheta, 1)) = GTheta';
-                    if strcmp(ExpModel, 'Test')
-                        [Model] = MSD.Rotational.TestModels(GTheta, tau);
-                        %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model,0);
-                        [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta');
+                    [GTheta,tau] = MSD.Rotational.GetAutoCorrelation(Diff,100,expTime);                   
+                    allGTheta(i,1:size(GTheta, 2)) = GTheta';
+                    tau(isnan(GTheta)) = [];
+                    GTheta(isnan(GTheta)) = [];
+                    if size(GTheta, 2) > MinSize
+                        try
+                            if strcmp(ExpModel, 'Test')
+                                [Model] = MSD.Rotational.TestModels(GTheta, tau);
+                                %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model,0);
+                                [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                            else
+                                %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel,0);
+                                [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                            end
+                            nTheta  = MSD.Rotational.getViscosity(DTheta.*25195./CorrFactor,Radius1,ParticleType, Temp, 'Theta');
+                            vTheta = MSD.Rotational.GetRotationalSpeed(GTheta, tau);
+                        catch
+                            DTheta = NaN;
+                            nTheta = NaN;
+                            vTheta = NaN;
+                            corrParamsTheta = [];
+                        end
                     else
-                        %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel,0);
-                        [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta');
+                        DTheta = NaN;
+                        nTheta = NaN;
+                        vTheta = NaN;
+                        corrParamsTheta = [];
                     end
-                    nTheta  = MSD.Rotational.getViscosity(DTheta,Radius1,ParticleType, Temp, 'Theta');
-                    vTheta = MSD.Rotational.GetRotationalSpeed(GTheta, tau);
 
                     %%% for Phi
                     [GPhi,tau] = MSD.Rotational.GetAutoCorrelation(TotInt,100,expTime);
-                    allGPhi(i,1:size(GPhi, 1)) = GPhi';
-                    if strcmp(ExpModel, 'Test')
-                        [Model] = MSD.Rotational.TestModels(GPhi, tau);
-                        %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, Model,0);
-                        [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta');
+                    allGPhi(i,1:size(GPhi, 2)) = GPhi';
+                    tau(isnan(GPhi)) = [];
+                    GPhi(isnan(GPhi)) = [];
+                    if size(GPhi,2) > MinSize
+                        try
+                            if strcmp(ExpModel, 'Test')
+                                [Model] = MSD.Rotational.TestModels(GPhi, tau);
+                                %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, Model,0);
+                                [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                            else
+                                %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, ExpModel,0);
+                                [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                            end
+                            nPhi  = MSD.Rotational.getViscosity(DPhi.*25195./CorrFactor,Radius1,ParticleType, Temp, 'Phi');
+                            vPhi = MSD.Rotational.GetRotationalSpeed(GPhi, tau);
+                        catch
+                            DPhi = NaN;
+                            nPhi = NaN;
+                            vPhi = NaN;
+                            corrParamsPhi = [];
+                        end
                     else
-                        %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, ExpModel,0);
-                        [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta');
+                        DPhi = NaN;
+                        nPhi = NaN;
+                        vPhi = NaN;
+                        corrParamsPhi = [];
                     end
-                    nPhi  = MSD.Rotational.getViscosity(DPhi,Radius1,ParticleType, Temp, 'Phi');
-                    vPhi = MSD.Rotational.GetRotationalSpeed(GPhi, tau);
                 
                 
                     %For both
