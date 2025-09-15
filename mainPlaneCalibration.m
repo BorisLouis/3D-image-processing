@@ -14,15 +14,11 @@ clear
 close all
 clc
 
-<<<<<<< HEAD
-file.path  = 'D:\Multimodal tracking\20250724\2DCal';
-=======
-file.path  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
->>>>>>> 789a2706a2455919fa94798e7f7a1f6f4c444a9a
+file.path  = 'D:\Polymer Dynamics\20250911\2DCal';
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
-info.method = 'Darkfield Phase'; %Darkfield Phase, Fluorescence,....
+info.method = 'Fluorescence'; %Darkfield Phase, Fluorescence,....
 %% 
 calib = Core.MPPlaneCalibration(file,info);
 
