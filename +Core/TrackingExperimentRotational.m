@@ -303,7 +303,7 @@ classdef TrackingExperimentRotational < handle
             end
             
             try
-                filename = [obj.path filesep 'traces3D.mat'];
+                filename = [obj.path filesep 'traces3D-', num2str(q), '.mat'];
                 save(filename,'allTraces');
             catch
             end

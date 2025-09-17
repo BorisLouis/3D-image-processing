@@ -1,16 +1,16 @@
-function [Dr, correctionParams] = GetDiffusion(Gr, tau, Radius1, Temp, Dimension, ExpModel, Plot, eta_truth, partType, Angle)
+function [Dr, correctionParams] = GetDiffusion(Gr, tau, Radius1, Temp, Dimension, ExpModel, Plot, eta_truth, partType, Angle, minSize)
     if strcmp(ExpModel, 'Single Exponential')
-        expfunction = @(p,t) (exp(-t./p(1))).';
+        expfunction = @(p,t) (exp(-t./p(1)));
     elseif strcmp(Model, 'Bi Exponential')
-        expfunction = @(p,t) (exp(-t./p(1)) + 1 * exp(-t./p(2))).';
+        expfunction = @(p,t) (exp(-t./p(1)) + 1 * exp(-t./p(2)));
     elseif strcmp(Model, 'Stretched Exponential')
-        expfunction = @(p,t) (exp(-(t./p(1)).^p(2))).';
+        expfunction = @(p,t) (exp(-(t./p(1)).^p(2)));
     else
         error('Please indicate right model for exponential fit')
     end
                     
     opts = optimset('Display','off');
-    Nfit = 10;%round(length(tau)/3);
+    Nfit = minSize;
     tfit = tau(1:Nfit);
     yfit = Gr(1:Nfit);
     
