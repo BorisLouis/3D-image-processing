@@ -2,14 +2,14 @@ close all; clc; clear all
 
 HeadFolder = 'D:\MultiColor - lysosome tracking\raw data for presentation';
 HeadFolders = dir(HeadFolder);
-MaxFrame = [500, 500, 500, 200, 300, 300, 300, 300, 300, 300];
-ExpTimes = [30, 30, 30, 200, 100, 100, 100, 100, 100, 100];
+MaxFrame = [500, 500, 200, 500, 300, 300, 300, 300, 300, 300];
+ExpTimes = [30, 30, 200, 30, 100, 100, 100, 100, 100, 100];
 CellNames = {'A549 - mSiPEI', 'A549 - mSi', 'HeLa - mSiPEI', 'HeLa - mSi', 'HepG2 - mSiPEI', 'HepG2 - mSi',...
     'KM12C - mSiPEI', 'KM12C - mSi', 'MCF - mSiPEI', 'MCF - mSi'};
 imgH = 512;
 imgW = 512;
 
-for s = 4:size(HeadFolders,1)
+for s = 3:size(HeadFolders,1)
     try
         mainFolder1 = append(HeadFolders(s).folder, filesep, HeadFolders(s).name);
     
