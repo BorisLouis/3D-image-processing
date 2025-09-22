@@ -21,9 +21,9 @@ for s = 3:size(HeadFolders,1)
         TimeRange = {'0','30'};
         stepThreshold = 500;
         DMin = 0;
-        DMax = 0.12;
+        DMax = 0.08;
         Amin = 0;
-        Amax = 1.25;
+        Amax = 1.75;
         DiffFit = 4;
         minSize = 20;
 
@@ -492,12 +492,7 @@ for s = 3:size(HeadFolders,1)
             cmap = [r(:), g(:), b(:)];
             cmap = cmap(1:nSteps,:);
             
-           %% Precompute per-trace metrics: InSegment majority, D (um^2/s) and alpha
-
-            trace_lengths = cellfun(@(t) size(t,1), traces1(:,1));
-            rows_to_keep = trace_lengths >= minSize;
-            traces1 = traces1(rows_to_keep, :);
-
+            %% Precompute per-trace metrics: InSegment majority, D (um^2/s) and alpha
             nTraces1 = size(traces1,1);
             isInSegment = false(nTraces1,1);
             Dvals = NaN(nTraces1,1);
@@ -511,9 +506,7 @@ for s = 3:size(HeadFolders,1)
             maskFile = fullfile(mainFolder1,'SegmentMovie','SegmentMovie.mat');
             load(maskFile,'Mask');
 
-            h = waitbar(0, 'initializing');
             for j = 1:nTraces1
-                waitbar(j./nTraces1,h,append('Calc D and alpha: Trace ', num2str(j), ' out of ', num2str(nTraces1)));
                 currTrace = traces1{j,1}; % table expected with columns 'row','col','z', ... 'InSegment'
                 % --- determine InSegment majority ---
                 for i = 1:size(currTrace, 1)
@@ -525,6 +518,7 @@ for s = 3:size(HeadFolders,1)
                 else
                     isInSegment(j) = false;
                 end
+            
                 % --- compute MSD (2D) and fit for D and alpha ---
                 % Build coordinate matrix: [x, y] in nanometers (as in your other script)
                 if all(ismember({'col','row'}, currTrace.Properties.VariableNames))
@@ -538,37 +532,37 @@ for s = 3:size(HeadFolders,1)
                     end
                 end
             
-                if isempty(coord_nm) || size(coord_nm,1) < 5
+                if isempty(coord_nm) || size(coord_nm,1) < 4
+                    Dvals(j) = NaN;
+                    alphas(j) = NaN;
+                    continue
+                end
+            
+                % center coordinates (like your original code)
+                CM = mean(coord_nm,1);
+                coord_nm_centered = coord_nm - CM;   % still in nm
+            
+                % convert to um for MSD (your other script used /1e3)
+                coord_um = coord_nm_centered / 1e3;  % um
+            
+                msdr = MSD.calc(coord_um);
+                tau = (1:length(msdr))'*expTime;
+                DR   = MSD.getDiffCoeff(msdr,tau,DiffFit,'2D');
+                AvStep = MSD.getAvStepSize(coord_um); 
+                aR   = MSD.getDiffTypeAlpha2(msdr,expTime, AvStep); 
+            
+                % Validate results (positive D)
+                if DR <= 0 || ~isfinite(aR)
                     Dvals(j) = NaN;
                     alphas(j) = NaN;
                 else
-                    % center coordinates (like your original code)
-                    CM = mean(coord_nm,1);
-                    coord_nm_centered = coord_nm - CM;   % still in nm
-                
-                    % convert to um for MSD (your other script used /1e3)
-                    coord_um = coord_nm_centered / 1e3;  % um
-    
-                    msdr = MSD.calc(coord_um);
-                    tau = (1:length(msdr))'*expTime;
-                    DR   = MSD.getDiffCoeff(msdr,tau,DiffFit,'2D');
-                    AvStep = MSD.getAvStepSize(coord_um); 
-                    aR   = MSD.getDiffTypeAlpha2(msdr,expTime, AvStep); 
-                
-                    % Validate results (positive D)
-                    if DR <= 0 || ~isfinite(aR)
-                        Dvals(j) = NaN;
-                        alphas(j) = NaN;
-                    else
-                        Dvals(j) = DR;     % um^2 / s
-                        alphas(j) = aR;
-                    end
+                    Dvals(j) = DR;     % um^2 / s
+                    alphas(j) = aR;
                 end
                 msdr = [];
                 tau = [];
-                AvStep = [];            
+                AvStep = [];
             end
-            close(h)
             
             % Some summary stats (used later for scaling)
             D_min = nanmin(Dvals); D_max = nanmax(Dvals);
