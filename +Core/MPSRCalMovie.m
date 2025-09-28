@@ -26,32 +26,31 @@ classdef MPSRCalMovie < Core.MPCalMovie
             
         end
         
-        function [SRCalibData, dataPerPlane] = getSRCalData(obj,trackParam)
-            for q = 1:obj.info.multiModal + 1
+        function [SRCalibData, dataPerPlane] = getSRCalData(obj,trackParam,q)
+            
                 switch nargin
-                    case 1
-                        error('Need tracking parameters to SR-Calibrate')
                     case 2
+                        error('Need tracking parameters to SR-Calibrate')
+                    case 3
                     otherwise
                         error('Unexpected number of input');
                 end
                 disp('Starting SR data extraction')
                 %#1 Track particle in Z (= Consolidation between frames)
-                [~,~] = obj.trackInZ(trackParam,q);
+                [~,~] = obj.trackInZ(trackParam);
                 
                 %#2 Extract Data per particles
-                [partData] = obj.extractPartData(q);
+                [partData] = obj.extractPartData;
         
                 %#3 Find frames where a particle is approx equally defocused in
                 %2 consective planes.
                 [idx2Frame]= obj.findDefocusedFrame(partData);
                 
                 %#4 Extract the data per plane
-                [SRCalibData, dataPerPlane] = obj.getCalibData(partData,idx2Frame,q);
-                obj.SRCalData{q,1} = SRCalibData;
-                obj.calDataPerPlane{q,1} = dataPerPlane;
+                [SRCalibData, dataPerPlane] = obj.getCalibData(partData,idx2Frame);
+                obj.SRCalData = SRCalibData;
+                obj.calDataPerPlane = dataPerPlane;
                 disp('==========> DONE ! <============');
-            end
             SRCalibData = obj.SRCalData;
             dataPerPlane = obj.calDataPerPlane;
         end
@@ -504,7 +503,7 @@ classdef MPSRCalMovie < Core.MPCalMovie
     
     methods (Access = private)
         
-        function [partData] = extractPartData(obj,q)
+        function [partData] = extractPartData(obj)
             list = obj.particles.List;
             traces = obj.particles.traces;
             nTraces = obj.particles.nTraces;
@@ -535,7 +534,7 @@ classdef MPSRCalMovie < Core.MPCalMovie
                 data2Test = partData{i};
                 test = unique(data2Test.plane);
                 
-                if length(test)<obj.calibrated{1,q}.nPlanes
+                if length(test)<obj.calibrated{1,1}.nPlanes
                     %put empty cells where test fails
                     partData{i} = [];
                 end
@@ -637,8 +636,8 @@ classdef MPSRCalMovie < Core.MPCalMovie
             idx = commonFrame(id);
             
         end
-        function [SRCalibData,dataPerPlane] = getCalibData(obj,partData,idx2Frame,q)
-            nPlanes = obj.calibrated{1,q}.nPlanes;
+        function [SRCalibData,dataPerPlane] = getCalibData(obj,partData,idx2Frame)
+            nPlanes = obj.calibrated{1,1}.nPlanes;
             SRCalibData = cell(nPlanes-1,1);
             dataPerPlane = cell(nPlanes,1);
             

@@ -12,7 +12,7 @@ classdef MPCalMovie < Core.MPParticleMovie
             obj  = obj@Core.MPParticleMovie(raw,cal,info);
         end
         
-        function [trace, counter] = trackInZ(obj,trackParam,q)
+        function [trace, counter] = trackInZ(obj,trackParam)
             %track the particle in the Z direction (3rd dimension here)
             %Here we do not expect any big movement from one frame to the
             %other so we give a warning if the tracking parameter seems to
@@ -25,7 +25,7 @@ classdef MPCalMovie < Core.MPParticleMovie
                 warning('Current euclidian distance thresholds is probably too high, we do not expect much movement from one frame to the next here')
             end
             
-            [trace,counter] = obj.zTracking(trackParam,q);
+            [trace,counter] = obj.zTracking(trackParam);
             obj.particles.traces = trace;
             obj.particles.nTraces = counter;
             
@@ -34,7 +34,7 @@ classdef MPCalMovie < Core.MPParticleMovie
     end
         
     methods (Access = private)
-        function [traces,counter] = zTracking(obj, trackParam,q)
+        function [traces,counter] = zTracking(obj, trackParam)
             %track the particle in the Z direction (3rd dimension here)
             assert(~isempty(obj.calibrated),'Data should be calibrated to do ZzCalibrationration');
             assert(~isempty(obj.candidatePos), 'No candidate found, please run findCandidatePos before zzCalibrationration');

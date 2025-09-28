@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'D:\Polymer Dynamics\20250911\2DCal';
+file.path = 'S:\Dual Color\20250121_dualcolor\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'D:\Polymer Dynamics\20250911\2DCal';
+path2Cal  = 'S:\Dual Color\20250121_dualcolor\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -25,7 +25,7 @@ info.IntCorr = 'off';
 info.Channel1 = 'Translational Tracking';
 info.Channel2 = 'Translational Tracking';
 
-testSRCal = Core.SRCalibration(file,path2Cal,info);
+testSRCal = Core.SRCalibrationMultiModal(file,path2Cal,info);
 
 %% get zCalibrationMovie
 
@@ -36,23 +36,16 @@ detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 50;
 detectParam{1}.consThresh = 6;
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 50;
+detectParam{2}.chi2  = 40;
 detectParam{2}.consThresh = 6;
 
 trackParam.commonPlanes = 1; 
 trackParam.euDistPx = 6;
 
-testSRCal.retrieveSRCalData(detectParam,trackParam);
+testSRCal.SRAnalysis(detectParam, trackParam);
 
-% calibratewwwnBB
-%% calc translation
-refPlane = 4;
-testSRCal.corrTranslation(refPlane);
-testSRCal.checkAccuracy(refPlane);
 
-%% calc rotation
-testSRCal.corrRotation(refPlane);
-testSRCal.checkAccuracy(refPlane);
+
 
 %% calc channel translations
 testSRCal.CalcAccuracyChannels(refPlane);
