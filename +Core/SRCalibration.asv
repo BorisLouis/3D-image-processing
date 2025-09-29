@@ -409,11 +409,6 @@ classdef SRCalibration < handle
     %                 idxM = ismember(mTestIdx,nTestIdx);
     %                 idxN = ismember(nTestIdx, mTestIdx);
 
-                    if size(mData, 1) > size(nData,1)
-                        mData = unique(mData);
-                    elseif size(mData, 1) < size(nData, 1)
-                        nData = unique(nData);
-                    end
                     if size(mData,1)<size(nData,1)
                         idxM = true(size(mData,1),1);
                         idxN = true(size(nData,1),1);

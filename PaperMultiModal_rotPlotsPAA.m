@@ -40,6 +40,7 @@ for i = 1:length(subFolders)
     viscosities = viscosities(~isnan(viscosities)); % remove NaNs
     % viscosities = viscosities(idxremove);
     A = viscosities;
+    idx_unique = unique(A);
     idx_replace = setdiff(1:length(A), idx_unique);
     mu = mean(A);
     sigma = std(A);
@@ -88,6 +89,11 @@ stds  = cellfun(@std,  viscosityData, 'UniformOutput', true);
 plot(1:length(timepoints), means, '-o', 'LineWidth',2, 'Color','r');
 set(gca, 'YSCale', 'log')
 
+translatmeans1 = [1.2545 1.1435 1.0205 1.1844 1.2062 1.2125 4.4151 14.4362 14.5271];
+translatmeans2 = [1.1692 1.1702 1.1667 1.1769 1.1675 1.1890 2.9240 38.9644 40.8395];
+plot(1:length(timepoints), translatmeans2, '-o', 'LineWidth',2, 'Color','b');
+set(gca, 'YSCale', 'log')
+
 % Display results in command window
 disp('--- Viscosity Statistics ---');
 for i = 1:length(timepoints)
@@ -95,5 +101,5 @@ for i = 1:length(timepoints)
         timepoints(i), means(i), stds(i), numel(viscosityData{i}));
 end
 
-saveas(gca, 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\Figures\PAAtrend.png')
-saveas(gca, 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\Figures\PAAtrend.svg')
+% saveas(gca, 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\Figures\PAAtrend.png')
+% saveas(gca, 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\Figures\PAAtrend.svg')

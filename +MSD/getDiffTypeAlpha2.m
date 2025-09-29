@@ -17,7 +17,11 @@
 function [alpha] = detDiffTypeAlpha2(msd,expTime,stepsize)
 
     if 0.014 < stepsize/4
-        FitRange = 10;
+        if size(msd, 1) > 20
+            FitRange = 10;
+        else
+            FitRange = round(size(msd, 1)./2);
+        end
     elseif 0.014 < stepsize
         if size(msd, 1) < 100
             FitRange = round(0.16*size(msd, 1));
@@ -31,8 +35,12 @@ function [alpha] = detDiffTypeAlpha2(msd,expTime,stepsize)
             FitRange = round(0.20*size(msd, 1));
         end
     end
-    t = (1:FitRange)*expTime;
-    toFit = log(msd(1:FitRange));
-    fitPar = fit(log(t(:)),toFit(:),'a*x+b');
-    alpha = fitPar.a;
+    if FitRange > 4
+        t = (1:FitRange)*expTime;
+        toFit = log(msd(1:FitRange));
+        fitPar = fit(log(t(:)),toFit(:),'a*x+b');
+        alpha = fitPar.a;
+    else
+        alpha = NaN;
+    end
 end

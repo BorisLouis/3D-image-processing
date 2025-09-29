@@ -1,10 +1,10 @@
 close all
 clc
 
-FolderName = 'D:\Multimodal tracking\20250724\alldata';
-OutputFolder = 'D:\Multimodal tracking\20250724\Figures\Intensity';
+FolderName = 'E:\Multimodal tracking\20250724\alldata';
+OutputFolder = 'E:\Multimodal tracking\20250724\Figures\Gradient';
 Folder = dir(FolderName);
-Parameter = 'IntPhaseCh';
+Parameter = 'GradientMagnitude';
 
 Diff0 = [];
 a0 = [];
@@ -234,6 +234,7 @@ for v = 1:length(varNames)
 
     title([yLabels{v} ' over time']);
     xlabel('Time (minutes)');
+    ylim([0.05 0.25])
     ylabel(yLabels{v});
     % if v == 4
     %     ylim([-0.01 0.01])

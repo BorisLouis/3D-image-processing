@@ -71,11 +71,7 @@ classdef MPParticleMovie < Core.MPMovie
                     assert(~isempty(obj.info), 'Missing information about setup to be able to find candidates, please use giveInfo method first or load previous data');
                     assert(nargin>1,'not enough input argument or accept loading of previous data (if possible)');
                     BgCorrFactor = {};
-                    if q == 1
-                        [candidate] = obj.detectCandidate(detectParam,frames,q);
-                    elseif q == 2
-                        [candidate] = obj.detectCandidate(detectParam,frames,q);
-                    end
+                    [candidate] = obj.detectCandidate(detectParam,frames,q);
                     
                 elseif ~isempty(candidate)
                     BgCorrFactor = {};
