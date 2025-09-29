@@ -10,7 +10,7 @@ path2Cal  = 'S:\Dual Color\20250121_dualcolor\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
-info.runMethod = 'run';
+info.runMethod = 'load';
 info.frame2Load = 'all';
 info.fitMethod = 'Phasor';
 info.zMethod   = 'Intensity';

@@ -177,7 +177,7 @@ classdef SRCalibrationMultiModal < handle
         end
 
         function [rotMat,corrData] = CalcAccuracyChannels(obj,refPlane)
-                nPlanes = size(obj.calib.SRCorrData{1, 1}, 1);
+                nPlanes = size(obj.MoviesCh1.calib.SRCorrData, 1);
                 figure()
                 for p = 1:nPlanes
                     PartCh1 = [];
@@ -189,25 +189,30 @@ classdef SRCalibrationMultiModal < handle
                     Im2 = [];
                     Im2Moved = [];
 
-                    PartCh1 = obj.calib.SRCorrData{1, 1}{p, 1};
-                    PartCh2 = obj.calib.SRCorrData{2, 1}{p, 1};
+                    PartCh1 = obj.MoviesCh1.calib.SRCorrData{p, 1};
+                    PartCh2 = obj.MoviesCh2.calib.SRCorrData{p, 1};
 
-                    idx = find((diff(PartCh2.partNum)) < 0);
-                    for z = 1:(size(idx, 1)+1)
+                    idx1 = find((diff(PartCh1.partNum)) < 0);
+                    idx2 = find((diff(PartCh2.partNum)) < 0);
+                    for z = 1:(size(idx1, 1)+1)
                         if z == 1
-                            Start = 1;
+                            Start1 = 1;
+                            Start2 = 1;
                         else
-                            Start = idx(z-1)+1;
+                            Start1 = idx1(z-1)+1;
+                            Start2 = idx2(z-1)+1;
                         end
 
-                        if z == size(idx, 1)+1
-                            End = size(PartCh1, 1);
+                        if z == size(idx1, 1)+1
+                            End1 = size(PartCh1, 1);
+                            End2 = size(PartCh2, 1);
                         else
-                            End = idx(z);
+                            End1 = idx1(z);
+                            End2 = idx2(z);
                         end
                         
-                        Part1Selected = PartCh1(Start:End, :);
-                        Part2Selected = PartCh2(Start:End, :);
+                        Part1Selected = PartCh1(Start1:End1, :);
+                        Part2Selected = PartCh2(Start2:End2, :);
 
                         coords1 = [Part1Selected.row, Part1Selected.col];
                         coords1 = sortrows(coords1);
@@ -269,8 +274,8 @@ classdef SRCalibrationMultiModal < handle
                     coords2s = [];
                     coords2t = [];
 
-                    PartCh1 = obj.calib.SRCorrData{1, 1}{p, 1};
-                    PartCh2 = obj.calib.SRCorrData{2, 1}{p, 1};
+                    PartCh1 = obj.MoviesCh1.calib.SRCorrData{p, 1};
+                    PartCh2 = obj.MoviesCh2.calib.SRCorrData{p, 1};
 
                     coords1 = [PartCh1.row, PartCh1.col];
                     coords1 = sortrows(coords1);
@@ -295,10 +300,14 @@ classdef SRCalibrationMultiModal < handle
                 end
 
 
-                obj.calib.corr{2,1}.Transformations = Transf;
-                SRCal = obj.calib.corr{2,1};
+                obj.MoviesCh1.calib.corr.Transformations = Transf;
+                obj.MoviesCh2.calib.corr.Transformations = Transf;
+                SRCal1 = obj.MoviesCh1.calib.corr;
+                SRCal2 = obj.MoviesCh2.calib.corr;
+                fileName = sprintf('%s%sSRCalibration1.mat',obj.path,'\');
+                save(fileName,'SRCal1');
                 fileName = sprintf('%s%sSRCalibration2.mat',obj.path,'\');
-                save(fileName,'SRCal');
+                save(fileName,'SRCal2');
         end
     end
 end

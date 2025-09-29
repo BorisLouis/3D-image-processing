@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
+path2SRCal = 'S:\Dual Color\20250121_dualcolor\2DCal';
 
 %file info
 
-file.path  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA';
-path2Cal = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\2DCal';
+file.path  = 'S:\Dual Color\20250121_dualcolor\Multicolor_particles\In_water';
+path2Cal = 'S:\Dual Color\20250121_dualcolor\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

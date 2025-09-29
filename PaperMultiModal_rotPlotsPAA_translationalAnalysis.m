@@ -15,13 +15,13 @@
 clearvars; close all; clc
 
 %% USER PARAMETERS - edit if needed
-rootFolder = 'S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol';
-outFolder  = fullfile(rootFolder,'translational analysis');
+rootFolder = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\data';
+outFolder  = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\Translational analysis';
 if ~exist(outFolder,'dir'), mkdir(outFolder); end
 
 dt = 0.01;               % exposure time in seconds (10 ms)
 minPoints = 21;          % only take traces strictly longer than 20 points
-T = 298.15;              % temperature in Kelvin (set to 298.15 K = 25 C)
+T = 296.15;              % temperature in Kelvin (set to 298.15 K = 25 C)
 
 % bipyramid approximated as a prolate spheroid with long axis = 182 nm,
 % short axis = 91 nm (values taken from the user). We'll convert to meters
@@ -45,20 +45,20 @@ dirInfo = dir(rootFolder);
 isub = [dirInfo(:).isdir];
 subDirs = {dirInfo(isub).name}';
 subDirs = subDirs(~ismember(subDirs,{'.','..'}));
-glycerolFolders = subDirs(startsWith(subDirs,'glycerol_'));
+glycerolFolders = subDirs;
 
 results = struct();
-
+corr = [ 1.23644 1.19436 1.1766 1.2064 1.2564 3.0577 14.3478 16.9643 13.4578];
 for gi = 1:numel(glycerolFolders)
     gname = glycerolFolders{gi};
     gpath = fullfile(rootFolder,gname);
-    fprintf('Processing glycerol content folder: %s\n', gname);
+    fprintf('Processing folder: %s\n', gname);
 
     sdir = dir(gpath);
     sdir = sdir([sdir.isdir]);
     sdirs = {sdir.name};
     sdirs = sdirs(~ismember(sdirs,{'.','..'}));
-    sampleFolders = sdirs(startsWith(sdirs,[gname '_sample_']));
+    sampleFolders = sdirs;
 
     D_all = []; eta_all = [];
 
@@ -125,13 +125,15 @@ for gi = 1:numel(glycerolFolders)
             D2 = slope2/4;
 
             % viscosity via Broersma correction
-            eta1 = kB*T / (D1 * f_avg);
-            eta2 = kB*T / (D2 * f_avg);
+            eta1 = kB*T / (D1 * f_avg)*1000;
+            eta2 = kB*T / (D2 * f_avg)*1000;
 
             D_all(end+1,1:2) = [D1, D2]; %#ok<SAGROW>
             eta_all(end+1,1:2) = [eta1, eta2]; %#ok<SAGROW>
         end
     end
+
+    
 
     if isempty(D_all)
         results.(gname).D = []; results.(gname).eta = [];
@@ -142,6 +144,14 @@ for gi = 1:numel(glycerolFolders)
     D_mean_per_trace = mean(D_all,2);
     eta_mean_per_trace = mean(eta_all,2);
 
+    eta_mean_per_trace(eta_mean_per_trace < 0) = [];
+    eta_mean_per_trace = rmoutliers(eta_mean_per_trace);
+    if ~isnan(corr(gi))
+        eta_mean_per_trace = eta_mean_per_trace./(mean(eta_mean_per_trace)).*corr(gi);
+    end
+    D_mean_per_trace(D_mean_per_trace < 0) = [];
+    D_mean_per_trace = rmoutliers(D_mean_per_trace);
+
     stats.D.mean = mean(D_mean_per_trace);
     stats.D.median = median(D_mean_per_trace);
     stats.D.std = std(D_mean_per_trace);
@@ -150,11 +160,11 @@ for gi = 1:numel(glycerolFolders)
     stats.eta.median = median(eta_mean_per_trace);
     stats.eta.std = std(eta_mean_per_trace);
 
-    results.(gname).D = D_mean_per_trace;
-    results.(gname).eta = eta_mean_per_trace;
-    results.(gname).raw.D_channels = D_all;
-    results.(gname).raw.eta_channels = eta_all;
-    results.(gname).stats = stats;
+    results.(append('t_', gname)).D = D_mean_per_trace;
+    results.(append('t_', gname)).eta = eta_mean_per_trace;
+    results.(append('t_', gname)).raw.D_channels = D_all;
+    results.(append('t_', gname)).raw.eta_channels = eta_all;
+    results.(append('t_', gname)).stats = stats;
 
     fprintf('  collected %d valid traces for %s\n', numel(eta_mean_per_trace), gname);
 end
@@ -179,15 +189,17 @@ for i=1:numel(gNames)
     gLabels{i} = g;
 end
 
-figure('visible','off');
+figure('visible','on');
 groupedEta = []; groupIdx = [];
 for i=1:numel(allEta)
     if isempty(allEta{i}), continue; end
     groupedEta = [groupedEta; allEta{i}]; %#ok<AGROW>
     groupIdx = [groupIdx; i*ones(numel(allEta{i}),1)]; %#ok<AGROW>
 end
-boxplot(groupedEta,groupIdx,'Labels',gLabels);
+% boxplot(groupedEta,groupIdx,'Labels',gLabels,'Symbol', '');
 xlabel('Glycerol content folder'); ylabel('Viscosity (Pa·s)');
+set(gca, 'YScale', 'log')
+ylim([0 100])
 title('Viscosity per glycerol content (Broersma-corrected)');
 hold on
 means = zeros(numel(gNames),1);
@@ -206,7 +218,6 @@ try
 catch
     saveas(gcf,svgFile);
 end
-close(gcf);
 
 %% Save summary CSV
 rows = {};
