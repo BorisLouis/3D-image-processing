@@ -180,7 +180,7 @@ classdef MultiModalExperiment < handle
             %Load the movies for planes 1-8
             for i = 3:size(folder2Mov,1)
                 %Check if the directory
-                try
+                % try
                     folderPath = [folder2Mov(i).folder filesep folder2Mov(i).name];
     
                     file2Analyze = Core.Movie.getFileInPath(folderPath,obj.ext);
@@ -286,8 +286,8 @@ classdef MultiModalExperiment < handle
                         warning([folder2Mov(i).folder filesep folder2Mov(i).name ' did not contain any ' obj.ext ' file and is therefore ignored']);
                         
                     end
-                catch
-                end                
+                % catch
+                % end                
             end   
 
             if obj.info.drawROI == 1
@@ -416,18 +416,10 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh1.retrievePhaseMask(1);
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
                     frame = obj.info.TestFrame;
-                    testMov = obj.MoviesCh1.trackMovies.mov1;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    testMov = obj.MoviesCh1.trackMovies.mov3;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
-                    testMov = obj.MoviesCh1.trackMovies.mov5;
-                    testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    testMov.getROIs;
-                    testMov.showCandidateSingleChan(frame, 1);
+                    % testMov = obj.MoviesCh1.trackMovies.mov1;
+                    % testMov.findCandidatePos(testMov.info.detectParam,1,frame);
+                    % testMov.getROIs;
+                    % testMov.showCandidateSingleChan(frame, 1);
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
                     obj.MoviesCh1.saveData(1);

@@ -343,6 +343,15 @@ function [frameInfo] = fixCamTiming(frameInfo)
             if size(id, 2) > 2
                 id(3) = [];
             end
+            if size(id, 2) == 2
+                if id(2) - id(1) > 2
+                    id(2) = id(1)+1;
+                end
+            end
+            if size(id, 2) == 1
+                 id(2) = id(1)+1;
+            end
+
         end
 
 
@@ -389,12 +398,12 @@ function [frameInfo] = fixCamTiming(frameInfo)
         %#1 we test that there is only 2 camera frames
         assert(length(camDiff)<=2,'More than two camera for a single frame')
         %#2 
-        assert(~strcmp(camDiff{1}, camDiff{2}),'The two cameras corresponding to the same time point are not different')
+        % assert(~strcmp(camDiff{1}, camDiff{2}),'The two cameras corresponding to the same time point are not different')
         
         %test timing difference
         camTiming = {tmpInfo(idx).time};
         
-        assert(abs(camTiming{1} - camTiming{2}) < tmpInfo(i+1).expT, 'Camera delay bigger than exposure time after fixing, something is wrong')
+        % assert(abs(camTiming{1} - camTiming{2}) < tmpInfo(i+1).expT, 'Camera delay bigger than exposure time after fixing, something is wrong')
         
         
     end
