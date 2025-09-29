@@ -14,9 +14,9 @@ clear
 close all
 clc
 
-file.path  = 'D:\Polymer Dynamics\20250911\2DCal';
+file.path  = 'S:\Dual Color\20250121_dualcolor\2DCal';
 file.ext   = '.ome.tif';
-info.runMethod = 'run';
+info.runMethod = 'load';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
 info.method = 'Fluorescence'; %Darkfield Phase, Fluorescence,....
 %% 
@@ -25,8 +25,7 @@ calib = Core.MPPlaneCalibration(file,info);
 calib.retrieveMovies;
 calib.calcIndivCal; 
 calib.calcCombinedCal;
-
+close all
 calib.showCal(1)
 calib.offTarget;
 calib.save;
-close all

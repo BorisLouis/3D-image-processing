@@ -36,16 +36,10 @@ detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 50;
 detectParam{1}.consThresh = 6;
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 40;
+detectParam{2}.chi2  = 50;
 detectParam{2}.consThresh = 6;
 
 trackParam.commonPlanes = 1; 
-trackParam.euDistPx = 6;
+trackParam.euDistPx = 10;
 
 testSRCal.SRAnalysis(detectParam, trackParam);
-
-
-
-
-%% calc channel translations
-testSRCal.CalcAccuracyChannels(refPlane);
