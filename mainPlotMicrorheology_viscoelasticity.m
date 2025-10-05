@@ -13,7 +13,7 @@ T  = 296.15;              % temperature [K]
 kB = 1.380649e-23;     % Boltzmann constant [J/K]
 
 fracKeep = 0.25;       % fraction of MSD points to keep (most reliable)
-minPairs = 5;          % minimum number of displacements per MSD point
+minPairs = 10;          % minimum number of displacements per MSD point
 nInterp  = 50;         % #points in common τ-grid
 
 %% GET TIMEPOINT FOLDERS
@@ -78,8 +78,8 @@ for t = 1:nTimepoints
                 polyOrder = 2;
                 smoothLogMSD = sgolayfilt(logMSD, polyOrder, windowLength);
                 alpha = gradient(smoothLogMSD) ./ gradient(logTau);
-                alpha(alpha < 0) = 0;
-                alpha(alpha > 1) = 1;
+                % alpha(alpha < 0) = 0;
+                % alpha(alpha > 1) = 1;
 
 
                 % alpha = gradient(log(msd*(10^-15))) ./ gradient(log(tau));
@@ -173,7 +173,7 @@ for t = tselect
         legend('Location','best');
         grid on;
         ylim([0.1, 5000]);
-        % xlim([0.05 0.15]);
+        xlim([0 0.15]);
         % if ch == 1
         %     ylim(yRange);
         % elseif ch == 2

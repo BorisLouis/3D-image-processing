@@ -251,165 +251,138 @@ end
 disp('All trace plots saved successfully.');
 disp('Script finished.');
 
-%% Part 2: Individual Trace Plots + Matching Video
-disp('Generating trace plots and videos for the first 5 measurements...');
+%% Part 2: Individual Trace Videos
+disp('Generating dual-color trace growth videos for the first 5 measurements...');
 
-fps = 100; % video frame rate
-minLength = 25; % only include traces longer than this
-distThreshold = 10 * 10^4; % same threshold you used
-xLimit = [0 35000];
-yLimit = [0 35000];
-zLimit = [-2000 2000];
+fps = 100;  % playback speed
+minLength = 25; % only consider traces longer than this
 
 for sampleNum = 1:5
     currentFolder = ['0_min' num2str(sampleNum)];
+
     filePath1 = fullfile(basePath, currentFolder, 'trackResults1.mat');
     filePath2 = fullfile(basePath, currentFolder, 'trackResults2.mat');
-    
-    if ~exist(filePath1, 'file') || ~exist(filePath2, 'file')
-        warning('Files not found in folder: %s', currentFolder);
-        continue;
-    end
-    
-    % Load both files
-    data1 = load(filePath1);
-    data2 = load(filePath2);
-    
-    % Create figure
-    fig2 = figure('Name', ['Traces - ' currentFolder], 'Color', 'w', ...
-                  'Position', [100 100 1200 600]);
-    ax1 = subplot(1, 2, 1);
-    ax2 = subplot(1, 2, 2);
-    hold(ax1, 'on'); hold(ax2, 'on');
-    
-    % Collect data for video
-    tracePairs = {}; % each row: {traceTable1, traceTable2corr, color}
-    
-    traces1 = data1.trackRes.traces;
-    traces2 = data2.trackRes.traces;
 
-    % Loop through traces
-    for j = 1:size(traces1, 1)
-        traceTable1 = traces1{j, 1};
-        if height(traceTable1) <= minLength, continue; end
+    if exist(filePath1, 'file') && exist(filePath2, 'file')
 
-        t1 = traceTable1.t;
-        for k = 1:size(traces2, 1)
-            traceTable2 = traces2{k, 1};
-            if height(traceTable2) <= minLength, continue; end
-            t2 = traceTable2.t;
-            
-            % Find common timepoints
-            commonT = intersect(t1, t2);
-            if isempty(commonT), continue; end
-            
-            traceTable1 = traceTable1(ismember(t1, commonT), :);
-            traceTable2 = traceTable2(ismember(t2, commonT), :);
-            
-            % Compute offset coordinates for Channel 2 (as in your code)
-            x1 = traceTable1.col;
-            y1 = traceTable1.row;
-            z1 = traceTable1.z;
-            x2 = x1 + randi([-786 786]) + randi([-286 286], size(x1,1),1);
-            y2 = y1 + randi([-886 886]) + randi([-486 486], size(x1,1),1);
-            z2 = z1 + randi([-886 886]) + randi([-386 386], size(x1,1),1);
-            
-            dist = sqrt((x1 - x2).^2 + (y1 - y2).^2 + (z1 - z2).^2);
-            if mean(dist) > distThreshold, continue; end
-            
-            % Store Channel 2 corrected trace
-            traceTable2corr = table(x2, y2, z2, traceTable1.t, ...
-                                    'VariableNames', {'col','row','z','t'});
-            
-            % Random color
-            traceColor = rand(1,3);
-            
-            % Plot on both subplots
-            plot3(ax1, x1, y1, z1, 'Color', traceColor, 'LineWidth', 1);
-            plot3(ax2, x2, y2, z2, 'Color', traceColor, 'LineWidth', 1);
-            
-            % Store for later video rendering
-            tracePairs{end+1,1} = traceTable1;
-            tracePairs{end,2} = traceTable2corr;
-            tracePairs{end,3} = traceColor;
-            
-            break;
+        % Load data
+        data1 = load(filePath1);
+        data2 = load(filePath2);
+        traces1 = data1.trackRes.traces;
+        traces2 = data2.trackRes.traces;
+
+        % Filter short traces
+        traces1 = traces1(cellfun(@(x) height(x) > minLength, traces1));
+        traces2 = traces2(cellfun(@(x) height(x) > minLength, traces2));
+
+        % Prepare video writers
+        aviName = fullfile(basePath, currentFolder, 'dualcolor_traces.avi');
+        mp4Name = fullfile(basePath, currentFolder, 'dualcolor_traces.mp4');
+        v1 = VideoWriter(aviName, 'Uncompressed AVI'); v1.FrameRate = fps;
+        % v2 = VideoWriter(mp4Name, 'MPEG-4'); v2.FrameRate = fps;
+        open(v1); open(v2);
+
+        % Prepare figure
+        fig2 = figure('Name', ['Traces - ' currentFolder], ...
+                      'Color', 'w', 'Position', [100 100 1200 600]);
+        ax1 = subplot(1,2,1); hold(ax1,'on'); grid(ax1,'on');
+        ax2 = subplot(1,2,2); hold(ax2,'on'); grid(ax2,'on');
+
+        title(ax1, 'Channel 1 Traces');
+        xlabel(ax1, 'x (\mum)'); ylabel(ax1, 'y (\mum)'); zlabel(ax1, 'z (\mum)');
+        title(ax2, 'Channel 2 Traces');
+        xlabel(ax2, 'x (\mum)'); ylabel(ax2, 'y (\mum)'); zlabel(ax2, 'z (\mum)');
+        axis(ax1,[0 35000 0 35000 -2000 2000]);
+        axis(ax2,[0 35000 0 35000 -2000 2000]);
+        pbaspect(ax1,[1 1 0.2]); pbaspect(ax2,[1 1 0.2]);
+        view(ax1,3); view(ax2,3);
+
+        % Collect matched trace pairs
+        matchedPairs = {};
+        colors = {};
+
+        for j = 1:size(traces1,1)
+            t1tab = traces1{j};
+            if height(t1tab) < minLength, continue; end
+            for k = 1:size(traces2,1)
+                t2tab = traces2{k};
+                if height(t2tab) < minLength, continue; end
+
+                % Match timepoints
+                t1 = t1tab.t; t2 = t2tab.t;
+                commonT = intersect(t1,t2);
+                if isempty(commonT), continue; end
+
+                t1mask = ismember(t1, commonT);
+                t2mask = ismember(t2, commonT);
+                t1tab = t1tab(t1mask,:); t2tab = t2tab(t2mask,:);
+
+                % Compute distance between mean positions
+                meanDist = mean( sqrt( (t1tab.col - t2tab.col).^2 + ...
+                                       (t1tab.row - t2tab.row).^2 + ...
+                                       (t1tab.z   - t2tab.z).^2 ) );
+
+                if meanDist < 1e5  % 100 µm threshold (adjust as needed)
+                    matchedPairs{end+1,1} = {t1tab, t2tab};
+                    colors{end+1,1} = rand(1,3);
+                    break;
+                end
+            end
         end
-    end
-    
-    % Set figure axes and labels
-    for ax = [ax1 ax2]
-        axis(ax, [xLimit yLimit zLimit]);
-        pbaspect(ax, [1 1 0.2]);
-        grid(ax, 'on');
-        view(ax, 3);
-        set(ax, 'Box', 'on', 'LineWidth', 1.5);
-    end
-    
-    title(ax1, 'Channel 1 Traces', 'FontSize', 16);
-    xlabel(ax1, 'x (\mum)'); ylabel(ax1, 'y (\mum)'); zlabel(ax1, 'z (\mum)');
-    title(ax2, 'Channel 2 Traces', 'FontSize', 16);
-    xlabel(ax2, 'x (\mum)'); ylabel(ax2, 'y (\mum)'); zlabel(ax2, 'z (\mum)');
-    
-    % Save static figure
-    disp(['Saving static traces for ' currentFolder '...']);
-    fileName = ['traces_' currentFolder '_colocalized'];
-    saveas(fig2, fullfile(tracePlotsPath, [fileName '.png']));
-    saveas(fig2, fullfile(tracePlotsPath, [fileName '.svg']));
-    
-    % --- Now render the video ---
-    if isempty(tracePairs)
-        warning('No valid trace pairs found for %s', currentFolder);
+
+        if isempty(matchedPairs)
+            warning('No matched traces found for %s', currentFolder);
+            continue;
+        end
+
+        % Determine global time span
+        allT = [];
+        for p = 1:numel(matchedPairs)
+            allT = [allT; matchedPairs{p}{1}.t; matchedPairs{p}{2}.t];
+        end
+        tMin = min(allT); tMax = max(allT);
+        nFrames = round((tMax - tMin) * fps / (1 / fps));
+
+        disp(['Rendering video for ' currentFolder ' with ' num2str(numel(matchedPairs)) ' trace pairs...']);
+
+        % Animate
+        for fnum = 1:nFrames
+            tNow = tMin + (fnum-1)/fps;
+            cla(ax1); cla(ax2);
+
+            for p = 1:numel(matchedPairs)
+                t1tab = matchedPairs{p}{1};
+                t2tab = matchedPairs{p}{2};
+                c = colors{p};
+
+                % Channel 1
+                mask1 = t1tab.t <= tNow;
+                if any(mask1)
+                    plot3(ax1, t1tab.col(mask1), t1tab.row(mask1), t1tab.z(mask1), ...
+                        'Color', c, 'LineWidth', 1.5);
+                end
+
+                % Channel 2
+                mask2 = t2tab.t <= tNow;
+                if any(mask2)
+                    plot3(ax2, t2tab.col(mask2), t2tab.row(mask2), t2tab.z(mask2), ...
+                        'Color', c, 'LineWidth', 1.5);
+                end
+            end
+
+            % Capture and write frame
+            frameImg = getframe(fig2);
+            writeVideo(v1, frameImg);
+            % writeVideo(v2, frameImg);
+        end
+
+        % close(v1); close(v2);
         close(fig2);
-        continue;
-    end
+        disp(['Saved videos for ' currentFolder ' ✔']);
 
-    disp(['Rendering video for ' currentFolder '...']);
-    vidName = fullfile(tracePlotsPath, ['traces_' currentFolder '_colocalized.mp4']);
-    vw = VideoWriter(vidName, 'MPEG-4');
-    vw.FrameRate = fps;
-    open(vw);
-    
-    % Determine time range across all traces
-    allT = cell2mat(cellfun(@(t) t.t, tracePairs(:,1), 'UniformOutput', false));
-    minT = min(allT);
-    maxT = max(allT);
-    
-    for tNow = minT:maxT
-        cla(ax1); cla(ax2);
-        for ax = [ax1 ax2]
-            axis(ax, [xLimit yLimit zLimit]);
-            pbaspect(ax, [1 1 0.2]);
-            grid(ax, 'on'); view(ax, 3);
-        end
-        
-        % Plot each trace up to the current frame
-        for p = 1:size(tracePairs,1)
-            tr1 = tracePairs{p,1};
-            tr2 = tracePairs{p,2};
-            c = tracePairs{p,3};
-            
-            idx1 = tr1.t <= tNow;
-            idx2 = tr2.t <= tNow;
-            
-            if any(idx1)
-                plot3(ax1, tr1.col(idx1), tr1.row(idx1), tr1.z(idx1), ...
-                      'Color', c, 'LineWidth', 1.2);
-            end
-            if any(idx2)
-                plot3(ax2, tr2.col(idx2), tr2.row(idx2), tr2.z(idx2), ...
-                      'Color', c, 'LineWidth', 1.2);
-            end
-        end
-        
-        drawnow;
-        frame = getframe(fig2);
-        writeVideo(vw, frame);
+    else
+        warning('Files not found in folder: %s', currentFolder);
     end
-    
-    close(vw);
-    close(fig2);
-    disp(['✅ Video saved for ' currentFolder]);
 end
 
-disp('All trace plots and videos completed.');
+disp('✅ All dual-color growth videos generated successfully.');
