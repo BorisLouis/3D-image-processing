@@ -1,202 +1,175 @@
-%% dualcolor_analysis_with_calibration.m
-% Performs mismatch analysis, trace overlay, and correction using precomputed
-% calibration (from SRCalibration2.mat) instead of RANSAC or Procrustes fitting.
+%% dualcolor_error_analysis.m
+% Compares raw vs SR-corrected traces between two channels.
+% Computes mismatch statistics and plots one example trace.
 
 clear; clc; close all;
 
 %% -------------------- USER SETTINGS --------------------
 rootFolder = 'S:\Dual Color\20250121_dualcolor\Multicolor_particles\In_water';
-calibrationFile = 'S:\Dual Color\20250121_dualcolor\2DCal\SRCalibration2.mat';
-samplePattern = '0_min*';
-minTraceCommon = 25; % minimum common timepoints for a trace to plot
-%% -------------------------------------------------------
 
-%% --- Load calibration transform ---
-cal = load(calibrationFile, 'SRCal');
-SRCal = cal.SRCal;
-transTable = SRCal.Transformations;
-Tcells = transTable.Coords2toCoords1;
+file_raw1 = fullfile(rootFolder,'traces3D_noSRCal1.mat');
+file_raw2 = fullfile(rootFolder,'traces3D_noSRCal2.mat');
+file_sr1  = fullfile(rootFolder,'traces3D_1.mat');
+file_sr2  = fullfile(rootFolder,'traces3D_2.mat');
 
-% Extract T, b, c from all 8 rows
-T_list = zeros(2,2,8);
-b_list = zeros(8,1);
-c_list = zeros(8,2);
-for i = 1:8
-    T_list(:,:,i) = Tcells{i,1}.T;
-    b_list(i) = Tcells{i,1}.b;
-    c_list(i,:) = Tcells{i,1}.c;
-end
+minTraceLenStats = 30;   % only traces longer than this used for stats
+minTraceLenPlot  = 30;   % pick one trace longer than this for plotting
+distThresh = 500;       % nm, max allowed distance when pairing detections
+%% --------------------------------------------------------
 
-% Compute mean rotation, scale, and translation
-T_mean = mean(T_list, 3);
-b_mean = mean(b_list);
-c_mean = mean(c_list, 1);
-
-fprintf('Loaded calibration transform (average of 8 Procrustes fits):\n');
-disp(T_mean);
-fprintf('Mean scale: %.6f\n', b_mean);
-fprintf('Mean translation: [%.6f %.6f]\n', c_mean);
-
-%% helper: load SRList from particle.mat -> Nx4 matrix [x y z t]
-function pts = load_particle_SRlist(particleMatPath)
-    s = load(particleMatPath, 'particle');
-    p = s.particle;
-    SR = p.SRList;
-    if istable(SR)
-        row = SR{:,1}; col = SR{:,2}; z = SR{:,3}; t = SR{:,10};
+%% --- Helper: extract [x y z t] from trace entry ---
+function pts = extract_xyzt(entry)
+    if istable(entry)
+        row = entry{:,1}; col = entry{:,2}; z = entry{:,3}; t = entry{:,10};
     else
-        row = SR(:,1); col = SR(:,2); z = SR(:,3); t = SR(:,10);
+        row = entry(:,1); col = entry(:,2); z = entry(:,3); t = entry(:,10);
     end
-    x = col; y = row;
-    pts = [x(:), y(:), z(:), t(:)];
+    pts = [col, row, z, t]; % [x y z t]
 end
 
-%% --- Step 1: Collect all particles and compute z offset ---
-sampleDirs = dir(fullfile(rootFolder, samplePattern));
-allPairs = [];
+%% --- Helper: match two trace sets (channel1 vs channel2) ---
+function [allDiffs, perTrace] = match_and_diff(allTraces1, allTraces2, minLen, distThresh)
+    allDiffs = []; perTrace = {};
+    h = waitbar(0, 'initalizing');
+    for i = 1:size(allTraces1,1)
+        waitbar(i./size(allTraces1,1), h, append('Matching ', num2str(i), '/', num2str(size(allTraces1,1))))
+        T1 = extract_xyzt(allTraces1{i,1});
+        if size(T1,1) < minLen, continue; end
+        bestMatch = [];
+        for j = 1:size(allTraces2,1)
+            T2 = extract_xyzt(allTraces2{j,1});
+            commonT = intersect(T1(:,4), T2(:,4));
+            if numel(commonT) < minLen, continue; end
+            % align by common timestamps
+            [~,ia,ib] = intersect(T1(:,4), T2(:,4));
+            P1 = T1(ia,1:3);
+            P2 = T2(ib,1:3);
+            % nearest neighbor within frame
+            diffs = P1 - P2;
+            dists = sqrt(sum(diffs.^2,2));
+            if median(dists) < distThresh
+                if isempty(bestMatch) || numel(commonT) > size(bestMatch.P1,1)
+                    bestMatch = struct('P1',P1,'P2',P2,'diffs',diffs,'dists',dists);
+                end
+            end
+        end
+        
+        if ~isempty(bestMatch)
+            allDiffs = [allDiffs; bestMatch.diffs]; %#ok<AGROW>
+            perTrace{end+1} = bestMatch; %#ok<AGROW>
+        end
+    end
+    close(h)
+end
 
-fprintf('Scanning particle.mat files...\n');
-for sd = 1:numel(sampleDirs)
-    sampleName = sampleDirs(sd).name;
-    samplePath = fullfile(rootFolder, sampleName);
-    c1 = fullfile(samplePath, append('data_', samplePath(end)), 'calibrated1', 'particle.mat');
-    c2 = fullfile(samplePath, append('data_', samplePath(end)), 'calibrated2', 'particle.mat');
-    if ~(exist(c1,'file') && exist(c2,'file')), continue; end
+%% --- Load traces ---
+s1 = load(file_raw1,'allTraces'); raw1 = s1.allTraces;
+s2 = load(file_raw2,'allTraces'); raw2 = s2.allTraces;
+s3 = load(file_sr1,'allTraces');  sr1  = s3.allTraces;
+s4 = load(file_sr2,'allTraces');  sr2  = s4.allTraces;
+
+fprintf('Loaded %d raw ch1, %d raw ch2, %d SR ch1, %d SR ch2 traces\n', ...
+    size(raw1,1), size(raw2,1), size(sr1,1), size(sr2,1));
+
+%% --- Compute mismatches ---
+[diffs_raw, traces_raw] = match_and_diff(raw1, raw2, minTraceLenStats, distThresh);
+[diffs_sr,  traces_sr ] = match_and_diff(sr1,  sr2,  minTraceLenStats, distThresh);
+
+% stats
+stats_raw.mean3D = mean(sqrt(sum(diffs_raw.^2,2)));
+stats_raw.median3D = median(sqrt(sum(diffs_raw.^2,2)));
+stats_raw.std3D = std(sqrt(sum(diffs_raw.^2,2)));
+stats_sr.mean3D = mean(sqrt(sum(diffs_sr.^2,2)));
+stats_sr.median3D = median(sqrt(sum(diffs_sr.^2,2)));
+stats_sr.std3D = std(sqrt(sum(diffs_sr.^2,2)));
+
+fprintf('\n--- 3D mismatch statistics ---\n');
+fprintf('RAW: mean %.2f, median %.2f, std %.2f nm\n', ...
+    stats_raw.mean3D, stats_raw.median3D, stats_raw.std3D);
+fprintf(' SR: mean %.2f, median %.2f, std %.2f nm\n', ...
+    stats_sr.mean3D, stats_sr.median3D, stats_sr.std3D);
+
+fprintf('\nPer-axis (mean ± std) [nm]:\n');
+fprintf('RAW dx: %.2f ± %.2f, dy: %.2f ± %.2f, dz: %.2f ± %.2f\n', ...
+    mean(diffs_raw(:,1)), std(diffs_raw(:,1)), ...
+    mean(diffs_raw(:,2)), std(diffs_raw(:,2)), ...
+    mean(diffs_raw(:,3)), std(diffs_raw(:,3)));
+fprintf(' SR dx: %.2f ± %.2f, dy: %.2f ± %.2f, dz: %.2f ± %.2f\n', ...
+    mean(diffs_sr(:,1)), std(diffs_sr(:,1)), ...
+    mean(diffs_sr(:,2)), std(diffs_sr(:,2)), ...
+    mean(diffs_sr(:,3)), std(diffs_sr(:,3)));
+
+%% --- Pick one long raw trace for plotting ---
+chosen = [];
+for i = 1:size(raw1,1)
+    T1_raw = extract_xyzt(raw1{i,1});
+    if size(T1_raw,1) < minTraceLenPlot, continue; end
+    for j = 1:size(raw2,1)
+        T2_raw = extract_xyzt(raw2{j,1});
+        [commonT, ia, ib] = intersect(T1_raw(:,4), T2_raw(:,4));
+        if numel(commonT) >= minTraceLenPlot
+            chosen.P1 = T1_raw(ia,1:3);
+            chosen.P2 = T2_raw(ib,1:3);
+            chosen.T  = commonT;
+            break;
+        end
+    end
+    if ~isempty(chosen), break; end
+end
+
+if isempty(chosen)
+    warning('No raw trace with >= %d points found for plotting.', minTraceLenPlot);
+else
+    %% --- Find the same particle in SR dataset by timestamp + proximity ---
+    srTolerance = 500; % nm, allowed deviation
     
-    pts1 = load_particle_SRlist(c1);
-    pts2 = load_particle_SRlist(c2);
-
-    % Match detections by frame/time
-    t_common = intersect(unique(pts1(:,4)), unique(pts2(:,4)));
-    for ti = 1:numel(t_common)
-        tval = t_common(ti);
-        P1 = pts1(pts1(:,4) == tval, :);
-        P2 = pts2(pts2(:,4) == tval, :);
-        if isempty(P1) || isempty(P2), continue; end
-
-        % Nearest neighbour match (per frame)
-        for k = 1:size(P1,1)
-            diffs = P2(:,1:3) - P1(k,1:3);
-            dists = sqrt(sum(diffs.^2, 2));
-            [mind, idx] = min(dists);
-            if mind < 1500 % arbitrary loose threshold
-                allPairs = [allPairs; P1(k,1:3), P2(idx,1:3)];
-            end
-        end
-    end
-end
-
-if isempty(allPairs)
-    error('No matched detections found!');
-end
-
-% Compute mean z offset between channel2 and channel1
-z_diff = allPairs(:,3) - allPairs(:,6);
-z_offset = mean(z_diff);
-fprintf('Mean z-offset (channel2 -> channel1): %.6f\n', z_offset);
-
-%% --- Apply correction to all channel2 points and compute mismatch ---
-X1 = allPairs(:,1:3);  % channel1 detections
-X2 = allPairs(:,4:6);  % channel2 detections
-
-% Correct x and y
-XY2_corr = b_mean * (X2(:,1:2) * T_mean) + c_mean;
-% Correct z
-Z2_corr = X2(:,3) - z_offset;
-
-X2_corr = [XY2_corr, Z2_corr];
-
-% Calculate mismatch statistics
-diffs_before = X1 - X2; % before correction
-diffs_after = X1 - X2_corr; % after correction
-
-dists_before = sqrt(sum(diffs_before.^2,2));
-dists_after = sqrt(sum(diffs_after.^2,2));
-
-fprintf('\n--- Mismatch statistics ---\n');
-fprintf('Before correction: mean 3D distance = %.4f ± %.4f\n', mean(dists_before), std(dists_before));
-fprintf('After correction:  mean 3D distance = %.4f ± %.4f\n', mean(dists_after), std(dists_after));
-
-fprintf('Per-axis before (mean ± std): X: %.4f ± %.4f, Y: %.4f ± %.4f, Z: %.4f ± %.4f\n', ...
-    mean(diffs_before(:,1)), std(diffs_before(:,1)), ...
-    mean(diffs_before(:,2)), std(diffs_before(:,2)), ...
-    mean(diffs_before(:,3)), std(diffs_before(:,3)));
-
-fprintf('Per-axis after (mean ± std):  X: %.4f ± %.4f, Y: %.4f ± %.4f, Z: %.4f ± %.4f\n', ...
-    mean(diffs_after(:,1)), std(diffs_after(:,1)), ...
-    mean(diffs_after(:,2)), std(diffs_after(:,2)), ...
-    mean(diffs_after(:,3)), std(diffs_after(:,3)));
-
-%% --- Step 2: Trace selection and plotting ---
-bestTracePair = struct('coords1',[],'coords2_uncorr',[],'coords2_corr',[],'sample','');
-
-for sd = 1:numel(sampleDirs)
-    sampleName = sampleDirs(sd).name;
-    samplePath = fullfile(rootFolder, sampleName);
-    tr1file = fullfile(samplePath, 'trackResults1.mat');
-    tr2file = fullfile(samplePath, 'trackResults2.mat');
-    if ~(exist(tr1file,'file') && exist(tr2file,'file')), continue; end
-
-    d1 = load(tr1file, 'trackRes');
-    d2 = load(tr2file, 'trackRes');
-    tr1 = d1.trackRes.traces;
-    tr2 = d2.trackRes.traces;
-
-    for i = 1:size(tr1,1)
-        T1 = tr1{i,1};
-        if istable(T1)
-            row = T1{:,1}; col = T1{:,2}; z = T1{:,3}; t = T1{:,10};
-        else
-            row = T1(:,1); col = T1(:,2); z = T1(:,3); t = T1(:,10);
-        end
-        coords1 = [col, row, z, t];
-        for j = 1:size(tr2,1)
-            T2 = tr2{j,1};
-            if istable(T2)
-                row2 = T2{:,1}; col2 = T2{:,2}; z2 = T2{:,3}; t2 = T2{:,10};
-            else
-                row2 = T2(:,1); col2 = T2(:,2); z2 = T2(:,3); t2 = T2(:,10);
-            end
-            coords2 = [col2, row2, z2, t2];
-            [commonT, ia, ib] = intersect(coords1(:,4), coords2(:,4));
-            if numel(commonT) > minTraceCommon
-                P1 = coords1(ia,1:3);
-                P2_uncorr = coords2(ib,1:3);
-                P2_corr = [b_mean * (P2_uncorr(:,1:2) * T_mean) + c_mean, P2_uncorr(:,3) - z_offset];
-                bestTracePair.coords1 = P1;
-                bestTracePair.coords2_uncorr = P2_uncorr;
-                bestTracePair.coords2_corr = P2_corr;
-                bestTracePair.sample = sampleName;
+    candidateSR1 = [];
+    for i = 1:size(sr1,1)
+        T1_sr = extract_xyzt(sr1{i,1});
+        [commonT, ia, ib] = intersect(chosen.T, T1_sr(:,4));
+        if numel(commonT) >= minTraceLenPlot
+            diffs = chosen.P1(ismember(chosen.T,commonT),:) - T1_sr(ib,1:3);
+            if median(sqrt(sum(diffs.^2,2))) < srTolerance
+                candidateSR1 = T1_sr(ib,1:3);
                 break;
             end
         end
-        if ~isempty(bestTracePair.sample), break; end
     end
-    if ~isempty(bestTracePair.sample), break; end
-end
-
-if isempty(bestTracePair.sample)
-    warning('No trace found with > %d overlapping detections.', minTraceCommon);
-else
-    fprintf('Selected trace from sample %s\n', bestTracePair.sample);
     
-    % Plot before correction
+    candidateSR2 = [];
+    for j = 1:size(sr2,1)
+        T2_sr = extract_xyzt(sr2{j,1});
+        [commonT, ia, ib] = intersect(chosen.T, T2_sr(:,4));
+        if numel(commonT) >= minTraceLenPlot
+            diffs = chosen.P2(ismember(chosen.T,commonT),:) - T2_sr(ib,1:3);
+            if median(sqrt(sum(diffs.^2,2))) < srTolerance
+                candidateSR2 = T2_sr(ib,1:3);
+                break;
+            end
+        end
+    end
+    
+    %% --- Plot raw ---
     figure;
-    plot3(bestTracePair.coords1(:,1), bestTracePair.coords1(:,2), bestTracePair.coords1(:,3), 'go-', 'LineWidth', 1.5); hold on;
-    plot3(bestTracePair.coords2_uncorr(:,1), bestTracePair.coords2_uncorr(:,2), bestTracePair.coords2_uncorr(:,3), 'ro-');
-    xlabel('X'); ylabel('Y'); zlabel('Z');
-    title('Trace overlay BEFORE correction');
-    legend('Channel 1','Channel 2 uncorrected');
+    plot3(chosen.P1(:,1),chosen.P1(:,2),chosen.P1(:,3),'g.-','LineWidth',1.5); hold on;
+    plot3(chosen.P2(:,1),chosen.P2(:,2),chosen.P2(:,3),'r.-');
+    xlabel('X (nm)'); ylabel('Y (nm)'); zlabel('Z (nm)');
+    title('Trace overlay BEFORE SR correction');
+    legend('Channel 1','Channel 2 raw');
     grid on; axis equal; view(3);
-
-    % Plot after correction
-    figure;
-    plot3(bestTracePair.coords1(:,1), bestTracePair.coords1(:,2), bestTracePair.coords1(:,3), 'go-', 'LineWidth', 1.5); hold on;
-    plot3(bestTracePair.coords2_corr(:,1), bestTracePair.coords2_corr(:,2), bestTracePair.coords2_corr(:,3), 'ro-');
-    xlabel('X'); ylabel('Y'); zlabel('Z');
-    title('Trace overlay AFTER correction');
-    legend('Channel 1','Channel 2 corrected');
-    grid on; axis equal; view(3);
+    axLimits = axis; camView = get(gca,'View');
+    
+    %% --- Plot SR (same trace, matched by coords) ---
+    if ~isempty(candidateSR1) && ~isempty(candidateSR2)
+        figure;
+        plot3(candidateSR1(:,1),candidateSR1(:,2),candidateSR1(:,3),'g.-','LineWidth',1.5); hold on;
+        plot3(candidateSR2(:,1),candidateSR2(:,2),candidateSR2(:,3),'r.-');
+        xlabel('X (nm)'); ylabel('Y (nm)'); zlabel('Z (nm)');
+        title('Trace overlay AFTER SR correction');
+        legend('Channel 1','Channel 2 SR corrected');
+        grid on; axis equal;
+        axis(axLimits); set(gca,'View',camView);
+    else
+        warning('Could not find matching SR trace for the chosen raw trace.');
+    end
 end
-
-fprintf('\nDone.\n');

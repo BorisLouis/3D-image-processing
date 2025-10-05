@@ -3,7 +3,7 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Dual Color\20250121_dualcolor\2DCal';
+path2SRCal = [];
 
 %file info
 

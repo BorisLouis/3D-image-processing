@@ -439,12 +439,12 @@ classdef TrackingExperimentRotational < handle
                 obj.traces3D = allTraces;
                 obj.trackMovies.(fieldsN{i}) = currentTrackMov;
        
-                filename = [currentTrackMov.raw.movInfo.Path filesep 'traces3D_', num2str(q), '.mat'];
+                filename = [currentTrackMov.raw.movInfo.Path filesep 'traces3D_noSRCal', num2str(q), '.mat'];
                 save(filename,'traces');
             end
             
             
-            filename = [obj.path filesep 'traces3D_', num2str(q), '.mat'];
+            filename = [obj.path filesep 'traces3D_noSRCal', num2str(q), '.mat'];
             save(filename,'allTraces');
             
             

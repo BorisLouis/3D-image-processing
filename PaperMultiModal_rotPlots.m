@@ -17,7 +17,7 @@ for i = 1:numel(FileNames)
         try
             load(append(Folder(j).folder, filesep, Folder(j).name, filesep, 'msadRes.mat'));
             Viscosity = [Viscosity; [allRes.nr]'];
-            disp(append('Median Viscosity in 3D is ', num2str(nanmedian([allRes.nr]))));
+            % disp(append('Median Viscosity in 3D is ', num2str(nanmedian([allRes.nr]))));
             
         catch
             disp(append('Failed to load data from ',Folder(j).folder, filesep, Folder(j).name, filesep, 'msadRes.mat' ));
@@ -26,6 +26,8 @@ for i = 1:numel(FileNames)
     % CorrFactor(i) = MeanViscs(i)./nanmean(Viscosity);
     % Viscosity = Viscosity.*(MeanViscs(i)./nanmean(Viscosity));
     % Append values
+    disp(append('mean Viscosity in 3D is ', num2str(nanmean(Viscosity))));
+    disp(append('std Viscosity in 3D is ', num2str(nanstd(Viscosity))));
     allVals  = [allVals; Viscosity];                % add values
     groups   = [groups; repmat(i, numel(Viscosity), 1)]; % add group IDs
 end
