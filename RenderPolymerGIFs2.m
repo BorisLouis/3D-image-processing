@@ -1,148 +1,90 @@
 clear; clc; close all;
 
-%% ------------------ Parameters ------------------
-nBlack = 500;       
-nGray  = 80;        
-nGreen = 40;        
-nFrames = 120;      
-boxSize = 7;        
-dt = 0.9;           
-collisionThresh = 0.15; 
-spacing = 0.15;      
-maxClusterSize = 4;  
+%% ------------------ PARAMETERS ------------------
+nChains = 60;              % number of initial polymer chains
+chainLengthRange = [5 25]; % each chain has 5–25 monomers
+nGray = 100;               % gray branch points
+nGreen = 40;               % green moving probes
+nFrames = 150;             % total frames per video
+boxSize = 10;              % simulation box size
+dt = 0.9;                  % timestep
+collisionThresh = 0.15;    % distance threshold for merging
+spacing = 0.15;            % monomer spacing
+branchConnectRadius = 0.25;% how close a chain end must be to a branch point to attach
+maxBranchLinks = 3;        % each gray node can connect up to 3 chains
 
-%% ------------------ Initialize positions and velocities ------------------
-blackPos = boxSize*rand(nBlack,2);
-grayPos  = boxSize*rand(nGray,2);
+%% ------------------ INITIALIZE CHAINS ------------------
+chains = [];
+monomerCounter = 0;
+for i = 1:nChains
+    L = randi(chainLengthRange);
+    monomerIdx = monomerCounter + (1:L);
+    monomerCounter = monomerCounter + L;
+    relPos = zeros(L,2);
+    for k = 2:L
+        relPos(k,:) = relPos(k-1,:) + spacing*[cosd(rand*360) sind(rand*360)];
+    end
+    chains(i).members = monomerIdx;
+    chains(i).relPos = relPos - mean(relPos); % center chain
+    chains(i).center = boxSize*rand(1,2);
+    chains(i).vel = 0.05*randn(1,2);
+    chains(i).angle = 0;
+    chains(i).rotVel = 0.2*randn;
+    chains(i).isAttached = false;
+end
+nBlack = monomerCounter;
+
+%% ------------------ INITIALIZE GRAY BRANCH POINTS ------------------
+grayPos = boxSize*rand(nGray,2);
+grayVel = 0.02*randn(nGray,2);
+grayLinks = cell(nGray,1); % store which chains are linked to each gray node
+
+%% ------------------ INITIALIZE GREEN PROBES ------------------
 greenPos = boxSize*rand(nGreen,2);
-
-blackVel = 0.1*randn(nBlack,2);
-grayVel  = 0.05*randn(nGray,2);
 greenVel = 0.08*randn(nGreen,2);
 
-%% ------------------ Initialize clusters ------------------
-blackClusters = struct('members', num2cell((1:nBlack)'), ...
-                       'relPos', num2cell(zeros(1,2),2), ...
-                       'center', num2cell(blackPos,2), ...
-                       'vel', num2cell(blackVel,2), ...
-                       'angle', num2cell(zeros(nBlack,1)), ...
-                       'rotVel', num2cell(0.2*randn(nBlack,1)));
-
-grayClusters = struct('members', num2cell(nBlack+(1:nGray)'), ...
-                      'relPos', num2cell(zeros(1,2),2), ...
-                      'center', num2cell(grayPos,2), ...
-                      'vel', num2cell(grayVel,2), ...
-                      'angle', num2cell(zeros(nGray,1)), ...
-                      'rotVel', num2cell(0.1*randn(nGray,1)));
-
-%% ------------------ Video 1: Initial cluster formation ------------------
+%% ------------------ VIDEO 1: Initial chain motion ------------------
 figure('Color','w'); axis equal off;
-filename1 = 'initial_clusters.gif';
+filename1 = 'chains_free_motion.gif';
 
 for frame = 1:nFrames
     cla; hold on;
-    allClusters = [blackClusters; grayClusters];
 
-    %% Move clusters
-    for c = 1:length(allClusters)
-        clusterSize = length(allClusters(c).members);
-        speedFactor = 1/sqrt(clusterSize); 
+    % Move chains
+    for c = 1:length(chains)
+        speedFactor = 1/sqrt(length(chains(c).members));
+        chains(c).center = reshape(chains(c).center,1,2) + reshape(chains(c).vel,1,2)*dt*speedFactor;
+        chains(c).angle = chains(c).angle + chains(c).rotVel*dt*speedFactor;
 
-        allClusters(c).center = reshape(allClusters(c).center,1,2);
-        allClusters(c).vel    = reshape(allClusters(c).vel,1,2);
-
-        allClusters(c).center = allClusters(c).center + allClusters(c).vel*dt*speedFactor;
-        allClusters(c).angle  = allClusters(c).angle  + allClusters(c).rotVel*dt*speedFactor;
-
-        pos = allClusters(c).center; vel = allClusters(c).vel;
+        pos = chains(c).center; vel = chains(c).vel;
         if pos(1)<=0 || pos(1)>=boxSize; vel(1)=-vel(1); end
         if pos(2)<=0 || pos(2)>=boxSize; vel(2)=-vel(2); end
-        allClusters(c).vel = vel;
+        chains(c).vel = vel;
     end
 
-    %% Move green dots
+    % Move gray and green
+    grayPos = grayPos + grayVel*dt;
+    greenPos = greenPos + greenVel*dt;
+    for g = 1:nGray
+        if grayPos(g,1)<=0 || grayPos(g,1)>=boxSize; grayVel(g,1)=-grayVel(g,1); end
+        if grayPos(g,2)<=0 || grayPos(g,2)>=boxSize; grayVel(g,2)=-grayVel(g,2); end
+    end
     for g = 1:nGreen
-        greenPos(g,:) = greenPos(g,:) + greenVel(g,:)*dt;
         if greenPos(g,1)<=0 || greenPos(g,1)>=boxSize; greenVel(g,1)=-greenVel(g,1); end
         if greenPos(g,2)<=0 || greenPos(g,2)>=boxSize; greenVel(g,2)=-greenVel(g,2); end
     end
 
-    %% Cluster collisions
-    i = 1;
-    while i < length(allClusters)
-        j = i+1;
-        while j <= length(allClusters)
-            ci = reshape(allClusters(i).center,1,2);
-            cj = reshape(allClusters(j).center,1,2);
-            distVec = ci - cj;
-
-            if norm(distVec) < collisionThresh
-                totalMembers = numel(allClusters(i).members) + numel(allClusters(j).members);
-                if totalMembers <= maxClusterSize
-                    allMembers = [allClusters(i).members, allClusters(j).members];
-                    newRelPos = generateRelPosPolymer(allMembers, spacing);
-                    allClusters(i).members = allMembers;
-                    allClusters(i).relPos  = newRelPos;
-                    allClusters(i).vel     = mean([reshape(allClusters(i).vel,1,2); reshape(allClusters(j).vel,1,2)],1);
-                    allClusters(i).center  = mean([ci; cj],1);
-                    allClusters(j) = [];
-                else
-                    v1 = reshape(allClusters(i).vel,1,2);
-                    v2 = reshape(allClusters(j).vel,1,2);
-                    n = distVec/norm(distVec);
-                    allClusters(i).vel = v1 - 2*dot(v1,n)*n;
-                    allClusters(j).vel = v2 - 2*dot(v2,n)*n;
-                    j = j + 1;
-                end
-            else
-                j = j + 1;
-            end
-        end
-        i = i + 1;
-    end
-
-    %% Green dots bounce off clusters
-    for g = 1:nGreen
-        for c = 1:length(allClusters)
-            clusterRel = sanitizeRelPos(allClusters(c).relPos);
-            ctr = reshape(allClusters(c).center,1,2);
-            clusterPos = clusterRel + repmat(ctr, size(clusterRel,1), 1);
-
-            for m = 1:size(clusterPos,1)
-                diffVec = greenPos(g,:) - clusterPos(m,:);
-                dist = norm(diffVec);
-                if dist < collisionThresh && dist>0
-                    normal = diffVec / dist;
-                    greenVel(g,:) = greenVel(g,:) - 2*dot(greenVel(g,:), normal)*normal;
-                end
-            end
-        end
-    end
-
-    %% Split back
-    blackClusters = allClusters(cellfun(@(m) all(m<=nBlack), {allClusters.members}));
-    grayClusters  = allClusters(~cellfun(@(m) all(m<=nBlack), {allClusters.members}));
-
-    %% Plot clusters
-    for c = 1:length(allClusters)
-        theta = allClusters(c).angle;
+    % Plot
+    for c = 1:length(chains)
+        theta = chains(c).angle;
         R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
-        relPos = sanitizeRelPos(allClusters(c).relPos);
-        ctr = reshape(allClusters(c).center,1,2);
-        clusterPos = (R*relPos')' + repmat(ctr, size(relPos,1), 1);
-
-        blackIdx = allClusters(c).members <= nBlack;
-        grayIdx  = allClusters(c).members > nBlack;
-        if any(blackIdx)
-            plot(clusterPos(blackIdx,1), clusterPos(blackIdx,2), 'ko','MarkerFaceColor','k','MarkerSize',6);
-        end
-        if any(grayIdx)
-            plot(clusterPos(grayIdx,1), clusterPos(grayIdx,2), 'ko','MarkerFaceColor',[0.5 0.5 0.5],'MarkerSize',8);
-        end
+        relPos = (R*chains(c).relPos')';
+        absPos = relPos + repmat(chains(c).center, size(relPos,1),1);
+        plot(absPos(:,1), absPos(:,2), 'k.-','MarkerSize',10,'LineWidth',1);
     end
-
+    plot(grayPos(:,1), grayPos(:,2), 'ko','MarkerFaceColor',[0.5 0.5 0.5],'MarkerSize',8);
     plot(greenPos(:,1), greenPos(:,2), 'go','MarkerFaceColor','g','MarkerSize',6);
-    xlim([0 boxSize]); ylim([0 boxSize]);
+    xlim([0 boxSize]); ylim([0 boxSize]); axis equal off;
     drawnow;
 
     frameImg = getframe(gcf);
@@ -154,76 +96,88 @@ for frame = 1:nFrames
     end
 end
 
-%% ------------------ VIDEO 2: Monomer-level polymerization ------------------
+%% ------------------ VIDEO 2: NETWORK FORMATION ------------------
+filename2 = 'network_formation.gif';
 figure('Color','w'); axis equal off;
-filename2 = 'full_network_monomer_level.gif';
-
-collisionThreshNetwork = 0.2;  
-blackClusters = [blackClusters; grayClusters];  
 
 for frame = 1:nFrames
     cla; hold on;
 
-    %% Move clusters
-    for c = 1:length(blackClusters)
-        clusterSize = length(blackClusters(c).members);
-        speedFactor = 1/sqrt(clusterSize); 
-        blackClusters(c).center = reshape(blackClusters(c).center,1,2) + reshape(blackClusters(c).vel,1,2)*dt*speedFactor;
-        blackClusters(c).angle = blackClusters(c).angle + blackClusters(c).rotVel*dt*speedFactor;
-
-        pos = blackClusters(c).center; vel = blackClusters(c).vel;
-        if pos(1)<=0 || pos(1)>=boxSize; vel(1)=-vel(1); end
-        if pos(2)<=0 || pos(2)>=boxSize; vel(2)=-vel(2); end
-        blackClusters(c).vel = vel;
+    % Move unattached chains
+    for c = 1:length(chains)
+        if ~chains(c).isAttached
+            speedFactor = 1/sqrt(length(chains(c).members));
+            chains(c).center = reshape(chains(c).center,1,2) + reshape(chains(c).vel,1,2)*dt*speedFactor;
+            chains(c).angle = chains(c).angle + chains(c).rotVel*dt*speedFactor;
+            pos = chains(c).center; vel = chains(c).vel;
+            if pos(1)<=0 || pos(1)>=boxSize; vel(1)=-vel(1); end
+            if pos(2)<=0 || pos(2)>=boxSize; vel(2)=-vel(2); end
+            chains(c).vel = vel;
+        end
     end
 
-    %% Green bead motion
+    % Move green beads
     for g = 1:nGreen
         greenPos(g,:) = greenPos(g,:) + greenVel(g,:)*dt;
         if greenPos(g,1)<=0 || greenPos(g,1)>=boxSize; greenVel(g,1)=-greenVel(g,1); end
         if greenPos(g,2)<=0 || greenPos(g,2)>=boxSize; greenVel(g,2)=-greenVel(g,2); end
     end
 
-    %% Monomer-level sticking
-    i = 1;
-    while i < length(blackClusters)
-        j = i + 1;
-        while j <= length(blackClusters)
-            rel_i = sanitizeRelPos(blackClusters(i).relPos);
-            rel_j = sanitizeRelPos(blackClusters(j).relPos);
+    % Try attaching chain ends to gray nodes
+    for c = 1:length(chains)
+        if chains(c).isAttached, continue; end
 
-            pos_i = rel_i + repmat(reshape(blackClusters(i).center,1,2), size(rel_i,1), 1);
-            pos_j = rel_j + repmat(reshape(blackClusters(j).center,1,2), size(rel_j,1), 1);
+        theta = chains(c).angle;
+        R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
+        relPos = (R*chains(c).relPos')';
+        absPos = relPos + repmat(chains(c).center, size(relPos,1),1);
 
-            if any(pdist2(pos_i, pos_j) < collisionThreshNetwork, 'all')
-                allMembers = [blackClusters(i).members, blackClusters(j).members];
-                newRelPos = generateRelPosPolymer(allMembers, spacing);
+        chainEnds = [absPos(1,:); absPos(end,:)];
 
-                blackClusters(i).members = allMembers;
-                blackClusters(i).relPos = newRelPos;
-                blackClusters(i).vel = mean([blackClusters(i).vel; blackClusters(j).vel],1);
-                blackClusters(i).center = mean([blackClusters(i).center; blackClusters(j).center],1);
-                blackClusters(j) = [];
-            else
-                j = j + 1;
+        for e = 1:2
+            distances = sqrt(sum((grayPos - chainEnds(e,:)).^2,2));
+            [minDist, minIdx] = min(distances);
+            if minDist < branchConnectRadius && length(grayLinks{minIdx}) < maxBranchLinks
+                % Attach chain to this gray node
+                chains(c).isAttached = true;
+                grayLinks{minIdx}{end+1} = c;
+                % Move chain center to align the end
+                shiftVec = grayPos(minIdx,:) - chainEnds(e,:);
+                chains(c).center = chains(c).center + shiftVec;
+                break;
             end
         end
-        i = i + 1;
     end
 
-    %% Plot clusters
-    for c = 1:length(blackClusters)
-        theta = blackClusters(c).angle;
+    % Plot chains and branches
+    for c = 1:length(chains)
+        theta = chains(c).angle;
         R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
-        relPos = sanitizeRelPos(blackClusters(c).relPos);
-        clusterPos = (R*relPos')' + repmat(reshape(blackClusters(c).center,1,2), size(relPos,1), 1);
-        grayIdx = blackClusters(c).members > nBlack;
-        blackIdx = ~grayIdx;
-        if any(blackIdx)
-            plot(clusterPos(blackIdx,1), clusterPos(blackIdx,2), 'ko','MarkerFaceColor','k','MarkerSize',6);
+        relPos = (R*chains(c).relPos')';
+        absPos = relPos + repmat(chains(c).center, size(relPos,1),1);
+        if chains(c).isAttached
+            plot(absPos(:,1), absPos(:,2), 'r.-','MarkerSize',10,'LineWidth',1.5);
+        else
+            plot(absPos(:,1), absPos(:,2), 'k.-','MarkerSize',8,'LineWidth',1);
         end
-        if any(grayIdx)
-            plot(clusterPos(grayIdx,1), clusterPos(grayIdx,2), 'ko','MarkerFaceColor',[0.5 0.5 0.5],'MarkerSize',8);
+    end
+
+    % Draw gray nodes and connecting lines
+    for g = 1:nGray
+        plot(grayPos(g,1), grayPos(g,2), 'ko','MarkerFaceColor',[0.5 0.5 0.5],'MarkerSize',8);
+        if ~isempty(grayLinks{g})
+            for linkIdx = 1:length(grayLinks{g})
+                c = grayLinks{g}{linkIdx};
+                theta = chains(c).angle;
+                R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
+                relPos = (R*chains(c).relPos')';
+                absPos = relPos + repmat(chains(c).center, size(relPos,1),1);
+                endPos = absPos(1,:);
+                if norm(grayPos(g,:) - absPos(end,:)) < norm(grayPos(g,:) - absPos(1,:))
+                    endPos = absPos(end,:);
+                end
+                plot([grayPos(g,1) endPos(1)], [grayPos(g,2) endPos(2)], 'Color',[0.3 0.3 0.3]);
+            end
         end
     end
 
@@ -238,43 +192,4 @@ for frame = 1:nFrames
     else
         imwrite(A,map,filename2,'gif','WriteMode','append','DelayTime',0.1);
     end
-end
-
-%% ------------------ Helper functions ------------------
-function relPos = generateRelPosPolymer(members, spacing)
-    % Modified: generate branched, web-like clusters
-    N = length(members);
-    relPos = zeros(N,2);
-    relPos(1,:) = [0 0];
-    if N == 2
-        relPos(2,:) = [spacing 0];
-        return;
-    end
-
-    for k = 2:N
-        % Randomly pick an existing node to branch from
-        parentIdx = randi([1, k-1]);
-
-        % Random branching angle (0–360°)
-        ang = rand()*360;
-
-        % Random radial length (with slight noise)
-        r = spacing*(0.9 + 0.2*rand());
-
-        % Position new monomer near chosen parent
-        relPos(k,:) = relPos(parentIdx,:) + r*[cosd(ang) sind(ang)];
-    end
-
-    % Slight jitter to prevent perfect symmetry
-    relPos = relPos + 0.02*randn(size(relPos));
-end
-
-function rel = sanitizeRelPos(rel)
-    if isempty(rel)
-        rel = [0 0];
-    elseif iscell(rel)
-        rel = cell2mat(rel);
-    end
-    rel = double(rel);
-    rel = reshape(rel, [], 2);
 end
