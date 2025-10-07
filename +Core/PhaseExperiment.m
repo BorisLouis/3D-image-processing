@@ -81,7 +81,7 @@ classdef PhaseExperiment < handle
             allTraces = [];
             for i = 1: nfields
                 try
-                    disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
+                    disp(['Retrieving data from phase file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.PhaseMovies.(fieldsN{i});
     
                     currentTrackMov.getPhaseMovie(q);

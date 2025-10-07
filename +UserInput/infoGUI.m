@@ -14,35 +14,31 @@ function [info, info1, info2, file] = infoGUI(file)
 
     %% Column 1 – General Parameters
     col1 = uigridlayout(gl, [14, 2]);
-    
-
 
     state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.ome.tif');
     state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
     state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'load');
     state.calibrate = addDropdown(col1, 'calibrate', {'true', 'false'}, 'false');
-    state.drawROI = addDropdown(col1, 'draw ROI', {'on', 'off'}, 'off');
+
+    % Updated drawROI dropdown
+    state.drawROI = addDropdown(col1, 'draw ROI:', {'off', 'channel1', 'channel2'}, 'off');
 
     state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
     state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'on');
-    ch1Dropdown = addDropdown(col1, 'Channel 1:', ...
-        {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Rotational Tracking');
-    ch2Dropdown = addDropdown(col1, 'Channel 2:', ...
-        {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase'}, ...
-        'Rotational Tracking');
+
+    channelTypes = {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase', 'DDM'};
+
+    ch1Dropdown = addDropdown(col1, 'Channel 1:', channelTypes, 'Rotational Tracking');
+    ch2Dropdown = addDropdown(col1, 'Channel 2:', channelTypes, 'Rotational Tracking');
 
     state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
     state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
-    
     state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
     state.TestFrame = addLabelField(col1, 'Test Frame:', '10');
-
     state.Rotational = addDropdown(col1, 'Rotational:', {'on', 'off'}, 'on');
     state.Bipyramid = addLabelField(col1, 'Bipyramid (nm):', '[184 92]');
     state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'on', 'off'}, 'off');
     state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
-    
 
     %% Channel Panels
     channel1Panel = uipanel(gl, 'Title', 'Channel 1 Setup');
@@ -59,8 +55,7 @@ function [info, info1, info2, file] = infoGUI(file)
     channel2Layout.RowHeight = repmat({30}, 1, 14);
 
     %% OK Button
-    btn = uibutton(gl, 'Text', 'OK', ...
-        'ButtonPushedFcn', @(btn, event) onOK());
+    btn = uibutton(gl, 'Text', 'OK', 'ButtonPushedFcn', @(btn, event) onOK());
     btn.Layout.Row = 2;
     btn.Layout.Column = [1 3];
 
@@ -68,6 +63,7 @@ function [info, info1, info2, file] = infoGUI(file)
     ch1Dropdown.ValueChangedFcn = @(src, event) updateChannel(1, src.Value);
     ch2Dropdown.ValueChangedFcn = @(src, event) updateChannel(2, src.Value);
     state.RotationalCalib.ValueChangedFcn = @(src, event) toggleRadTime();
+    state.multiModal.ValueChangedFcn = @(src, event) toggleMultiModal();
 
     % Initial setup
     updateChannel(1, ch1Dropdown.Value);
@@ -75,12 +71,12 @@ function [info, info1, info2, file] = infoGUI(file)
     toggleRadTime();
     toggleBipyramid();
     toggleRotationalControls();
+    toggleMultiModal();
 
     % Wait for user to press OK
     uiwait(fig);
 
     %% --- Nested functions ---
-
     function updateChannel(channelNum, mode)
         if channelNum == 1
             delete(channel1Layout.Children);
@@ -91,6 +87,24 @@ function [info, info1, info2, file] = infoGUI(file)
         end
         toggleBipyramid();
         toggleRotationalControls();
+    end
+
+    function toggleMultiModal()
+        if strcmp(state.multiModal.Value, 'off')
+            ch2Dropdown.Enable = 'off';
+            channel2Panel.Visible = 'off';
+            state.channel2Controls = struct(); % clear
+            % Disable Channel2 option in drawROI
+            state.drawROI.Items = {'off', 'channel1'};
+            if strcmp(state.drawROI.Value, 'channel2')
+                state.drawROI.Value = 'off';
+            end
+        else
+            ch2Dropdown.Enable = 'on';
+            channel2Panel.Visible = 'on';
+            % Restore drawROI options
+            state.drawROI.Items = {'off', 'channel1', 'channel2'};
+        end
     end
 
     function toggleBipyramid()
@@ -114,54 +128,20 @@ function [info, info1, info2, file] = infoGUI(file)
     function toggleRotationalControls()
         ch1 = ch1Dropdown.Value;
         ch2 = ch2Dropdown.Value;
-    
+
         if strcmp(ch1, 'Rotational Tracking') && strcmp(ch2, 'Rotational Tracking')
             state.Rotational.Value = 'on';
             state.Rotational.Enable = 'off';  % Fixed to on
             state.RotationalCalib.Enable = 'on';  % Let user change it
         else
             state.Rotational.Value = 'off';
-            state.Rotational.Enable = 'off';  % Fixed to 0
+            state.Rotational.Enable = 'off';
             state.RotationalCalib.Value = 'off';
             state.RotationalCalib.Enable = 'off';
         end
-    
-        toggleRadTime();  % Always refresh dependent RadTime state
-    end
 
-    function toggleSegmentDiameter()
-        ctrlSets = {state.channel1Controls, state.channel2Controls};
-        for i = 1:2
-            ctrlSet = ctrlSets{i};
-            if isfield(ctrlSet, 'CheckSize') && isfield(ctrlSet, 'SegmentDiameter')
-                if strcmp(ctrlSet.CheckSize.Value, 'on')
-                    ctrlSet.SegmentDiameter.Value = '[]';
-                    ctrlSet.SegmentDiameter.Enable = 'off';
-                else
-                    ctrlSet.SegmentDiameter.Enable = 'on';
-                end
-            end
-        end
+        toggleRadTime();
     end
-
-    function toggleTestFrame()
-        ctrlSets = {state.channel1Controls, state.channel2Controls};
-        for i = 1:2
-            ctrlSet = ctrlSets{i};
-            if isfield(ctrlSet, 'ShowSegmentation') && isfield(ctrlSet, 'CheckSize') && isfield(ctrlSet, 'TestFrame')
-                checkOn = strcmp(ctrlSet.CheckSize.Value, 'on');
-                showSegOn = strcmp(ctrlSet.ShowSegmentation.Value, 'on');
-    
-                if checkOn || showSegOn
-                    ctrlSet.TestFrame.Enable = 'on';
-                else
-                    ctrlSet.TestFrame.Value = '[]';
-                    ctrlSet.TestFrame.Enable = 'off';
-                end
-            end
-        end
-    end
-
 
     function onOK()
         % Collect info structure
@@ -169,40 +149,21 @@ function [info, info1, info2, file] = infoGUI(file)
         info.PxSize = str2double(state.PxSize.Value);
         info.type = state.Type.Value;
         info.runMethod = state.RunMethod.Value;
-        if strcmp(state.multiModal.Value, 'on')
-            info.multiModal = 1;
-        else 
-            info.multiModal = 0;
-        end
-        if strcmp(state.drawROI.Value, 'on')
-            info.drawROI = 1;
-        else 
-            info.drawROI = 0;
-        end
+        info.multiModal = strcmp(state.multiModal.Value, 'on');
+        info.drawROI = state.drawROI.Value; % <--- now stores string directly
+        info.calibrate = strcmp(state.calibrate.Value, 'true');
 
-        if strcmp(state.calibrate.Value, 'true')
-            info.calibrate = 1;
-        else
-            info.calibrate = 0;
-        end
         if strcmp(state.Frame2Load.Value, 'all')
             info.frame2Load = state.Frame2Load.Value;
         else
-            info.frame2Load = evalin('base', state.Frame2Load.Value);  %#ok<EVLC>
+            info.frame2Load = evalin('base', state.Frame2Load.Value); %#ok<EVLC>
         end
+
         info.Channel1 = ch1Dropdown.Value;
         info.Channel2 = ch2Dropdown.Value;
         info.FWHM = str2double(state.FWHM.Value);
-        if strcmp(state.Rotational.Value, 'on')
-            info.rotational = 1;
-        else 
-            info.rotational = 0;
-        end
-        if strcmp(state.Rotational.Value, 'on')
-            info.rotationalCalib = 1;
-        else 
-            info.rotationalCalib = 0;
-        end
+        info.rotational = strcmp(state.Rotational.Value, 'on');
+        info.rotationalCalib = strcmp(state.RotationalCalib.Value, 'on');
         info.TestFrame = str2double(state.TestFrame.Value);
         info.RadTime = str2double(state.RadTime.Value);
         info.Bipyramid = str2num(state.Bipyramid.Value); %#ok<ST2NM>
@@ -210,128 +171,131 @@ function [info, info1, info2, file] = infoGUI(file)
 
         % Substructures
         info1 = readControls(state.channel1Controls);
-        info2 = readControls(state.channel2Controls);
 
-        if contains(info.Channel1, 'Tracking')
-            info1.detectParam.delta = info1.delta;
-            info1.detectParam.chi2 = info1.chi2;
-            info1.detectParam.consThresh = info1.consThresh;
-            info1.trackParam.radius = info1.track_radius;
-            info1.trackParam.memory = info1.track_memory;
-            info1 = rmfield(info1, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
-
-        elseif contains(info.Channel1, 'Phase')
-            info1.optics.dz = info1.dz;
-            info1.optics.NA = info1.NA;
-            info1.optics.NA_ill = info1.NA_ill;
-            info1.optics.n = info1.n;
-            info1.optics.lambda = info1.lambda;
-            info1.optics.dlambda = info1.dlambda;
-            info1.optics.alpha = info1.alpha;
-            info1.optics.kzT = info1.kzT;
-
-            info1.proc.mirrorX = info1.mirrorX;
-            info1.proc.mirrorZ = info1.mirrorZ;
-            info1.proc.applyFourierMask = info1.applyFourierMask;
-
-            info1 = rmfield(info1, {'dz', 'NA', 'NA_ill', 'n', 'lambda', 'dlambda', 'alpha', 'kzT',...
-                        'mirrorX', 'mirrorZ', 'applyFourierMask'});
+        if strcmp(state.multiModal.Value, 'off')
+            info2 = NaN;
+        else
+            info2 = readControls(state.channel2Controls);
         end
 
-        if contains(info.Channel2, 'Tracking')
-            info2.detectParam.delta = info2.delta;
-            info2.detectParam.chi2 = info2.chi2;
-            info2.detectParam.consThresh = info2.consThresh;
-            info2.trackParam.radius = info2.track_radius;
-            info2.trackParam.memory = info2.track_memory;
-            info2 = rmfield(info2, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'}); 
-        elseif contains(info.Channel1, 'Phase')
-            info2.optics.dz = info2.dz;
-            info2.optics.NA = info2.NA;
-            info2.optics.NA_ill = info2.NA_ill;
-            info2.optics.n = info2.n;
-            info2.optics.lambda = info2.lambda;
-            info2.optics.dlambda = info2.dlambda;
-            info2.optics.alpha = info2.alpha;
-            info2.optics.kzT = info2.kzT;
-
-            info2.proc.mirrorX = info2.mirrorX;
-            info2.proc.mirrorZ = info2.mirrorZ;
-            info2.proc.applyFourierMask = info2.applyFourierMask;
-
-            info2 = rmfield(info2, {'dz', 'NA', 'NA_ill', 'n', 'lambda', 'dlambda', 'alpha', 'kzT',...
-                        'mirrorX', 'mirrorZ', 'applyFourierMask'});
+        % === STRUCTURE REORGANIZATION ===
+        info1 = restructureChannelInfo(info1, info.Channel1);
+        if ~isnan(info2)
+            info2 = restructureChannelInfo(info2, info.Channel2);
         end
 
-        
-        % Resume and close
         uiresume(fig);
         delete(fig);
     end
-function controls = addChannelControls(layout, type)
-    controls = struct();
-    switch type
-        case {'Translational Tracking', 'Rotational Tracking'}
-            controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
-            controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
-            controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
-            controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'on');
-            controls.euDist = addLabelField(layout, 'euDist (nm)', '1500');
-            controls.delta = addLabelField(layout, 'delta', '10');
-            controls.chi2 = addLabelField(layout, 'chi2', '35');
-            controls.consThresh = addLabelField(layout, 'consThresh', '4');
-            controls.track_radius = addLabelField(layout, 'track.radius (nm)', '1500');
-            controls.track_memory = addLabelField(layout, 'track.memory (frames)', '15');
-            controls.CorrectDrift = addDropdown(layout, 'Correct Drift', {'on', 'off'}, 'off');
 
-        case 'Segmentation'
-            controls.GlobalBgCorr = addLabelField(layout, ...
-                'GlobalBgThr', '10');
-            controls.ShowSegmentation = addDropdown(layout, 'ShowSegmentation:', {'on', 'off'}, 'on');
-            controls.threshold = addLabelField(layout, 'Threshold:', '0.25');
-            controls.diskDim = addLabelField(layout, 'Disk dim:', '2');          
+    function out = restructureChannelInfo(inStruct, channelType)
+        out = inStruct;
+        switch true
+            case contains(channelType, 'Tracking')
+                out.detectParam.delta = inStruct.delta;
+                out.detectParam.chi2 = inStruct.chi2;
+                out.detectParam.consThresh = inStruct.consThresh;
+                out.trackParam.radius = inStruct.track_radius;
+                out.trackParam.memory = inStruct.track_memory;
+                out = rmfield(out, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
 
+            case contains(channelType, 'Phase')
+                out.optics.dz = inStruct.dz;
+                out.optics.NA = inStruct.NA;
+                out.optics.NA_ill = inStruct.NA_ill;
+                out.optics.n = inStruct.n;
+                out.optics.lambda = inStruct.lambda;
+                out.optics.dlambda = inStruct.dlambda;
+                out.optics.alpha = inStruct.alpha;
+                out.optics.kzT = inStruct.kzT;
 
-        case 'Phase'
-            controls.dz = addLabelField(layout, 'PxSize z (µm):', '0.56');
-            controls.NA = addLabelField(layout, 'NA detection:', '1.20');
-            controls.NA_ill = addLabelField(layout, 'NA illumination:', '0.26');
-            controls.n = addLabelField(layout, 'Refractive index:', '1.33');
-            controls.lambda = addLabelField(layout, 'Central wavelength:', '0.58');
-            controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.075');
-            controls.alpha = addLabelField(layout, 'Alpha:', '3.15');
-            controls.kzT = addLabelField(layout, 'axial cutoff:', '0.01');
+                out.proc.mirrorX = inStruct.mirrorX;
+                out.proc.mirrorZ = inStruct.mirrorZ;
+                out.proc.applyFourierMask = inStruct.applyFourierMask;
 
-            controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'false'); 
-            controls.mirrorZ = addDropdown(layout, 'Mirror along z', {'true', 'false'}, 'true');             % mirror the input stack along Z
-            controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'true'); 
+                out = rmfield(out, {'dz', 'NA', 'NA_ill', 'n', 'lambda', 'dlambda', 'alpha', 'kzT', ...
+                    'mirrorX', 'mirrorZ', 'applyFourierMask'});
+
+            case contains(channelType, 'DDM')
+                out.ddmParam.ParticleSize = inStruct.ParticleSize;
+                out.ddmParam.ExpTime = inStruct.ExpTime;
+                out.ddmParam.Wavelength = inStruct.Wavelength;
+                out.ddmParam.NA = inStruct.NA;
+                out.ddmParam.Temp = inStruct.Temp;
+                out.ddmParam.Qmin = inStruct.Qmin;
+                out.ddmParam.Qmax = inStruct.Qmax;
+                out.ddmParam.Scanning = inStruct.Scanning;
+                out.ddmParam.CorrectBleaching = inStruct.CorrectBleaching;
+                out = rmfield(out, {'ParticleSize', 'ExpTime', 'Wavelength', 'NA', 'Temp', 'Qmin', ...
+                    'Qmax', 'Scanning', 'CorrectBleaching'});
+        end
     end
-end
+
+    function controls = addChannelControls(layout, type)
+        controls = struct();
+        switch type
+            case {'Translational Tracking', 'Rotational Tracking'}
+                controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
+                controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
+                controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
+                controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'on');
+                controls.euDist = addLabelField(layout, 'euDist (nm)', '1500');
+                controls.delta = addLabelField(layout, 'delta', '10');
+                controls.chi2 = addLabelField(layout, 'chi2', '35');
+                controls.consThresh = addLabelField(layout, 'consThresh', '4');
+                controls.track_radius = addLabelField(layout, 'track.radius (nm)', '1500');
+                controls.track_memory = addLabelField(layout, 'track.memory (frames)', '15');
+                controls.CorrectDrift = addDropdown(layout, 'Correct Drift', {'on', 'off'}, 'off');
+
+            case 'Segmentation'
+                controls.GlobalBgCorr = addLabelField(layout, 'GlobalBgThr', '10');
+                controls.ShowSegmentation = addDropdown(layout, 'ShowSegmentation:', {'on', 'off'}, 'on');
+                controls.threshold = addLabelField(layout, 'Threshold:', '0.25');
+                controls.diskDim = addLabelField(layout, 'Disk dim:', '2');
+
+            case 'Phase'
+                controls.dz = addLabelField(layout, 'PxSize z (µm):', '0.56');
+                controls.NA = addLabelField(layout, 'NA detection:', '1.20');
+                controls.NA_ill = addLabelField(layout, 'NA illumination:', '0.26');
+                controls.n = addLabelField(layout, 'Refractive index:', '1.33');
+                controls.lambda = addLabelField(layout, 'Central wavelength:', '0.58');
+                controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.075');
+                controls.alpha = addLabelField(layout, 'Alpha:', '3.15');
+                controls.kzT = addLabelField(layout, 'axial cutoff:', '0.01');
+                controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'false');
+                controls.mirrorZ = addDropdown(layout, 'Mirror along z', {'true', 'false'}, 'true');
+                controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'true');
+
+            case 'DDM'
+                controls.ParticleSize = addLabelField(layout, 'Particle radius (nm):', '20');
+                controls.ExpTime = addLabelField(layout, 'Exp time (s):', '0.03');
+                controls.Wavelength = addLabelField(layout, 'Wavelength (nm):', '561');
+                controls.NA = addLabelField(layout, 'NA:', '1.20');
+                controls.Temp = addLabelField(layout, 'Temperature (K):', '296.15');
+                controls.Qmin = addLabelField(layout, 'Qmin (µm^-1):', '3');
+                controls.Qmax = addLabelField(layout, 'Qmax (µm^-1):', '10');
+                controls.Scanning = addDropdown(layout, 'Scanning reconstruction', {'on', 'off'}, 'off');
+                controls.CorrectBleaching = addDropdown(layout, 'CorrectBleaching', {'on', 'off'}, 'on');
+        end
+    end
 end
 
 %% === UI Helper Functions ===
-
 function field = addLabelField(layout, label, defaultValue)
-    uilabel(layout, 'Text', label, ...
-        'HorizontalAlignment', 'right', ...
-        'FontSize', 11);
-    field = uieditfield(layout, 'text', ...
-        'Value', defaultValue, ...
-        'FontSize', 11);
+    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right', 'FontSize', 11);
+    field = uieditfield(layout, 'text', 'Value', defaultValue, 'FontSize', 11);
 end
 
 function dd = addDropdown(layout, label, items, defaultValue)
-    uilabel(layout, 'Text', label, ...
-        'HorizontalAlignment', 'right', ...
-        'FontSize', 11);
-    dd = uidropdown(layout, ...
-        'Items', items, ...
-        'Value', defaultValue, ...
-        'FontSize', 11);
+    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right', 'FontSize', 11);
+    dd = uidropdown(layout, 'Items', items, 'Value', defaultValue, 'FontSize', 11);
 end
 
 function s = readControls(controls)
     s = struct();
+    if isempty(fieldnames(controls))
+        return;
+    end
     fields = fieldnames(controls);
     for i = 1:length(fields)
         f = fields{i};

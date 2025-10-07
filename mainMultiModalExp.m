@@ -7,8 +7,8 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'S:\Dual Color\20250121_dualcolor\Multicolor_particles\In_water';
-path2Cal = 'S:\Dual Color\20250121_dualcolor\2DCal';
+file.path  = 'C:\Users\steve\OneDrive\Documenten\data multicolor\MCF7_15kPa_48h_reseeding';
+path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

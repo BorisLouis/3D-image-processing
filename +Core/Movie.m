@@ -509,9 +509,14 @@ classdef Movie < handle
                    
                 case '.his'
                     [frameInfo1, movInfo1] = Load.Movie.his.getInfo(fullPath);
-                    [frameInfo2, movInfo2] = Load.Movie.his.getInfo(fullPath2);
-                    frameInfo = {frameInfo1, frameInfo2};
-                    movInfo = {movInfo1, movInfo2};
+                    if exist('fullPath2', 'Var')
+                        [frameInfo2, movInfo2] = Load.Movie.his.getInfo(fullPath2);
+                        frameInfo = {frameInfo1, frameInfo2};
+                        movInfo = {movInfo1, movInfo2};
+                    else
+                        frameInfo = frameInfo1;
+                        movInfo = movInfo1;
+                    end
                 otherwise
                     extName = strrep(ext,'.','');  
                     [frameInfo,movInfo] = Load.Movie.(extName).getInfo(fullPath);

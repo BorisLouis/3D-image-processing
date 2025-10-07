@@ -195,27 +195,61 @@ classdef MPMovie < Core.Movie
         end
 
         function calibrate2DMovie(obj)
-            
-            Folder2Cal = dir(obj.cal2D);
+            if ~isempty(obj.cal2D)
+                Folder2Cal = dir(obj.cal2D);
 
-            if and(exist(append([obj.raw.movInfo.Path filesep append('calibrated1')])),...
-                    exist(append([obj.raw.movInfo.Path filesep append('calibrated2')])))
-                if obj.info.calibrate == 1
+                if and(exist(append([obj.raw.movInfo.Path filesep append('calibrated1')])),...
+                        exist(append([obj.raw.movInfo.Path filesep append('calibrated2')])))
+                    if obj.info.calibrate == 1
+                        OldCalFolder = fullfile(obj.raw.movInfo.Path, 'calibrated1');
+                        theFiles = dir(OldCalFolder);
+                        theFiles = theFiles(~ismember({theFiles.name}, {'.', '..'}));
+                        for k = 1 : length(theFiles) 
+                            baseFileName = theFiles(k).name; 
+                            fullFileName = fullfile(OldCalFolder, baseFileName); 
+                            delete(fullFileName); 
+                        end
+                        fprintf(1, 'Now deleting tiff file %s\n', OldCalFolder); 
+                        run = 1;
+                    else 
+                        run = 0;
+                    end
+                else
                     run = 1;
-                else 
-                    run = 0;
                 end
+
             else
-                run = 1;
+
+                if exist(append([obj.raw.movInfo.Path filesep append('calibrated1')]))
+                    if obj.info.calibrate == 1
+                        OldCalFolder = fullfile(obj.raw.movInfo.Path, 'calibrated1');
+                        theFiles = dir(OldCalFolder);
+                        theFiles = theFiles(~ismember({theFiles.name}, {'.', '..'}));
+                        for k = 1 : length(theFiles) 
+                            baseFileName = theFiles(k).name; 
+                            fullFileName = fullfile(OldCalFolder, baseFileName); 
+                            delete(fullFileName); 
+                        end
+                        fprintf(1, 'Now deleting tiff file %s\n', OldCalFolder); 
+                        run = 1;
+                    else 
+                        run = 0;
+                    end
+                else
+                    run = 1;
+                end
             end
 
             if run == 0
                 calib1 = load(append([obj.raw.movInfo.Path filesep append('calibrated1\calibrated1.mat')]));
                 calib1 = calib1.calib;
                 obj.calibrated{1,1} = calib1;
-                calib2 = load(append([obj.raw.movInfo.Path filesep append('calibrated2\calibrated2.mat')]));
-                calib2 = calib2.calib;
-                obj.calibrated{1,2} = calib2;
+
+                if obj.info.multiModal == 1
+                    calib2 = load(append([obj.raw.movInfo.Path filesep append('calibrated2\calibrated2.mat')]));
+                    calib2 = calib2.calib;
+                    obj.calibrated{1,2} = calib2;
+                end
                 disp('Found calibration file - loading this')
             else 
 
@@ -232,9 +266,11 @@ classdef MPMovie < Core.Movie
                 end
                 frame2Load = 1:maxFrame;
     
-                idx = find(strcmp({Folder2Cal.name}, '2DCal.mat'));
-                tform = load(append(Folder2Cal(idx).folder, filesep, Folder2Cal(idx).name));
-                tform = tform.tform;
+                if obj.info.multiModal == 1
+                    idx = find(strcmp({Folder2Cal.name}, '2DCal.mat'));
+                    tform = load(append(Folder2Cal(idx).folder, filesep, Folder2Cal(idx).name));
+                    tform = tform.tform;
+                end
     
                 endFrame = max(frame2Load);
                 startFrame = frame2Load(1);
@@ -250,34 +286,42 @@ classdef MPMovie < Core.Movie
                     else
                         cFrame = frame(i):endFrame;
                     end
-                    Mov1 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath1, cFrame);
-                    Mov2 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath2, cFrame);
                     
-                    for j = 1:step
-                        waitbar(j./step, f, append('Applying calibration - step ', num2str(i), ' out of ', num2str(nStep)));
-                        %Mov1New(:,:,j) = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
-                        paddedImg = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
+                    if obj.info.multiModal == 1
+                        Mov1 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath1, cFrame);
+                        Mov2 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath2, cFrame);
+                    else
+                        Mov1 = Load.Movie.(erase(obj.raw.ext, '.')).getFrame(obj.raw.fullPath, cFrame);
+                    end
 
-                        zeroRows = all(paddedImg == 0, 2);
-                        rowIdx = find(~zeroRows);
-                        for k = 1:min(rowIdx)-1
-                            paddedImg(k, :) = paddedImg(min(rowIdx), :);
-                        end
-                    
-                        for k = max(rowIdx)+1:size(paddedImg, 1)
-                            paddedImg(k, :) = paddedImg(max(rowIdx), :);
-                        end
-                    
-                        zeroCols = all(paddedImg == 0, 1);
-                        colIdx = find(~zeroCols);
-                        for l = 1:min(colIdx)-1
-                            paddedImg(:, l) = paddedImg(:, min(colIdx));
-                        end
-                        for l = max(colIdx)+1:size(paddedImg, 2)
-                            paddedImg(:, l) = paddedImg(:, max(colIdx));
-                        end
+                    if obj.info.multiModal == 1
+                        for j = 1:step
+                            waitbar(j./step, f, append('Applying calibration - step ', num2str(i), ' out of ', num2str(nStep)));
+                            %Mov1New(:,:,j) = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
+                        
+                            paddedImg = imwarp(Mov1(:,:,j), tform, "OutputView",imref2d(size(Mov2(:,:,j))));
 
-                        Mov1New(:,:,j) = paddedImg;
+                            zeroRows = all(paddedImg == 0, 2);
+                            rowIdx = find(~zeroRows);
+                            for k = 1:min(rowIdx)-1
+                                paddedImg(k, :) = paddedImg(min(rowIdx), :);
+                            end
+                        
+                            for k = max(rowIdx)+1:size(paddedImg, 1)
+                                paddedImg(k, :) = paddedImg(max(rowIdx), :);
+                            end
+                    
+                            zeroCols = all(paddedImg == 0, 1);
+                            colIdx = find(~zeroCols);
+                            for l = 1:min(colIdx)-1
+                                paddedImg(:, l) = paddedImg(:, min(colIdx));
+                            end
+                            for l = max(colIdx)+1:size(paddedImg, 2)
+                                paddedImg(:, l) = paddedImg(:, max(colIdx));
+                            end
+    
+                            Mov1New(:,:,j) = paddedImg;
+                        end
                     end
                     
                     calDir1 = [obj.raw.movInfo.Path filesep append('calibrated1')];
@@ -287,6 +331,9 @@ classdef MPMovie < Core.Movie
                     fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
                     calib1.mainPath = calDir1;
     
+                    if obj.info.multiModal == 0
+                        Mov1New = Mov1;
+                    end
                     data2Store1 = uint16(Mov1New);
             
                     fieldN = sprintf('plane%d',1);
@@ -316,47 +363,52 @@ classdef MPMovie < Core.Movie
                     fclose(fid);
                     fName = [calDir1 filesep 'calibrated1.mat'];
                     save(fName,'calib');
+
+                    if obj.info.multiModal == 1
     
-                    calDir2 = [obj.raw.movInfo.Path filesep append('calibrated2')];
-                    mkdir(calDir2);
-           
-                    fid = fopen([calDir2 filesep 'CalibratedInfo.txt'],'w');
-                    fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
-                    calib2.mainPath = calDir2;
-    
-                    data2Store2 = uint16(Mov2);
-            
-                    fieldN = sprintf('plane%d',2);
-                    fName = sprintf('calibratedPlane%d.tif',2);
-                            
-                    fPathTiff = [calDir2 filesep fName];
-                    calib2.filePath.(fieldN) = fPathTiff;   
-                    calib2.nFrames = maxFrame;
-                    calib2.nPlanes = 1;
-                    
-                    t2 = Tiff(fPathTiff, 'a');
-                    if isa(data2Store2,'uint32')
-                        t2 = dataStorage.writeTiff(t2,data2Store2,32);
-                    else
-                        t2 = dataStorage.writeTiff(t2,data2Store2,16);
-                    end   
-                    t2.close;
-                          
-                    fprintf(fid,...
-                        'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
-                    calib2.camConfig{1,1} = 'None';
-                    calib2.oRelZPos(1) = 0;
-                    calib2.Width  = size(Mov2,2);
-                    calib2.Height = size(Mov2,1);
-                    % calib1.Backgrounds = Bg.Ch1;
-                    calib = calib2;
-                    fclose(fid);
-                    fName = [calDir2 filesep 'calibrated2.mat'];
-                    save(fName,'calib');
+                        calDir2 = [obj.raw.movInfo.Path filesep append('calibrated2')];
+                        mkdir(calDir2);
+               
+                        fid = fopen([calDir2 filesep 'CalibratedInfo.txt'],'w');
+                        fprintf(fid,'The information in this file are intended to the user. They are generated automatically so please do not edit them\n');
+                        calib2.mainPath = calDir2;
+        
+                        data2Store2 = uint16(Mov2);
+                
+                        fieldN = sprintf('plane%d',2);
+                        fName = sprintf('calibratedPlane%d.tif',2);
+                                
+                        fPathTiff = [calDir2 filesep fName];
+                        calib2.filePath.(fieldN) = fPathTiff;   
+                        calib2.nFrames = maxFrame;
+                        calib2.nPlanes = 1;
+                        
+                        t2 = Tiff(fPathTiff, 'a');
+                        if isa(data2Store2,'uint32')
+                            t2 = dataStorage.writeTiff(t2,data2Store2,32);
+                        else
+                            t2 = dataStorage.writeTiff(t2,data2Store2,16);
+                        end   
+                        t2.close;
+                              
+                        fprintf(fid,...
+                            'No Calibration was performed on this data as only a single plane was provided. It is likely to be coming from the widefield setup');
+                        calib2.camConfig{1,1} = 'None';
+                        calib2.oRelZPos(1) = 0;
+                        calib2.Width  = size(Mov2,2);
+                        calib2.Height = size(Mov2,1);
+                        % calib1.Backgrounds = Bg.Ch1;
+                        calib = calib2;
+                        fclose(fid);
+                        fName = [calDir2 filesep 'calibrated2.mat'];
+                        save(fName,'calib');
+                    end
 
                 end
                 obj.calibrated{1,1} = calib1;
-                obj.calibrated{1,2} = calib2;
+                if obj.info.multiModal == 1
+                    obj.calibrated{1,2} = calib2;
+                end
                 
                 close(f)
             end

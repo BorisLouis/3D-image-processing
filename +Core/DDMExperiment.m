@@ -1,18 +1,17 @@
-classdef SegmentExperiment < handle
-    %SEGMENTEXPERIMENT Summary of this class goes here
+classdef DDMExperiment < handle
+    %DDMEXPERIMENT Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         path
         ext
-        SegmentMovies
+        DDMMovies
         info
         cal2D
     end
     
     methods
-        function obj = SegmentExperiment(folder2Data,cal2D,info,infoChannel)
-            
+        function obj = DDMExperiment(folder2Data,cal2D,info,infoChannel)
             obj.path = folder2Data.path;
             obj.ext  = folder2Data.ext;
             obj.info = info;
@@ -22,7 +21,7 @@ classdef SegmentExperiment < handle
             end
             obj.cal2D = cal2D;
         end
-        
+       
         function set.path(obj, path)
             assert(ischar(path), 'Path should be given as a string');
             assert(isfolder(path), 'The path given is not a folder, ZCalibration expect a folder. In the folder it is expected to find separate folder for each zCalMovie.')
@@ -77,22 +76,33 @@ classdef SegmentExperiment < handle
             end
         end
 
-        function retrieveSegmentMask(obj, q)
-            fieldsN = fieldnames(obj.SegmentMovies);
+        function retrieveDDMMovies(obj,q)
+            fieldsN = fieldnames(obj.DDMMovies);
             %Extraction of Data
             nfields = numel(fieldsN);
             allTraces = [];
             for i = 1: nfields
                 try
-                    disp(['Retrieving data from segment file ' num2str(i) ' / ' num2str(nfields) ' ...']);
-                    currentTrackMov = obj.SegmentMovies.(fieldsN{i});
-                    currentTrackMov.getSegmentMovie(q, []);
+                    disp(['Retrieving data from DDM file ' num2str(i) ' / ' num2str(nfields) ' ...']);
+                    currentTrackMov = obj.DDMMovies.(fieldsN{i});
+    
+                    if strcmp(currentTrackMov.info.ddmParam.Scanning, 'off')
+                        currentTrackMov.getFullFrames;
+                        currentTrackMov.mainDDM('NumBins',30);
+                        currentTrackMov.fitDDM;
+                        currentTrackMov.MSDoptimisation;
+                    elseif strcmp(currentTrackMov.info.ddmParam.Scanning, 'on')
+                        currentTrackMov.getFrameParts(ROI);
+                        currentTrackMov.mainDDM('NumBins',30);
+                        currentTrackMov.fitDDM;
+                        currentTrackMov.MSDoptimisation;
+                    end
+                    
                 catch
-                    disp(append('Failed segmenting movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
+                    disp(append('Failed DDM movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
         end
-
     end
 end
 
