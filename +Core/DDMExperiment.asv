@@ -87,18 +87,30 @@ classdef DDMExperiment < handle
                     currentTrackMov = obj.DDMMovies.(fieldsN{i});
     
                     if strcmp(currentTrackMov.info.ddmParam.Scanning, 'off')
-                        currentTrackMov.getFullFrames(q);
-                        currentTrackMov.mainDDM(q);
+                        currentTrackMov.getFullFrames;
+                        currentTrackMov.mainDDM('NumBins',30);
                         currentTrackMov.fitDDM;
-                        
+                        currentTrackMov.getParams;
+                        disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     elseif strcmp(currentTrackMov.info.ddmParam.Scanning, 'on')
-                        currentTrackMov.getFrameParts(q);
-                        currentTrackMov.mainDDM(q);
-                        currentTrackMov.fitDDM;
+                        [PxIdx] = currentTrackMov.getROI;
+                        ViscosityMap = zeros(currentTrackMov.raw.movInfo.Length, ...
+                            currentTrackMov.raw.movInfo.Width, 8);
+                        DiffusionMap = zeros(currentTrackMov.raw.movInfo.Length, ...
+                            currentTrackMov.raw.movInfo.Width, 8);
+                        AnExpMap = zeros(currentTrackMov.raw.movInfo.Length, ...
+                            currentTrackMov.raw.movInfo.Width, 8);
+                        for CurrentPx = PxIdx'
+                            currentTrackMov.getFrameParts(CurrentPx);
+                            currentTrackMov.mainDDM('NumBins',30);
+                            currentTrackMov.fitDDM;
+                            currentTrackMov.getParams;
+                            for j = 1:size()
+                        end
                     end
                     
                 catch
-                    disp(append('Failed segmenting movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
+                    disp(append('Failed DDM movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
         end

@@ -7,7 +7,7 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'C:\Users\steve\OneDrive\Documenten\data multicolor\MCF7_15kPa_48h_reseeding';
+file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\testdata\GEMs';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

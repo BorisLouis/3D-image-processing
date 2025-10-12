@@ -35,7 +35,7 @@ function [alpha] = detDiffTypeAlpha2(msd,expTime,stepsize)
             FitRange = round(0.20*size(msd, 1));
         end
     end
-    if FitRange > 4
+    if FitRange >= 4
         t = (1:FitRange)*expTime;
         toFit = log(msd(1:FitRange));
         fitPar = fit(log(t(:)),toFit(:),'a*x+b');

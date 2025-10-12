@@ -90,12 +90,33 @@ classdef DDMExperiment < handle
                         currentTrackMov.getFullFrames;
                         currentTrackMov.mainDDM('NumBins',30);
                         currentTrackMov.fitDDM;
-                        currentTrackMov.MSDoptimisation;
+                        currentTrackMov.getParams;
+                        disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     elseif strcmp(currentTrackMov.info.ddmParam.Scanning, 'on')
-                        currentTrackMov.getFrameParts(ROI);
-                        currentTrackMov.mainDDM('NumBins',30);
-                        currentTrackMov.fitDDM;
-                        currentTrackMov.MSDoptimisation;
+                        [PxIdx] = currentTrackMov.getROI;
+                        for z = 1:8
+                            ViscosityMap{z,1} = zeros(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                            DiffusionMap{z,1} = zeros(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                            AnExpMap{z,1} = zeros(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                        end
+                        for CurrentPx = PxIdx'
+                            currentTrackMov.getFrameParts(CurrentPx);
+                            currentTrackMov.mainDDM('NumBins',30);
+                            currentTrackMov.fitDDM;
+                            currentTrackMov.getParams;
+                            for j = 1:size(currentTrackMov.MSDResults, 1)
+                                ViscosityMap{j,1}(CurrentPx) = currentTrackMov.MSDResults{j,1}.n;
+                                AnExpMap{j,1}(CurrentPx) = currentTrackMov.MSDResults{j,1}.alpha;
+                                DiffusionMap{j,1}(CurrentPx) = currentTrackMov.MSDResults{j,1}.Diff;
+                            end
+                        end
+                        FileName = append(currentTrackMov.calibrated{1, 1}.mainPath, filesep, 'ViscosityMap.mat');
+                        save(FileName, 'ViscosityMap');
+                        FileName = append(currentTrackMov.calibrated{1, 1}.mainPath, filesep, 'AnExpMap.mat');
+                        save(FileName, 'AnExpMap');
+                        FileName = append(currentTrackMov.calibrated{1, 1}.mainPath, filesep, 'DiffusionMap.mat');
+                        save(FileName, 'DiffusionMap');
+                        disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     end
                     
                 catch
