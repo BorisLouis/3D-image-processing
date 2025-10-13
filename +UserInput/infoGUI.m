@@ -176,17 +176,30 @@ function onOK()
     info.Bipyramid = str2num(state.Bipyramid.Value);
     file.ext = state.Ext.Value;
 
-    info1 = readControls(state.channel1Controls);
-    if strcmp(state.multiModal.Value, 'off')
-        info2 = NaN;
+    % Read controls for both channels; ensure they are structs (possibly empty)
+    if ~isempty(fieldnames(state.channel1Controls))
+        info1 = readControls(state.channel1Controls);
+    else
+        info1 = struct();
+    end
+
+    if strcmp(state.multiModal.Value, 'off') || isempty(fieldnames(state.channel2Controls))
+        info2 = struct();    % no second-channel info => empty struct
     else
         info2 = readControls(state.channel2Controls);
     end
 
-    % Restructure
-    info1 = restructureChannelInfo(info1, info.Channel1);
-    if ~isnan(info2)
+    % Restructure only when the control-struct contains fields
+    if ~isempty(fieldnames(info1))
+        info1 = restructureChannelInfo(info1, info.Channel1);
+    else
+        info1 = struct();
+    end
+
+    if ~isempty(fieldnames(info2))
         info2 = restructureChannelInfo(info2, info.Channel2);
+    else
+        info2 = struct();
     end
 
     uiresume(fig);
