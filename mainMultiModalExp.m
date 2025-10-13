@@ -7,8 +7,8 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\testdata\GEMs';
-path2Cal = [];
+file.path  = 'E:\Multimodal tracking\test multimodal tracking';
+path2Cal = 'E:\Multimodal tracking\20250724\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

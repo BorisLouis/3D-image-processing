@@ -49,9 +49,9 @@ classdef MPPhaseMovie < Core.MPMovie
                         waitbar(n./nFrames,f,append('Calculating phase map ', num2str(n),' out of ', num2str(nFrames)));
                         Stack = obj.getFrame(n, q);
                         [Stack, StartX, StartY] = QP_package.cropXY(Stack);
-                        PadValues = [134.27, 134.18, 134.42, 116.71, 117.52, 99.19, 117.63, 115.69];
+                        PadValues = 134;
                         for l = 1:size(Stack, 3)
-                            StackPadded(:,:,l) = padarray(Stack(:,:,l), [50 50], PadValues(l));
+                            StackPadded(:,:,l) = padarray(Stack(:,:,l), [50 50], PadValues);
                         end
                         QPmap(:,:,:,i-Startidx) = QP_package.getQP(StackPadded,s);
                         n = n+1;

@@ -213,9 +213,9 @@ function out = restructureChannelInfo(inStruct, channelType)
             out.optics.dlambda = inStruct.dlambda;
             out.optics.alpha = inStruct.alpha;
             out.optics.kzT = inStruct.kzT;
-            out.proc.mirrorX = inStruct.mirrorX;
-            out.proc.mirrorZ = inStruct.mirrorZ;
-            out.proc.applyFourierMask = inStruct.applyFourierMask;
+            out.proc.mirrorX = inStruct.mirrorX.Value;
+            out.proc.mirrorZ = inStruct.mirrorZ.Value;
+            out.proc.applyFourierMask = inStruct.applyFourierMask.Value;
             out = rmfield(out, {'dz','NA','NA_ill','n','lambda','dlambda','alpha','kzT','mirrorX','mirrorZ','applyFourierMask'});
 
         case contains(channelType, 'DDM')
