@@ -1,50 +1,24 @@
 close all
-Path = append('D:\Multimodal tracking\20250724\alldata\50mgmL_sample4_min0__1', filesep, '50mgmL_sample4_min0__1_MMStack_Pos0.ome.tif');
-[FrameInfo, MovInfo, ~] =  Load.Movie.ome.getInfo(Path);
-[ movC1, movC2, idx ] = Load.Movie.ome.load( FrameInfo, MovInfo, 50);
-StackToPlot = movC1(42:42+530, 1610:1610+360);
-figure()
-imagesc(StackToPlot)
-colormap('gray');
-clim([100 180])
-axis image
+for i = 1:800
+    Ch1(:,:,i) = Load.Movie.tif.getframes('S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\glycerol_95\glycerol_95_sample_1\calibrated1\calibratedPlane4.tif',i);
+    Ch2(:,:,i) = Load.Movie.tif.getframes('S:\Rotational Tracking\20250708_AuBPs_184x92_glycerol\glycerol_95\glycerol_95_sample_1\calibrated2\calibratedPlane4.tif',i);
+end
 
-Path = append('D:\Multimodal tracking\20250724\alldata\50mgmL_sample4_min4__1', filesep, '50mgmL_sample4_min4__1_MMStack_Pos0.ome.tif');
-[FrameInfo, MovInfo, ~] =  Load.Movie.ome.getInfo(Path);
-[ movC1, movC2, idx ] = Load.Movie.ome.load( FrameInfo, MovInfo, 50);
-StackToPlot = movC1(42:42+530, 1610:1610+360);
-figure()
-imagesc(StackToPlot)
-colormap('gray');
-clim([100 180])
-axis image
+for j = [172]
+    fig = figure()
+    subplot(1,2,1)
+    imagesc(Ch1(180:210, 135:165, j))
+    colormap('hot')
+    clim([350 550])
+    axis square
+    hold on
 
-Path = append('D:\Multimodal tracking\20250724\alldata\50mgmL_sample4_min8__1', filesep, '50mgmL_sample4_min8__1_MMStack_Pos0.ome.tif');
-[FrameInfo, MovInfo, ~] =  Load.Movie.ome.getInfo(Path);
-[ movC1, movC2, idx ] = Load.Movie.ome.load( FrameInfo, MovInfo, 50);
-StackToPlot = movC1(42:42+530, 1610:1610+360);
-figure()
-imagesc(StackToPlot)
-colormap('gray');
-clim([100 180])
-axis image
+    subplot(1,2,2)
+    imagesc(Ch2(165:195, 135:165, j))
+    colormap('hot')
+    axis square
+    clim([350 550])
 
-Path = append('D:\Multimodal tracking\20250724\alldata\50mgmL_sample4_min10__1', filesep, '50mgmL_sample4_min8__2_MMStack_Pos0.ome.tif');
-[FrameInfo, MovInfo, ~] =  Load.Movie.ome.getInfo(Path);
-[ movC1, movC2, idx ] = Load.Movie.ome.load( FrameInfo, MovInfo, 50);
-StackToPlot = movC1(42:42+530, 1610:1610+360);
-figure()
-imagesc(StackToPlot)
-colormap('gray');
-clim([100 180])
-axis image
-
-Path = append('D:\Multimodal tracking\20250724\alldata\50mgmL_sample4_min13__1', filesep, '50mgmL_sample4_min13__1_MMStack_Pos0.ome.tif');
-[FrameInfo, MovInfo, ~] =  Load.Movie.ome.getInfo(Path);
-[ movC1, movC2, idx ] = Load.Movie.ome.load( FrameInfo, MovInfo, 50);
-StackToPlot = movC1(42:42+530, 1610:1610+360);
-figure()
-imagesc(StackToPlot)
-colormap('gray');
-clim([100 180])
-axis image
+    filename = append('C:\Users\Windows 11\Downloads', filesep, 'Frame_', num2str(j), '.svg');
+    saveas(fig, filename)
+end

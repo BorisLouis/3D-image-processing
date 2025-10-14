@@ -1,3 +1,6 @@
+clc
+close all
+
 %% Script for Rotational Tracking Data Analysis and Visualization
 % This script loads data from a specified directory structure,
 % generates a boxplot of rotational speeds, and plots individual trace
