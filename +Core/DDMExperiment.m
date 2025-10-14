@@ -81,6 +81,15 @@ classdef DDMExperiment < handle
             %Extraction of Data
             nfields = numel(fieldsN);
             allTraces = [];
+
+            Cell = [];
+            Diffusion = [];
+            AnExp = [];
+            Viscosity = [];
+            IntMean = [];
+            IntVar = [];
+            Size = [];
+
             for i = 1: nfields
                 try
                     disp(['Retrieving data from DDM file ' num2str(i) ' / ' num2str(nfields) ' ...']);
@@ -91,13 +100,13 @@ classdef DDMExperiment < handle
                         currentTrackMov.mainDDM('NumBins',30);
                         currentTrackMov.fitDDM;
                         currentTrackMov.getParams;
-                        disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);
+                        disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);   
                     elseif strcmp(currentTrackMov.info.ddmParam.Scanning, 'on')
                         [PxIdx] = currentTrackMov.getROI;
                         for z = 1:8
-                            ViscosityMap{z,1} = zeros(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
-                            DiffusionMap{z,1} = zeros(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
-                            AnExpMap{z,1} = zeros(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                            ViscosityMap{z,1} = nan(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                            DiffusionMap{z,1} = nan(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                            AnExpMap{z,1} = nan(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
                         end
                         for CurrentPx = PxIdx'
                             currentTrackMov.getFrameParts(CurrentPx);
@@ -110,6 +119,10 @@ classdef DDMExperiment < handle
                                 DiffusionMap{j,1}(CurrentPx) = currentTrackMov.MSDResults{j,1}.Diff;
                             end
                         end
+                        currentTrackMov.MSDResults{1, 1}.Diff = nanmean(DiffusionMap{1,1});
+                        currentTrackMov.MSDResults{1, 1}.alpha = nanmean(AnExpMap{1,1});
+                        currentTrackMov.MSDResults{1, 1}.n = nanmean(ViscosityMap{1,1});
+
                         FileName = append(currentTrackMov.calibrated{1, 1}.mainPath, filesep, 'ViscosityMap.mat');
                         save(FileName, 'ViscosityMap');
                         FileName = append(currentTrackMov.calibrated{1, 1}.mainPath, filesep, 'AnExpMap.mat');
@@ -118,11 +131,22 @@ classdef DDMExperiment < handle
                         save(FileName, 'DiffusionMap');
                         disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     end
-                    
+                    Cell{end+1, 1} = currentTrackMov.raw.movInfo.Path;
+                    Diffusion = [Diffusion; currentTrackMov.MSDResults{1, 1}.Diff];
+                    AnExp = [AnExp; currentTrackMov.MSDResults{1, 1}.alpha];
+                    Viscosity = [Viscosity; currentTrackMov.MSDResults{1, 1}.n];
+                    IntMean = [IntMean; currentTrackMov.IntResults.MeanInt];
+                    IntVar = [IntVar; currentTrackMov.IntResults.VarInt];
+                    Size = [Size; currentTrackMov.SizeResults];
                 catch
                     disp(append('Failed DDM movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
+
+            DDMResults = table(Cell, Diffusion, AnExp, Viscosity, IntMean, IntVar, Size, 'VariableNames', {'Sample', 'Diff (µm^2/s)', 'Anom. exp',...
+                'Viscosity (cP)', 'Intensity mean', 'Intensity var', 'Size (µm^2)'});
+            Filename = append(obj.path, filesep, 'DDMResults.mat');
+            save(Filename, 'DDMResults')
         end
     end
 end

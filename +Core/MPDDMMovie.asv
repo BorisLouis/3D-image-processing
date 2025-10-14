@@ -49,7 +49,7 @@ classdef MPDDMMovie < Core.MPMovie
                     FrameList(FrameList == 0) = [];
                     obj.IntResults.MeanInt = mean(FrameList);
                     obj.IntResults.VarInt = var(FrameList);
-                    obj.SizeResults = numel(FrameList).*(obj.info.pxSize*10^(-3)).^2;
+                    obj.SizeResults = numel(FrameList).*(obj.info.ddmParam.PxSize*10^(-3)).^2;
                     
                 end
                 close(h)
