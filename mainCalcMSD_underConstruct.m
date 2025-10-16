@@ -4,7 +4,7 @@ close all;
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
-
+FilenameRaw = 'traces3D_noSRCal';
 %% Loading
 f = waitbar(0, 'Initializing...');
 MainFolder = dir(FilePath);

@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'S:\Dual Color\20251015_localisation_error\2DCal';
+file.path  = 'S:\Dual Color\Localisation_error\20251016\2DCal';
 file.ext   = '.ome.tif';
 info.runMethod = 'load';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)

@@ -49,7 +49,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         
     else
         tHold = Misc.tholdSigBg(bg,sig);
-        im = im>tHold;
+        im = im>tHold+20;
         %remove small pixel
         im = bwareaopen(im,21);
         % Clean up boundary

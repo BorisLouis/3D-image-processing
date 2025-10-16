@@ -504,11 +504,11 @@ classdef MultiModalExperiment < handle
                   elseif strcmp(obj.info.Channel2, 'DDM')
                         obj.MoviesCh2.retrieveDDMMovies(2);
                   elseif strcmp(obj.info.Channel2, 'Translational Tracking')
-                        frame = obj.info.TestFrame;
-                        testMov = obj.MoviesCh2.trackMovies.mov1;
-                        testMov.findCandidatePos(testMov.info.detectParam,2,frame);
-                        testMov.getROIs;
-                        testMov.showCandidateSingleChan(frame, 1);
+                        % frame = obj.info.TestFrame;
+                        % testMov = obj.MoviesCh2.trackMovies.mov1;
+                        % testMov.findCandidatePos(testMov.info.detectParam,2,frame);
+                        % testMov.getROIs;
+                        % testMov.showCandidateSingleChan(frame, 1);
                         val2Use = 'bestFocus';
                         obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
                         obj.MoviesCh2.saveData(2);
@@ -943,59 +943,62 @@ classdef MultiModalExperiment < handle
             
                 % Loop through all available movies
                 for i = 1:numel(movieNames)
-                    movName = movieNames{i};
-            
-                    % Skip if movie missing in Ch2
-                    if ~isfield(obj.MoviesCh2.trackMovies, movName)
-                        warning('Movie %s missing in Channel 2, skipping.', movName);
-                        continue;
-                    end
-            
-                    % Extract SRList tables
-                    SR1 = obj.MoviesCh1.trackMovies.(movName).particles.SRList;
-                    SR2 = obj.MoviesCh2.trackMovies.(movName).particles.SRList;
-            
-                    if isempty(SR1) || isempty(SR2)
-                        continue;
-                    end
-            
-                    % Common timepoints
-                    common_t = intersect(SR1.t, SR2.t);
-            
-                    % For each timepoint, find nearest matches
-                    for tVal = common_t'
-                        idx1 = SR1.t == tVal;
-                        idx2 = SR2.t == tVal;
-            
-                        p1 = SR1{idx1, {'row','col','z'}}; % [y x z]
-                        p2 = SR2{idx2, {'row','col','z'}};
-            
-                        if isempty(p1) || isempty(p2)
+                    try
+                        movName = movieNames{i};
+                
+                        % Skip if movie missing in Ch2
+                        if ~isfield(obj.MoviesCh2.trackMovies, movName)
+                            warning('Movie %s missing in Channel 2, skipping.', movName);
                             continue;
                         end
-            
-                        % Compute pairwise distances between all points (m x n)
-                        D = pdist2(p1, p2);  % requires Statistics Toolbox
-                        D(D > 500) = Inf;
-                        idxMatch = matchpairs(D, 10000);
-
-                        for i = 1:size(idxMatch)
-                            dx(i,1) = p1(idxMatch(i,1),1) - p2(idxMatch(i,2),1);
-                            dy(i,1) = p1(idxMatch(i,1),2) - p2(idxMatch(i,2),2);
-                            dz(i,1) = p1(idxMatch(i,1),3) - p2(idxMatch(i,2),3);
-                            dr(i,1) = sqrt(dx(i,1).^2 + dy(i,1).^2 + dz(i,1).^2);
+                
+                        % Extract SRList tables
+                        SR1 = obj.MoviesCh1.trackMovies.(movName).particles.SRList;
+                        SR2 = obj.MoviesCh2.trackMovies.(movName).particles.SRList;
+                
+                        if isempty(SR1) || isempty(SR2)
+                            continue;
                         end
-            
-                        % Store
-                        all_dx = [all_dx; dx];
-                        all_dy = [all_dy; dy];
-                        all_dz = [all_dz; dz];
-                        all_dr = [all_dr; dr];
-
-                        dx = [];
-                        dy = [];
-                        dz = [];
-                        dr = [];
+                
+                        % Common timepoints
+                        common_t = intersect(SR1.t, SR2.t);
+                
+                        % For each timepoint, find nearest matches
+                        for tVal = common_t'
+                            idx1 = SR1.t == tVal;
+                            idx2 = SR2.t == tVal;
+                
+                            p1 = SR1{idx1, {'row','col','z'}}; % [y x z]
+                            p2 = SR2{idx2, {'row','col','z'}};
+                
+                            if isempty(p1) || isempty(p2)
+                                continue;
+                            end
+                
+                            % Compute pairwise distances between all points (m x n)
+                            D = pdist2(p1, p2);  % requires Statistics Toolbox
+                            D(D > 500) = Inf;
+                            idxMatch = matchpairs(D, 10000);
+    
+                            for i = 1:size(idxMatch)
+                                dx(i,1) = (p1(idxMatch(i,1),1) - p2(idxMatch(i,2),1));
+                                dy(i,1) = (p1(idxMatch(i,1),2) - p2(idxMatch(i,2),2));
+                                dz(i,1) = (p1(idxMatch(i,1),3) - p2(idxMatch(i,2),3));
+                                dr(i,1) = sqrt(dx(i,1).^2 + dy(i,1).^2 + dz(i,1).^2);
+                            end
+                
+                            % Store
+                            all_dx = [all_dx; dx];
+                            all_dy = [all_dy; dy];
+                            all_dz = [all_dz; dz];
+                            all_dr = [all_dr; dr];
+    
+                            dx = [];
+                            dy = [];
+                            dz = [];
+                            dr = [];
+                        end
+                    catch
                     end
                 end
             
@@ -1017,7 +1020,7 @@ classdef MultiModalExperiment < handle
                 results.meanError = avg;
                 results.varError = Var;
 
-                save(append(obj.path, filesep, 'ChannelLocalisationError.mat'), "results")
+                save(append(obj.path, filesep, 'ChannelLocalisationError_water.mat'), "results")
             
                 % Print summary
                 fprintf('\n=== Localization Error Summary ===\n');
