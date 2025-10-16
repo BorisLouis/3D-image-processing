@@ -1,4 +1,4 @@
-function [Dr, correctionParams] = GetDiffusion(Gr, tau, Radius1, Temp, Dimension, ExpModel, Plot, eta_truth, partType, Angle, minSize)
+function [Dr, correctionParams, TauC] = GetDiffusion(Gr, tau, Radius1, Temp, Dimension, ExpModel, Plot, eta_truth, partType, Angle, minSize)
     if strcmp(ExpModel, 'Single Exponential')
         expfunction = @(p,t) (exp(-t./p(1)));
     elseif strcmp(Model, 'Bi Exponential')

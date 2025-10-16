@@ -283,7 +283,7 @@ for j = 3 : size(MainFolder,1)
                 idx = allHeight>MinSize;
                 currMov = data(idx,:);
                 allRes = struct('GTheta',0,'GPhi',0,'tau',0,'DTheta',0,'DPhi',0,'Dr',0,...
-                    'nTheta',0,'nPhi',0,'nr',0,'vTheta',0,'vPhi',0,'vr',0, 'num', 0);
+                    'nTheta',0,'nPhi',0,'nr',0,'vTheta',0,'vPhi',0,'vr',0, 'TauCTheta', 0, 'TauCPhi', 0, 'num', 0);
                 allRes(size(currMov, 1)).masdTheta = [];
                 maxLength = max(allHeight);
                 allGTheta = zeros(size(currMov, 1),maxLength-1);
@@ -295,7 +295,7 @@ for j = 3 : size(MainFolder,1)
                     CorrFactor = 37;
                 elseif strcmp(MainFolder(j).name(1:4), '7min')
                     CorrFactor = 29;
-                elseif strcmp(MainFolder(j).name(1:4), '8min')
+                elseif strcmp(MainFolder(j).name(1:4), '9min')
                     CorrFactor = 1;
                 elseif strcmp(MainFolder(j).name(1:4), '11mi')
                     CorrFactor = 1.7;
@@ -335,23 +335,27 @@ for j = 3 : size(MainFolder,1)
                             if strcmp(ExpModel, 'Test')
                                 [Model] = MSD.Rotational.TestModels(GTheta, tau);
                                 %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model,0);
-                                [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                                [DTheta, corrParamsTheta,TauCTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
                             else
                                 %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel,0);
-                                [DTheta, corrParamsTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                                [DTheta, corrParamsTheta, TauCTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
                             end
                             nTheta  = MSD.Rotational.getViscosity(DTheta.*25195./CorrFactor,Radius1,ParticleType, Temp, 'Theta');
+                            Dcalctheta = (3*1.380649*10^(-23)*Temp*log(Radius1(1)/Radius1(2)))./(pi*nTheta*Radius1(1)^3)*1000;
+                            TauCTheta = (((((1./(2*pi*Dcalctheta))*2*pi))./8));
                             vTheta = MSD.Rotational.GetRotationalSpeed(GTheta, tau);
                         catch
                             DTheta = NaN;
                             nTheta = NaN;
                             vTheta = NaN;
+                            TauCTheta = NaN;
                             corrParamsTheta = [];
                         end
                     else
                         DTheta = NaN;
                         nTheta = NaN;
                         vTheta = NaN;
+                        TauCTheta = NaN;
                         corrParamsTheta = [];
                     end
 
@@ -365,23 +369,27 @@ for j = 3 : size(MainFolder,1)
                             if strcmp(ExpModel, 'Test')
                                 [Model] = MSD.Rotational.TestModels(GPhi, tau);
                                 %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, Model,0);
-                                [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                                [DPhi, corrParamsPhi, TauCPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
                             else
                                 %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, ExpModel,0);
-                                [DPhi, corrParamsPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
+                                [DPhi, corrParamsPhi, TauCPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
                             end
                             nPhi  = MSD.Rotational.getViscosity(DPhi.*25195./CorrFactor,Radius1,ParticleType, Temp, 'Phi');
+                            DcalcPhi = (3*1.380649*10^(-23)*Temp*log(Radius1(1)/Radius1(2)))./(pi*nPhi*Radius1(1)^3)*1000;
+                            TauCPhi = (((((1./(2*pi*DcalcPhi))*2*pi))./8));
                             vPhi = MSD.Rotational.GetRotationalSpeed(GPhi, tau);
                         catch
                             DPhi = NaN;
                             nPhi = NaN;
                             vPhi = NaN;
+                            TauCPhi = NaN;
                             corrParamsPhi = [];
                         end
                     else
                         DPhi = NaN;
                         nPhi = NaN;
                         vPhi = NaN;
+                        TauCPhi = NaN;
                         corrParamsPhi = [];
                     end
                 
@@ -406,6 +414,9 @@ for j = 3 : size(MainFolder,1)
                     allRes(i).vTheta   = vTheta;
                     allRes(i).vPhi   = vPhi;
                     allRes(i).vr   = vr;
+
+                    allRes(i).TauCTheta = TauCTheta;
+                    allRes(i).TauCPhi = TauCPhi;
                     
                     allRes(i).num  = length(GTheta);
 
@@ -434,7 +445,8 @@ end
 % mean(CorrectionsTheta,1)
 % mean(CorrectionsPhi,1)
 close(f)
-
+disp(append('TauTheta = ', num2str(mean([AllMovieResults.TauCTheta], 'omitnan'))));
+disp(append('TauPhi = ', num2str(mean([AllMovieResults.TauCPhi], 'omitnan'))));
 save(FilePath, "AllMovieResults");
 
 if strcmp(Experiment, 'Tracking-Segmentation')

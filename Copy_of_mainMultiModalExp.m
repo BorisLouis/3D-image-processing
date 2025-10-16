@@ -28,5 +28,6 @@ for j = 1:numel(Paths)
     
     %% get Movies
     MultiModalExp.RetrieveMovies;
+    MultiModalExp.RunAnalysis;
 end
-%MultiModalExp.RunAnalysis;
+%
