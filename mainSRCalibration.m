@@ -4,13 +4,13 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'D:\Polymer Dynamics\20250924\2DCal';
+file.path = 'S:\Dual Color\20251015_localisation_error\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'D:\Polymer Dynamics\20250924\2DCal';
+path2Cal  = 'S:\Dual Color\20251015_localisation_error\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
-info.runMethod = 'run';
+info.runMethod = 'load';
 info.frame2Load = 'all';
 info.fitMethod = 'Phasor';
 info.zMethod   = 'Intensity';
@@ -34,12 +34,12 @@ testSRCal.retrieveSRCalMov;
 %% extract zData
 detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 50;
-detectParam{1}.consThresh = 6;
+detectParam{1}.consThresh = 4;
 detectParam{2}.delta = 6;
-detectParam{2}.chi2  = 50;
-detectParam{2}.consThresh = 6;
+detectParam{2}.chi2  = 40;
+detectParam{2}.consThresh = 15;
 
 trackParam.commonPlanes = 1; 
-trackParam.euDistPx = 10;
+trackParam.euDistPx = 20;
 
 testSRCal.SRAnalysis(detectParam, trackParam);

@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = [];
+path2SRCal = 'S:\Dual Color\20251015_localisation_error\2DCal';
 
 %file info
 
-file.path  = 'C:\Users\Windows 11\OneDrive - KU Leuven\Documents\KU Leuven\PhD\data\testdata\GEMs';
-path2Cal = [];
+file.path  = 'S:\Dual Color\20251015_localisation_error\10ms_expTime';
+path2Cal = 'S:\Dual Color\20251015_localisation_error\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

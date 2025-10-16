@@ -145,6 +145,7 @@ classdef SRCalibration < handle
                 catch
                     frames = 1:currMov.calibrated{1,1}.nFrames;
                 end
+
                 currMov.consolidatePlanes(frames,detectParam,q);
                 
                 %getting Calibration data
@@ -378,7 +379,7 @@ classdef SRCalibration < handle
         end
 
         
-        function checkAccuracy(obj,refPlane)
+        function checkAccuracy(obj,refPlane,q)
                 data = obj.calib.dataPerPlane;
                 corrData = obj.calib.SRCorrData;
                 
@@ -423,7 +424,11 @@ classdef SRCalibration < handle
                         idxM = true(size(mData,1),1);
                         idxM(1:2:end) = false;
                         idxN = true(size(nData,1),1);
-                        idxN(2:2:end) = false;
+                        if rem(size(idxN, 1), 2) ~= 0
+                            idxN(1:2:end) = false;
+                        else
+                            idxN(2:2:end) = false;
+                        end
                     else
                         idxM = true(size(mData,1),1);
                         idxN = true(size(nData,1),1);
@@ -456,7 +461,7 @@ classdef SRCalibration < handle
                 fullCErrRow = [];
                 errorPerPlane = zeros(length(data)-1,2);
                 errorCorrPerPlane = zeros(length(data)-1,2);
-                for i = 1:length(data)-1
+                for i = 1:4%length(data)-1
                     [errN, errEdge] = histcounts(errRow{i},[-2:0.1:2]);
                     errBin = errEdge(1:end-1)+(errEdge(2)-errEdge(1));
                     [errCN, errCEdge] = histcounts(errCRow{i},[-2:0.1:2]);

@@ -162,16 +162,16 @@ classdef SRCalibrationMultiModal < handle
             %% calc translation
             refPlane = 4;
             obj.MoviesCh1.corrTranslation(refPlane,1);
-            obj.MoviesCh1.checkAccuracy(refPlane);      
+            obj.MoviesCh1.checkAccuracy(refPlane,1);      
             %% calc rotation
             obj.MoviesCh1.corrRotation(refPlane,1);
-            obj.MoviesCh1.checkAccuracy(refPlane);
+            obj.MoviesCh1.checkAccuracy(refPlane,1);
 
             obj.MoviesCh2.corrTranslation(refPlane,2);
-            obj.MoviesCh2.checkAccuracy(refPlane);      
+            obj.MoviesCh2.checkAccuracy(refPlane,2);      
             %% calc rotation
             obj.MoviesCh2.corrRotation(refPlane,2);
-            obj.MoviesCh2.checkAccuracy(refPlane);
+            obj.MoviesCh2.checkAccuracy(refPlane,2);
 
             obj.CalcAccuracyChannels(refPlane);
         end
@@ -255,9 +255,9 @@ classdef SRCalibrationMultiModal < handle
                         b(i) = Transformations{p, i}.b;
                         c(:,:,i) = Transformations{p, i}.c(1,:);
                     end
-                    Transf{p,1}.T = mean(T,3);
-                    Transf{p,1}.b = mean(b);
-                    Transf{p,1}.c = mean(c, 3);
+                    Transf{p,1}.T = median(T,3);
+                    Transf{p,1}.b = median(b);
+                    Transf{p,1}.c = median(c, 3);
 
                     Transf{p,2}.T = Transf{p,1}.T';
                     Transf{p,2}.b = 1/(Transf{p,1}.b);
@@ -282,7 +282,7 @@ classdef SRCalibrationMultiModal < handle
                     coords2 = [PartCh2.row, PartCh2.col];
                     coords2 = sortrows(coords2);
                         
-                    coords2t = Transf.Coords2toCoords1{1}.b*coords2*Transf.Coords2toCoords1{1}.T + Transf.Coords2toCoords1{1}.c;
+                    coords2t = Transf.Coords2toCoords1{p}.b*coords2*Transf.Coords2toCoords1{p}.T + Transf.Coords2toCoords1{p}.c;
     
                     subplot(2, nPlanes, p)
                     scatter(coords1(:,2), coords1(:,1),"MarkerEdgeColor", "#0072BD")
