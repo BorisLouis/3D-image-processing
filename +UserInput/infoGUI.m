@@ -226,23 +226,31 @@ function out = restructureChannelInfo(inStruct, channelType)
             out.optics.dlambda = inStruct.dlambda;
             out.optics.alpha = inStruct.alpha;
             out.optics.kzT = inStruct.kzT;
-            out.proc.mirrorX = inStruct.mirrorX.Value;
-            out.proc.mirrorZ = inStruct.mirrorZ.Value;
-            out.proc.applyFourierMask = inStruct.applyFourierMask.Value;
-            out = rmfield(out, {'dz','NA','NA_ill','n','lambda','dlambda','alpha','kzT','mirrorX','mirrorZ','applyFourierMask'});
+            % mirrorX, mirrorZ and applyFourierMask are now plain values (strings 'true'/'false' or logical)
+            if isfield(inStruct, 'mirrorX')
+                out.proc.mirrorX = inStruct.mirrorX;
+            end
+            if isfield(inStruct, 'mirrorZ')
+                out.proc.mirrorZ = inStruct.mirrorZ;
+            end
+            if isfield(inStruct, 'applyFourierMask')
+                out.proc.applyFourierMask = inStruct.applyFourierMask;
+            end
+            out = rmfield(out, intersect(fieldnames(out), ...
+                {'dz','NA','NA_ill','n','lambda','dlambda','alpha','kzT','mirrorX','mirrorZ','applyFourierMask'}));
 
         case contains(channelType, 'DDM')
-            % Extract values, not UI objects
-            out.ddmParam.ParticleSize = inStruct.ParticleSize;
-            out.ddmParam.ExpTime = inStruct.ExpTime;
-            out.ddmParam.Wavelength = inStruct.Wavelength;
-            out.ddmParam.NA = inStruct.NA;
-            out.ddmParam.Temp = inStruct.Temp;
-            out.ddmParam.Qmin = inStruct.Qmin;
-            out.ddmParam.Qmax = inStruct.Qmax;
-            out.ddmParam.Scanning = inStruct.Scanning.Value;
-            out.ddmParam.CorrectBleaching = inStruct.CorrectBleaching.Value;
-            out.ddmParam.AngularAnisotropy = inStruct.AngularAnisotropy.Value;
+            % Extract values (readControls now returns plain values)
+            if isfield(inStruct, 'ParticleSize'),   out.ddmParam.ParticleSize = inStruct.ParticleSize;   end
+            if isfield(inStruct, 'ExpTime'),       out.ddmParam.ExpTime = inStruct.ExpTime;             end
+            if isfield(inStruct, 'Wavelength'),    out.ddmParam.Wavelength = inStruct.Wavelength;       end
+            if isfield(inStruct, 'NA'),            out.ddmParam.NA = inStruct.NA;                       end
+            if isfield(inStruct, 'Temp'),          out.ddmParam.Temp = inStruct.Temp;                   end
+            if isfield(inStruct, 'Qmin'),          out.ddmParam.Qmin = inStruct.Qmin;                   end
+            if isfield(inStruct, 'Qmax'),          out.ddmParam.Qmax = inStruct.Qmax;                   end
+            if isfield(inStruct, 'Scanning'),      out.ddmParam.Scanning = inStruct.Scanning;           end
+            if isfield(inStruct, 'CorrectBleaching'), out.ddmParam.CorrectBleaching = inStruct.CorrectBleaching; end
+            if isfield(inStruct, 'AngularAnisotropy'), out.ddmParam.AngularAnisotropy = inStruct.AngularAnisotropy; end
 
             if isfield(inStruct, 'ROISize')
                 out.ddmParam.ROISize = inStruct.ROISize;
@@ -370,23 +378,39 @@ function s = readControls(controls)
     for i = 1:length(fields)
         f = fields{i};
         val = controls.(f);
-        if isa(val, 'uidropdown')
-            s.(f) = val.Value;
-        elseif isa(val, 'matlab.ui.control.EditField')
+
+        % If it's a UI object with a Value property (dropdown, editfield, etc.)
+        if isobject(val) && isprop(val, 'Value')
+            raw = val.Value;
+            % If it's an edit field (text entry), try to convert to numeric
+            if isa(val, 'matlab.ui.control.EditField') || isa(val, 'matlab.ui.control.NumericEditField')
+                if isempty(raw)
+                    s.(f) = [];
+                else
+                    num = str2double(raw);
+                    if isnan(num)
+                        s.(f) = raw;      % keep string
+                    else
+                        s.(f) = num;      % numeric value
+                    end
+                end
+            else
+                % For dropdowns and other controls, just store the Value as-is
+                s.(f) = raw;
+            end
+
+        % If it's a plain UI handle array / empty or already a value (char, numeric, etc.)
+        else
+            % If it's empty UI handle (like []), store empty
             if isempty(val)
                 s.(f) = [];
             else
-                valNum = str2double(val.Value);
-                if isnan(valNum)
-                    s.(f) = val.Value;
-                else
-                    s.(f) = valNum;
-                end
+                % Plain values (numbers, strings, arrays) are stored directly
+                s.(f) = val;
             end
-        else
-            s.(f) = val;
         end
     end
 end
+
 
 end

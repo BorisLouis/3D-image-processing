@@ -9,8 +9,8 @@ rootFolder = 'S:\Dual Color\20250121_dualcolor\Multicolor_particles\In_water';
 
 file_raw1 = fullfile(rootFolder,'traces3D_noSRCal1.mat');
 file_raw2 = fullfile(rootFolder,'traces3D_noSRCal2.mat');
-file_sr1  = fullfile(rootFolder,'traces3D_1.mat');
-file_sr2  = fullfile(rootFolder,'traces3D_2.mat');
+% file_sr1  = fullfile(rootFolder,'traces3D_1.mat');
+% file_sr2  = fullfile(rootFolder,'traces3D_2.mat');
 
 minTraceLenStats = 30;   % only traces longer than this used for stats
 minTraceLenPlot  = 30;   % pick one trace longer than this for plotting
@@ -65,23 +65,23 @@ end
 %% --- Load traces ---
 s1 = load(file_raw1,'allTraces'); raw1 = s1.allTraces;
 s2 = load(file_raw2,'allTraces'); raw2 = s2.allTraces;
-s3 = load(file_sr1,'allTraces');  sr1  = s3.allTraces;
-s4 = load(file_sr2,'allTraces');  sr2  = s4.allTraces;
+% s3 = load(file_sr1,'allTraces');  sr1  = s3.allTraces;
+% s4 = load(file_sr2,'allTraces');  sr2  = s4.allTraces;
 
-fprintf('Loaded %d raw ch1, %d raw ch2, %d SR ch1, %d SR ch2 traces\n', ...
-    size(raw1,1), size(raw2,1), size(sr1,1), size(sr2,1));
+% fprintf('Loaded %d raw ch1, %d raw ch2, %d SR ch1, %d SR ch2 traces\n', ...
+%     size(raw1,1), size(raw2,1), size(sr1,1), size(sr2,1));
 
 %% --- Compute mismatches ---
 [diffs_raw, traces_raw] = match_and_diff(raw1, raw2, minTraceLenStats, distThresh);
-[diffs_sr,  traces_sr ] = match_and_diff(sr1,  sr2,  minTraceLenStats, distThresh);
+% [diffs_sr,  traces_sr ] = match_and_diff(sr1,  sr2,  minTraceLenStats, distThresh);
 
 % stats
 stats_raw.mean3D = mean(sqrt(sum(diffs_raw.^2,2)));
 stats_raw.median3D = median(sqrt(sum(diffs_raw.^2,2)));
 stats_raw.std3D = std(sqrt(sum(diffs_raw.^2,2)));
-stats_sr.mean3D = mean(sqrt(sum(diffs_sr.^2,2)));
-stats_sr.median3D = median(sqrt(sum(diffs_sr.^2,2)));
-stats_sr.std3D = std(sqrt(sum(diffs_sr.^2,2)));
+% stats_sr.mean3D = mean(sqrt(sum(diffs_sr.^2,2)));
+% stats_sr.median3D = median(sqrt(sum(diffs_sr.^2,2)));
+% stats_sr.std3D = std(sqrt(sum(diffs_sr.^2,2)));
 
 fprintf('\n--- 3D mismatch statistics ---\n');
 fprintf('RAW: mean %.2f, median %.2f, std %.2f nm\n', ...
@@ -94,10 +94,10 @@ fprintf('RAW dx: %.2f ± %.2f, dy: %.2f ± %.2f, dz: %.2f ± %.2f\n', ...
     mean(diffs_raw(:,1)), std(diffs_raw(:,1)), ...
     mean(diffs_raw(:,2)), std(diffs_raw(:,2)), ...
     mean(diffs_raw(:,3)), std(diffs_raw(:,3)));
-fprintf(' SR dx: %.2f ± %.2f, dy: %.2f ± %.2f, dz: %.2f ± %.2f\n', ...
-    mean(diffs_sr(:,1)), std(diffs_sr(:,1)), ...
-    mean(diffs_sr(:,2)), std(diffs_sr(:,2)), ...
-    mean(diffs_sr(:,3)), std(diffs_sr(:,3)));
+% fprintf(' SR dx: %.2f ± %.2f, dy: %.2f ± %.2f, dz: %.2f ± %.2f\n', ...
+%     mean(diffs_sr(:,1)), std(diffs_sr(:,1)), ...
+%     mean(diffs_sr(:,2)), std(diffs_sr(:,2)), ...
+%     mean(diffs_sr(:,3)), std(diffs_sr(:,3)));
 
 %% --- Pick one long raw trace for plotting ---
 chosen = [];
