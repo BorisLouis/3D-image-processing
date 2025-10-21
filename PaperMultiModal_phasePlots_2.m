@@ -4,7 +4,7 @@ clc
 FolderName = 'E:\Multimodal tracking\20250724\alldata';
 OutputFolder = 'E:\Multimodal tracking\20250724\FiguresFromRawData\GradVar';
 Folder = dir(FolderName);
-Parameter = 'GradientMagnitude';
+Parameter = 'IntPhaseCh';
 load('E:\Multimodal tracking\20250724\2DCal\2DCal.mat');
 ROI1 = cal2D.file.ROI1;
 ROI2 = cal2D.file.ROI2FullCam;

@@ -1,5 +1,5 @@
 % Main folder path
-mainFolder = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA';
+mainFolder = 'S:\Rotational Tracking\20250708_AuBPs_184x92_PAA\data';
 
 % Define expected timepoints (minutes)
 timepoints = [3 5 7 9 11 13 15 17 19];
@@ -16,27 +16,24 @@ for i = 1:length(subFolders)
     folderName = subFolders(i).name;
     
     % Extract time and sample from folder name (e.g., "13min_s4")
-    tokens = regexp(folderName,'(\d+)min_s(\d+)','tokens');
+    tokens = regexp(folderName,'(\d+)s_(\d+)min','tokens');
     if isempty(tokens)
         continue; % skip if folder doesn't match pattern
     end
-    t = str2double(tokens{1}{1});
-    s = str2double(tokens{1}{2});
+    t = str2double(tokens{1}{2});
+    s = str2double(tokens{1}{1});
     
     % Full path to msadRes.mat
-    matFile = fullfile(mainFolder, folderName, 'msadRes.mat');
+    matFile = fullfile(mainFolder, folderName, 'msadResRot.xlsx');
     if ~isfile(matFile)
         continue;
     end
     
     % Load file
-    data = load(matFile);
-    if ~isfield(data,'allRes')
-        continue;
-    end
+    data = readtable(matFile);
     
     % Extract viscosities
-    viscosities = [data.allRes.nr];
+    viscosities = [data.nr];
     viscosities = viscosities(~isnan(viscosities)); % remove NaNs
     % viscosities = viscosities(idxremove);
     A = viscosities;
