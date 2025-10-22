@@ -417,12 +417,43 @@ classdef MPDDMMovie < Core.MPMovie
              for c = 1:size(obj.FitResults,1)
                  Results{1,c}.Diff = MSD.getDiffCoeff(obj.FitResults{1, 1}.MSD,obj.FitResults{1, 1}.tau,...
                      obj.info.ddmParam.FitRDiff,obj.info.Dimension);
-                 try
-                    Results{1,c}.alpha = MSD.getDiffTypeAlpha2(obj.FitResults{1, 1}.MSD',obj.info.ddmParam.ExpTime,sqrt(Results{1,c}.Diff)*obj.info.ddmParam.ExpTime);
-                 catch
-                     Results{1,c}.alpha = NaN;
+                
+                 switch obj.info.Dimension
+                    case '1D'
+                        equation = '2*a*x+b';
+                    case '2D'
+                        equation = '4*a*x+b';
+                    case '3D'
+                        equation = '6*a*x+b';
+                    otherwise
+                        error('Unknown dim, dim needs to be provided as 1D 2D or 3D')
                  end
-                 Results{1,c}.n = MSD.getViscosity(Results{1,c}.Diff,obj.info.ddmParam.ParticleSize,obj.info.ddmParam.Temp);
+            
+                 assert(min(size(obj.FitResults{1, 1}.MSD))==1,'MSD needs to be provided as a vector')
+                 %  assert(and(fitRange<=1,isnumeric(fitRange)),'fit Range needs to be numerical between 0 and 1');
+
+                 tofit = obj.FitResults{1, 1}.MSD(1:obj.info.ddmParam.FitRDiff);
+                 tau   = obj.FitResults{1, 1}.tau(1:obj.info.ddmParam.FitRDiff);
+                 Lower = [obj.info.FitMinDiffLim, 0];
+                 Upper = [obj.info.FitMaxDiffLim, max(tofit)];
+                 Start = [obj.info.FitDiffEstim, tofit(1) - (tofit(2) - tofit(1))];
+                 [f, gov]     = fit(tau(:),tofit(:),equation, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
+                
+                 if gov.rsquare > 10
+                     g = coeffvalues(f);
+                     D = g(1);
+                     Results{1,c}.Diff = D;
+                     try
+                        Results{1,c}.alpha = MSD.getDiffTypeAlpha2(obj.FitResults{1, 1}.MSD',obj.info.ddmParam.ExpTime,sqrt(Results{1,c}.Diff)*obj.info.ddmParam.ExpTime);
+                     catch
+                         Results{1,c}.alpha = NaN;
+                     end
+                     Results{1,c}.n = MSD.getViscosity(Results{1,c}.Diff,obj.info.ddmParam.ParticleSize,obj.info.ddmParam.Temp);
+                 else
+                     Results{1,c}.Diff = NaN;
+                     Results{1,c}.alpha = NaN;
+                     Results{1,c}.n = NaN;
+                 end
              end
 
              obj.MSDResults = Results;

@@ -10,7 +10,7 @@ info2 = struct();
 % Create the UI figure
 fig = uifigure('Name', 'Experiment Setup', 'Position', [100, 100, 1000, 650]);
 gl = uigridlayout(fig, [2, 3]);
-gl.RowHeight = {'9x', '1x'};
+gl.RowHeight = {'15x', '1x'};
 gl.ColumnWidth = {'1x', '1x', '1x'};
 
 state = struct();
@@ -42,11 +42,11 @@ state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
 
 %% Channel Panels
 channel1Panel = uipanel(gl, 'Title', 'Channel 1 Setup');
-channel1Layout = uigridlayout(channel1Panel, [14, 2]);
+channel1Layout = uigridlayout(channel1Panel, [16, 2]);
 channel1Layout.RowHeight = repmat({30}, 1, 14);
 
 channel2Panel = uipanel(gl, 'Title', 'Channel 2 Setup');
-channel2Layout = uigridlayout(channel2Panel, [14, 2]);
+channel2Layout = uigridlayout(channel2Panel, [16, 2]);
 channel2Layout.RowHeight = repmat({30}, 1, 14);
 
 state.channel1Controls = [];
@@ -251,6 +251,9 @@ function out = restructureChannelInfo(inStruct, channelType)
             if isfield(inStruct, 'Scanning'),      out.ddmParam.Scanning = inStruct.Scanning;           end
             if isfield(inStruct, 'CorrectBleaching'), out.ddmParam.CorrectBleaching = inStruct.CorrectBleaching; end
             if isfield(inStruct, 'AngularAnisotropy'), out.ddmParam.AngularAnisotropy = inStruct.AngularAnisotropy; end
+            if isfield(inStruct, 'FitMaxDiffLim'), out.ddmParam.FitMaxDiffLim = inStruct.FitMaxDiffLim; end
+            if isfield(inStruct, 'FitMinDiffLim'), out.ddmParam.FitMinDiffLim = inStruct.FitMinDiffLim; end
+            if isfield(inStruct, 'FitDiffEstim'), out.ddmParam.FitDiffEstim = inStruct.FitDiffEstim;    end      
 
             if isfield(inStruct, 'ROISize')
                 out.ddmParam.ROISize = inStruct.ROISize;
@@ -315,6 +318,9 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.AngularAnisotropy = addDropdown(layout, 'Angular anisotropy', {'on', 'off'}, 'off');
             controls.AngularAnisotropy.Value = controls.AngularAnisotropy.Value;
             controls.FitRDiff = addLabelField(layout, 'fitRange D:', '4');
+            controls.FitMaxDiffLim = addLabelField(layout, 'max D:', '100');
+            controls.FitMinDiffLim = addLabelField(layout, 'min D:', '0.2');
+            controls.FitDiffEstim = addLabelField(layout, 'Estimated D:', '10.8');
 
             controls.Scanning.ValueChangedFcn = @(src,event) onScanningChange(src, layout, controlsName);
     end
@@ -360,13 +366,13 @@ end
 
 %% === UI Helper Functions ===
 function field = addLabelField(layout, label, defaultValue)
-    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right', 'FontSize', 11);
-    field = uieditfield(layout, 'text', 'Value', defaultValue, 'FontSize', 11);
+    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right', 'FontSize', 10);
+    field = uieditfield(layout, 'text', 'Value', defaultValue, 'FontSize', 10);
 end
 
 function dd = addDropdown(layout, label, items, defaultValue)
-    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right', 'FontSize', 11);
-    dd = uidropdown(layout, 'Items', items, 'Value', defaultValue, 'FontSize', 11);
+    uilabel(layout, 'Text', label, 'HorizontalAlignment', 'right', 'FontSize',10);
+    dd = uidropdown(layout, 'Items', items, 'Value', defaultValue, 'FontSize', 10);
 end
 
 function s = readControls(controls)

@@ -3,12 +3,12 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Dual Color\Localisation_error\20251015\2DCal';
+path2SRCal = [];
 
 %file info
 
-file.path  = 'S:\Dual Color\Localisation_error\20251015\10ms_expTime';
-path2Cal = 'S:\Dual Color\Localisation_error\20251015\2DCal';
+file.path  = 'C:\Users\steve\OneDrive\Documenten\data multicolor\MCF7_15kPa_48h_reseeding';
+path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
