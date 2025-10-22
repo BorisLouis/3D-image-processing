@@ -272,8 +272,12 @@ function [frameInfo] = fixCamTiming(frameInfo)
     timing = [tmpInfo.time];
     
     meanExpTime = (frameInfo(end).time - frameInfo(1).time)/(str2double(frameInfo(end).T)+1);
-
-    assert(meanExpTime-frameInfo(1).expT<0.002,'Timing between frames is really wrong, please check')
+    
+    if all(str2double(frameInfo(end).T) ==0)
+        disp('file is zstack, no need to fix camera timing')
+    else
+    
+    assert(meanExpTime-frameInfo(1).expT<0.1,'Timing between frames is really wrong, please check')
     
     cellC = {frameInfo.C};
     matC = cellfun(@str2num,cellC);
@@ -397,5 +401,5 @@ function [frameInfo] = fixCamTiming(frameInfo)
 
     end
     warning('There was some issues with the synchronization, we had to fixed the out of sync frames');
-
+    end
 end
