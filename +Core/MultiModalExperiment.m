@@ -186,7 +186,7 @@ classdef MultiModalExperiment < handle
             %Load the movies for planes 1-8
             for i = 3:size(folder2Mov,1)
                 %Check if the directory
-                % try
+                try
                     folderPath = [folder2Mov(i).folder filesep folder2Mov(i).name];
     
                     file2Analyze = Core.Movie.getFileInPath(folderPath,obj.ext);
@@ -312,8 +312,9 @@ classdef MultiModalExperiment < handle
                         warning([folder2Mov(i).folder filesep folder2Mov(i).name ' did not contain any ' obj.ext ' file and is therefore ignored']);
                         
                     end
-                % catch
-                % end                
+                catch
+                    disp(append('Could not load movie ', [folder2Mov(i).folder filesep folder2Mov(i).name]));
+                end                
             end   
 
             if ~strcmp(obj.info.drawROI, 'off')
@@ -520,7 +521,7 @@ classdef MultiModalExperiment < handle
               elseif all(ismember({'Segmentation', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
                   obj.SegmentTracking;
               elseif all(ismember({'Translational Tracking', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
-                  obj.CalculateLocError;
+                  % obj.CalculateLocError;
               end
           end
 

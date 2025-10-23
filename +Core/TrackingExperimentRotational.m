@@ -406,45 +406,46 @@ classdef TrackingExperimentRotational < handle
                         currentTrackMov.trackParticle(trackParam,q);
                         
                         [traces] = currentTrackMov.getTraces;
+
+                        allTraces = [];
+                        fileN = cell(length(traces),1);
+                        fileN(:,1) = {i};
+                   
+                        [xStep,xMotor] = currentTrackMov.getXPosMotor;
+                        [yStep,yMotor] = currentTrackMov.getYPosMotor;
+                        [zSt,zMotor]   = currentTrackMov.getZPosMotor;
+        
+                        colMot = cell(length(traces),1);
+                        colMot(:,1) = {xMotor};
+                        colStep = cell(length(traces),1);
+                        colStep(:,1) = {xStep};
+        
+                        rowMot = cell(length(traces),1);
+                        rowMot(:,1) = {yMotor};
+                        rowStep = cell(length(traces),1);
+                        rowStep(:,1) = {yStep};
+        
+                        zMot = cell(length(traces),1);
+                        zMot(:,1) = {zMotor};
+                        zStep = cell(length(traces),1);
+                        zStep(:,1) = {zSt};
+        
+                        allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
+                        currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
+                        obj.traces3D = allTraces;
+                        obj.trackMovies.(fieldsN{i}) = currentTrackMov;
+               
+                        filename = [currentTrackMov.raw.movInfo.Path filesep 'traces3D_', num2str(q), '.mat'];
+                        save(filename,'traces');
                        
                 catch
                     disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);
                 end
-        
-                allTraces = [];
-                fileN = cell(length(traces),1);
-                fileN(:,1) = {i};
-           
-                [xStep,xMotor] = currentTrackMov.getXPosMotor;
-                [yStep,yMotor] = currentTrackMov.getYPosMotor;
-                [zSt,zMotor]   = currentTrackMov.getZPosMotor;
 
-                colMot = cell(length(traces),1);
-                colMot(:,1) = {xMotor};
-                colStep = cell(length(traces),1);
-                colStep(:,1) = {xStep};
-
-                rowMot = cell(length(traces),1);
-                rowMot(:,1) = {yMotor};
-                rowStep = cell(length(traces),1);
-                rowStep(:,1) = {yStep};
-
-                zMot = cell(length(traces),1);
-                zMot(:,1) = {zMotor};
-                zStep = cell(length(traces),1);
-                zStep(:,1) = {zSt};
-
-                allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
-                currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
-                obj.traces3D = allTraces;
-                obj.trackMovies.(fieldsN{i}) = currentTrackMov;
-       
-                filename = [currentTrackMov.raw.movInfo.Path filesep 'traces3D_noSRCal', num2str(q), '.mat'];
-                save(filename,'traces');
             end
             
             
-            filename = [obj.path filesep 'traces3D_noSRCal', num2str(q), '.mat'];
+            filename = [obj.path filesep 'traces3D_', num2str(q), '.mat'];
             save(filename,'allTraces');
             
             

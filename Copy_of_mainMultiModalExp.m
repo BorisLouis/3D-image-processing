@@ -3,15 +3,23 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'S:\Dual Color\20251015_localisation_error\2DCal';
+% path2SRCal = 'S:\Dual Color\20251015_localisation_error\2DCal';
 
 %file info
-Paths = {'S:\Dual Color\20251015_localisation_error\10ms_expTime', 'S:\Dual Color\20251015_localisation_error\500ms_expTime'};
-path2Cal = 'S:\Dual Color\20251015_localisation_error\2DCal';
+Paths = {'D:\Polymer Dynamics\20251008\PAA_3x_bAA', 'D:\Polymer Dynamics\20251008\PAA_4x_bAA',...
+    'D:\Polymer Dynamics\20251004\PAA_1x_bAA', 'D:\Polymer Dynamics\20251004\PAA_2x_bAA',...
+    'D:\Polymer Dynamics\20250925\PAA_2x_bAA', 'D:\Polymer Dynamics\20250925\PAA_3x_bAA',...
+    'D:\Polymer Dynamics\20250924\PAA_1x_bAA', 'D:\Polymer Dynamics\20250924\PAA_2x_bAA'};
+Cals = {'D:\Polymer Dynamics\20251008\2DCal', 'D:\Polymer Dynamics\20251008\2DCal',...
+    'D:\Polymer Dynamics\20251004\2DCal', 'D:\Polymer Dynamics\20251004\2DCal',...
+    'D:\Polymer Dynamics\20250925\2DCal', 'D:\Polymer Dynamics\20250925\2DCal',...
+    'D:\Polymer Dynamics\20250924\2DCal', 'D:\Polymer Dynamics\20250924\2DCal'};
 file.path = Paths{1};
 [info, info1, info2, file] = UserInput.infoGUI(file);
 for j = 1:numel(Paths)
     file.path  = Paths{j};   
+    path2Cal = Cals{j};
+    path2SRCal = Cals{j};
     
     %% create experiments
     MultiModalExp = Core.MultiModalExperiment(file,path2Cal, info, info1, info2,path2SRCal,path2ZCal);
