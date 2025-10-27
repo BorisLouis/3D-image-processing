@@ -2,10 +2,7 @@ clc ;
 clear ;
 close all;
 
-MainMainFolders = {'E:\Polymer Dynamics\20251009\PAA_2x_AA', 'E:\Polymer Dynamics\20251009\PAA_3x_AA'};
-
-
-
+MainMainFolders = {'D:\Polymer Dynamics\20251009\PAA_2x_AA', 'D:\Polymer Dynamics\20251009\PAA_3x_AA'};
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
@@ -538,8 +535,8 @@ for bigstart = 1:numel(MainMainFolders)
         fig = figure;
         baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];
         for i = 1:size(TimeLoopResults, 2)
-            try
-                TimeValid = TimeLoopResults{i}.Time;              % 1×N vector
+            try           
+                TimeValid = (TimeLoopResults{i}.Time)./100 + TimeStamp;
                 DiffMean = TimeLoopResults{i}.ViscMean;      % 1×N vector
                 DiffStd = TimeLoopResults{i}.ViscStd;        % 1×N vector
                 DiffMeanValid = DiffMean;
@@ -568,7 +565,7 @@ for bigstart = 1:numel(MainMainFolders)
                 
                 % --- Axes labels and formatting ---
                 xlabel('Time (s)', 'FontSize', 12);
-                ylabel('Diffusion coefficient (µm^2/s)', 'FontSize', 12);
+                ylabel('Viscosity (cP)', 'FontSize', 12);
                 grid on;
                 box on;
                 axis tight;
