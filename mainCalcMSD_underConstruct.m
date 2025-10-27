@@ -2,7 +2,11 @@ clc ;
 clear ;
 close all;
 
+<<<<<<< HEAD
 MainMainFolders = {'D:\Polymer Dynamics\20251009\PAA_2x_AA', 'D:\Polymer Dynamics\20251009\PAA_3x_AA'};
+=======
+MainMainFolders = {'E:\Polymer Dynamics\20251009\PAA_2x_AA', 'E:\Polymer Dynamics\20251009\PAA_3x_AA'};
+>>>>>>> 133fe8e4af0e3ff3c4d41c493f3be6f4d016e670
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;

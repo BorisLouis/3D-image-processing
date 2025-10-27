@@ -19,13 +19,19 @@ eta_trans = cell(1, numel(rotFiles));
 % Loop through timepoints
 for i = 1:numel(rotFiles)
     % --- Rotational ---
-    data = load(fullfile(rotPath, rotFiles{i}));
-    allRes = data.AllMovieResults;
-    eta_rot{i} = [allRes.nr]';  % Force column vector
-
+    Folder = dir(fullfile(rotPath, rotFiles{i}));
+    DiffList = [];
+    for j = 3:size(Folder, 1)
+        if Folder(j).isdir == 1
+            data = load(fullfile(Folder(j).folder, Folder(j).name, 'msadRes.mat'));
+            allRes = data.allRes;
+        end
+        DiffList = [DiffList; [allRes.Dr]'];
+    end
+    eta_rot{i} = DiffList;
     % --- Translational ---
     fieldName = ['t_' rotFiles{i}];
-    eta_trans{i} = results.(fieldName).eta(:);  % Force column vector
+    eta_trans{i} = mean(results.(fieldName).raw.D_channels, 2)*10^(12);  % Force column vector
 end
 
 %% Prepare figure
@@ -68,10 +74,10 @@ end
 
 % Axis formatting
 xlim([min(timepoints)-1, max(timepoints)+1]);
-ylim([1e-1, 1e3]);
 xticks(timepoints);
+ylim([ 0 5])
 xlabel('Polymerization time (min)');
-ylabel('Viscosity (cP)');
+ylabel('Diffusion coefficient (µm^2/s^(-1))');
 set(gca, 'FontSize', 12, 'LineWidth', 1.5);
 grid on; box on;
 
