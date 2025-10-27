@@ -439,7 +439,7 @@ classdef MPDDMMovie < Core.MPMovie
                  Start = [obj.info.FitDiffEstim, tofit(1) - (tofit(2) - tofit(1))];
                  [f, gov]     = fit(tau(:),tofit(:),equation, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
                 
-                 if gov.rsquare > 10
+                 if gov.rsquare > 0
                      g = coeffvalues(f);
                      D = g(1);
                      Results{1,c}.Diff = D;
@@ -448,7 +448,7 @@ classdef MPDDMMovie < Core.MPMovie
                      catch
                          Results{1,c}.alpha = NaN;
                      end
-                     Results{1,c}.n = MSD.getViscosity(Results{1,c}.Diff,obj.info.ddmParam.ParticleSize,obj.info.ddmParam.Temp);
+                     Results{1,c}.n = MSD.getViscosity(Results{1,c}.Diff,obj.info.ddmParam.ParticleSize*10^(-3),obj.info.ddmParam.Temp);
                  else
                      Results{1,c}.Diff = NaN;
                      Results{1,c}.alpha = NaN;
