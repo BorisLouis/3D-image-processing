@@ -2,7 +2,7 @@ clc ;
 clear ;
 close all;
 
-MainMainFolders = {'E:\Polymer Dynamics\20251009\PAA_2x_AA', 'E:\Polymer Dynamics\20251009\PAA_3x_AA'};
+MainMainFolders = {'D:\DDM_TestData\PS_500nm_highconc'};
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
@@ -94,8 +94,8 @@ for bigstart = 1:numel(MainMainFolders)
                         end
                     end
     
-                    %nRows = size(dataMatrix, 1);
-                    nRows = 100;
+                    nRows = size(dataMatrix, 1);
+                    % nRows = 100;
                     Time     = nan(nRows, 1);
                     DiffMean = nan(nRows, 1);
                     DiffStd  = nan(nRows, 1);
@@ -108,14 +108,14 @@ for bigstart = 1:numel(MainMainFolders)
                     AnExpAll = cell(nRows, 1);
                     TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
     
-                    for k = 1:100 %size(dataMatrix, 1)
+                    for k = 1:size(dataMatrix, 1)
                         DataCurrent = dataMatrix{k, 1};
                         if isempty(DataCurrent)
                             currMov = [];
                         else
-                            allHeight = cellfun(@height,DataCurrent(:,1));
+                            allHeight = cellfun(@height,DataCurrent(1,:));
                             idx = allHeight>MinSize;
-                            currMov = dataMatrix{k,1}(idx, 1);
+                            currMov = dataMatrix{k,1}(1,idx);
                         end
     
                         if ~isempty(currMov)
