@@ -35,8 +35,8 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Filename:');
     dropdownFilename = uidropdown(fig, 'Position', [130 y 280 22], ...
-        'Items', {'trackResults', 'trackResults1', 'trackResults2', 'TracesWMask', 'TraceswPhase', 'Traces3DCommon', 'traces3D_', 'traces3D_noSRCal'}, ...
-        'Value', 'traces3D_noSRCal');
+        'Items', {'trackResults', 'trackResults1', 'trackResults2', 'TracesWMask', 'TraceswPhase', 'Traces3DCommon', 'traces3D_', 'traces3D_noSRCal', 'Traces3D'}, ...
+        'Value', 'Traces3D');
 
     % Dimension
     y = y - dy;

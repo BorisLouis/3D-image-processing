@@ -7,7 +7,7 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'D:\DDM_TestData\PS_1000nm_highconc';
+file.path  = 'D:\Data Steven - GEMs\20250725_GEMScarlet_37kPa_48h_KM12\KM12SM';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

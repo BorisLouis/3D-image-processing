@@ -1,10 +1,10 @@
 close all; clc; clear all
 
-HeadFolder = 'D:\MultiColor - lysosome tracking\raw data for presentation\data cells\rerunvids';
+HeadFolder = 'D:\Data Natalie\KM12C\trackingdata\20240301';
 HeadFolders = dir(HeadFolder);
-MaxFrame = [1000, 300];
-ExpTimes = [30, 100];
-CellNames = {'A549 - mSiPEI', 'HepG2 - mSiPEI'};
+MaxFrame = [1000];
+ExpTimes = [30];
+CellNames = {'KM12SM'};
 imgH = 512;
 imgW = 512;
 
@@ -30,8 +30,8 @@ for s = 3:size(HeadFolders,1)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%%
         % try
             %% Paths for dataset 1 (left)
-            trackFile1  = fullfile(mainFolder1,'TracesWMask.mat');
-        
+            % trackFile1  = fullfile(mainFolder1,'TracesWMask.mat');
+            trackFile1  = fullfile(mainFolder1,'trackResults.mat');
             %% Video output names
             mp4File_seg = fullfile(mainFolder1,'TraceMovie_Segment_bgParticles.avi');
             mp4File_diff = fullfile(mainFolder1,'TraceMovie_Diffusion_bgParticles.avi');
@@ -39,8 +39,8 @@ for s = 3:size(HeadFolders,1)
             
             %% Load track data
             load(trackFile1)%,'traces3D'); 
-            traces1 = Traces3D;
-            
+            % traces1 = Traces3D;
+            traces1 = trackRes.traces;
             %% Load raw videos
             Folder = dir(mainFolder1);
             idx = find(and(contains({Folder.name}, '.HIS'), contains({Folder.name}, 'Cam2')) == 1);

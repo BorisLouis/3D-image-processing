@@ -2,11 +2,7 @@ clc ;
 clear ;
 close all;
 
-<<<<<<< HEAD
-MainMainFolders = {'D:\Polymer Dynamics\20251009\PAA_2x_AA', 'D:\Polymer Dynamics\20251009\PAA_3x_AA'};
-=======
-MainMainFolders = {'E:\Polymer Dynamics\20251009\PAA_2x_AA', 'E:\Polymer Dynamics\20251009\PAA_3x_AA'};
->>>>>>> 133fe8e4af0e3ff3c4d41c493f3be6f4d016e670
+MainMainFolders = {'D:\Data Steven - GEMs\20250725_GEMScarlet_37kPa_48h_KM12\KM12SM'};
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
@@ -98,8 +94,8 @@ for bigstart = 1:numel(MainMainFolders)
                         end
                     end
     
-                    %nRows = size(dataMatrix, 1);
-                    nRows = 100;
+                    nRows = size(dataMatrix, 1);
+                    % nRows = 100;
                     Time     = nan(nRows, 1);
                     DiffMean = nan(nRows, 1);
                     DiffStd  = nan(nRows, 1);
@@ -112,14 +108,21 @@ for bigstart = 1:numel(MainMainFolders)
                     AnExpAll = cell(nRows, 1);
                     TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
     
-                    for k = 1:100 %size(dataMatrix, 1)
+                    for k = 1:size(dataMatrix, 1)
                         DataCurrent = dataMatrix{k, 1};
                         if isempty(DataCurrent)
                             currMov = [];
                         else
                             allHeight = cellfun(@height,DataCurrent(:,1));
+                            if numel(allHeight) == 1
+                                allHeight = cellfun(@height,DataCurrent(1,:));
+                            end
                             idx = allHeight>MinSize;
-                            currMov = dataMatrix{k,1}(idx, 1);
+                            try
+                                currMov = dataMatrix{k,1}(idx, 1);
+                            catch
+                                currMov = dataMatrix{k,1}(1, idx);
+                            end
                         end
     
                         if ~isempty(currMov)
