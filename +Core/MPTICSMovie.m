@@ -69,20 +69,21 @@ classdef MPTICSMovie < Core.MPMovie
                         TACS_Matrix(i, j,:) = ac;
                     end
                 end
+                obj.AutocorrMap{c,1} = TACS_Matrix;
             end
             close(h)
-            obj.AutocorrMap = TACS_Matrix;
+            
         end
 
         function getDiffusionmap(obj)
             tic
             hh = waitbar(0, 'initializing');
-            Tau = [0, (1:size(AutoCorr,1)).*obj.info.ExpTime]';
+            Tau = [0, (1:size(obj.AutocorrMap{1,1},3)).*obj.info.ExpTime]';
             Tau(end) = [];
             FitRange = 10;
             for c = 1:obj.calibrated{1, 1}.nPlanes
-                C     = obj.Omegas{1, 1}.wAvg*10^(-6);               % your fixed C
-                data = obj.AutocorrMap;
+                C = obj.Omegas{1, 1}.wAvg*10^(-6);               % your fixed C
+                data = obj.AutocorrMap{c,1};
                 blockSize = obj.info.TICSWindow;
 
                 newX = floor(size(data,1)/blockSize);
@@ -106,7 +107,6 @@ classdef MPTICSMovie < Core.MPMovie
                         f = fit(Tau, AutoCorr(:), '(1./(1+x/a))');
                         coeff = coeffvalues(f);
                         LifeTime = coeff(1);
-                        
 
                         D = sqrt(C)./(4*LifeTime);
                         eta(i,j) = (1.380649*10^-23*296.15)./(6*pi*20*10^(-9)*D*10^(-12))*10^3;
