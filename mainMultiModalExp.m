@@ -7,7 +7,7 @@ path2SRCal = [];
 
 %file info
 
-file.path  = 'D:\DDM_TestData\PS_1000nm_highconc';
+file.path  = 'C:\Users\steve\OneDrive\Documenten\data multicolor\testdata Hannah\500 nm';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

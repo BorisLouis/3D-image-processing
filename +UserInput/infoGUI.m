@@ -27,7 +27,7 @@ state.drawROI = addDropdown(col1, 'draw ROI:', {'off', 'channel1', 'channel2'}, 
 state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
 state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'on');
 
-channelTypes = {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase', 'DDM'};
+channelTypes = {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase', 'DDM', 'TICS'};
 ch1Dropdown = addDropdown(col1, 'Channel 1:', channelTypes, 'Rotational Tracking');
 ch2Dropdown = addDropdown(col1, 'Channel 2:', channelTypes, 'Rotational Tracking');
 
@@ -264,6 +264,17 @@ function out = restructureChannelInfo(inStruct, channelType)
 
             out = rmfield(out, intersect(fieldnames(out), ...
                 {'ParticleSize','ExpTime','Wavelength','NA','Temp','Qmin','Qmax','Scanning','CorrectBleaching','AngularAnisotropy','ROISize','FitRDiff'}));
+
+        case contains(channelType, 'TICS')
+            if isfield(inStruct, 'ExpTime')
+                out.ExpTime = inStruct.ExpTime;
+            end
+            if isfield(inStruct, 'TICSWindow')
+                out.TICSWindow = inStruct.TICSWindow;
+            end
+            if isfield(inStruct, 'UseSinglePrecision')
+                out.UseSinglePrecision = inStruct.UseSinglePrecision;
+            end
     end
 end
 
@@ -323,6 +334,12 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.FitDiffEstim = addLabelField(layout, 'Estimated D:', '10.8');
 
             controls.Scanning.ValueChangedFcn = @(src,event) onScanningChange(src, layout, controlsName);
+
+       case 'TICS'
+            controls.ExpTime = addLabelField(layout, 'Exp time (s):', '0.0305');
+            controls.TICSWindow = addLabelField(layout, 'TICS window:', '3');
+            controls.UseSinglePrecision = addDropdown(layout, ...
+                'Use single precision', {'on','off'}, 'on');     
     end
 
     %% --- Nested scanning callback ---
