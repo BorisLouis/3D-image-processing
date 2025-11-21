@@ -228,8 +228,8 @@ classdef MPPlaneCalibration < handle
                 x = ones(1,length(y))*(FocusZ1{i}-mean(ZPos));
                 plot(x(:),y(:),'k--','HandleVisibility','off');
                 
-                leg1{i} = ['Cam' num2str(obj.cal.file.inFocus1(i).cam) ' - Plane' num2str(obj.cal.file.inFocus1(i).ch)];
-                
+                % leg1{i} = ['Cam' num2str(obj.cal.file.inFocus1(i).cam) ' - Plane' num2str(obj.cal.file.inFocus1(i).ch)];
+                leg1{i} = ['Cam' num2str(obj.cal.file.inFocus1(i).cam) ' - Plane' num2str(i)];
             end
             ylim([min(min(focusMet1)), max(max(focusMet1))]);
             xlim([round(min(ZPos-mean(ZPos))), round(max(ZPos-mean(ZPos)))]);
@@ -257,7 +257,7 @@ classdef MPPlaneCalibration < handle
                     x = ones(1,length(y))*(FocusZ2{i}-mean(ZPos));
                     plot(x(:),y(:),'k--','HandleVisibility','off');
                     
-                    leg2{i} = ['Cam' num2str(obj.cal.file.inFocus2(i).cam) ' - Plane' num2str(obj.cal.file.inFocus2(i).ch)];                  
+                    leg2{i} = ['Cam' num2str(obj.cal.file.inFocus2(i).cam) ' - Plane' num2str(i +8)];                  
                end
                ylim([min(min(focusMet2)), max(max(focusMet2))]);
                xlim([round(min(ZPos-mean(ZPos))), round(max(ZPos-mean(ZPos)))]);

@@ -42,6 +42,8 @@ classdef MultiModalExperiment < handle
                 obj.MoviesCh1 = Core.SegmentExperiment(folder2Data, obj.cal2D, obj.info, obj.info1);
             elseif strcmp(obj.info.Channel1, 'DDM')
                 obj.MoviesCh1 = Core.DDMExperiment(folder2Data, obj.cal2D, obj.info, obj.info1);
+            elseif strcmp(obj.info.Channel1, 'TICS')
+                obj.MoviesCh1 = Core.TICSExperiment(folder2Data, obj.cal2D, obj.info, obj.info1);
             end
 
             if obj.info.multiModal == 1
@@ -55,6 +57,8 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh2 = Core.SegmentExperiment(folder2Data, obj.cal2D, obj.info, obj.info2);
                 elseif strcmp(obj.info.Channel2, 'DDM')
                     obj.MoviesCh2 = Core.DDMExperiment(folder2Data, obj.cal2D, obj.info, obj.info2);
+                elseif strcmp(obj.info.Channel2, 'TICS')
+                    obj.MoviesCh1 = Core.TICSExperiment(folder2Data, obj.cal2D, obj.info, obj.info2);
                 end
             end
 
@@ -256,6 +260,15 @@ classdef MultiModalExperiment < handle
                                 Movie1.info = obj.MoviesCh1.DDMMovies.(['mov', num2str(1)]).getInfo;
                             end
                             obj.MoviesCh1.DDMMovies.(['mov', num2str(((i-2)*2) -1)]) = Movie1;
+                        elseif strcmp(obj.info.Channel1, 'TICS')
+                            Movie1 = Core.MPTICSMovie(file, obj.MoviesCh1.cal2D, obj.MoviesCh1.info);
+                            Movie1.calibrated = tmp.calibrated{1,1};
+                            if count == 1
+                                Movie1.giveInfo;
+                            else
+                                Movie1.info = obj.MoviesCh1.TICSMovies.(['mov', num2str(1)]).getInfo;
+                            end
+                            obj.MoviesCh1.TICSMovies.(['mov', num2str(((i-2)*2) -1)]) = Movie1;
                         end
     
                         if obj.info.multiModal == 1
@@ -304,6 +317,15 @@ classdef MultiModalExperiment < handle
                                     Movie1.info = obj.MoviesCh2.DDMMovies.(['mov', num2str(1)]).getInfo;
                                 end
                                 obj.MoviesCh2.DDMMovies.(['mov', num2str(((i-2)*2) -1)]) = Movie2;
+                            elseif strcmp(obj.info.Channel2, 'TICS')
+                                Movie2 = Core.MPTICSMovie(file, obj.MoviesCh2.cal2D, obj.MoviesCh2.info);
+                                Movie2.calibrated = tmp.calibrated{1,2};
+                                if count == 1
+                                    Movie1.giveInfo;
+                                else
+                                    Movie1.info = obj.MoviesCh2.TICSMovies.(['mov', num2str(1)]).getInfo;
+                                end
+                                obj.MoviesCh2.TICSMovies.(['mov', num2str(((i-2)*2) -1)]) = Movie2;
                             end
                         end
     
@@ -494,6 +516,8 @@ classdef MultiModalExperiment < handle
                     if obj.info.rotationalCalib == 1
                         obj.RotationalCalibration;
                     end
+              elseif strcmp(obj.info.Channel1, 'TICS')
+                    obj.MoviesCh1.retrieveTICSData(1);
               end
 
               %%% then run channel 2 analysis
@@ -513,6 +537,8 @@ classdef MultiModalExperiment < handle
                         val2Use = 'bestFocus';
                         obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
                         obj.MoviesCh2.saveData(2);
+                   elseif strcmp(obj.info.Channel2, 'TICS')
+                        obj.MoviesCh1.retrieveTICSData(2);
                   end
               end
 
