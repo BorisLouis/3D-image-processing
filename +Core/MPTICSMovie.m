@@ -44,21 +44,77 @@ classdef MPTICSMovie < Core.MPMovie
                 end
                 Results.wList = List;
                 Results.wAvg = mean(List);
-                Omegas{c,1} = Results;
+                obj.Omegas{c,1} = Results;
             end
             close(h)
         end
 
         function getAutocorrmap(obj)
+            h = waitbar(0, 'initializing');
             for c = 1:obj.calibrated{1, 1}.nPlanes
-                
+                [rows, cols, nLags] = size(obj.AllFrames{c, 1});
+                autoCorr = zeros(rows, cols, nLags, 'single');
+                TACFMatrix = nan(rows, cols);
+                frames = obj.AllFrames{c,1};
+                n = 0;
+                for i = 1:rows
+                    for j = 1:cols   
+                        n = n+1;
+                        waitbar(n./(rows*cols), h, append('computing TACF plane ', num2str(c))) ;
+                        ts = double(squeeze(frames(i,j,:)));
+                        ts = ts - mean(ts, 'omitnan');
+                        tsTrend = medfilt1(ts, 150);
+                        ts = ts - tsTrend;
+                        [ac] = obj.TACF(ts);
+                        TACS_Matrix(i, j,:) = ac;
+                    end
+                end
             end
+            close(h)
+            obj.AutocorrMap = TACS_Matrix;
         end
 
         function getDiffusionmap(obj)
+            tic
+            hh = waitbar(0, 'initializing');
+            Tau = [0, (1:size(AutoCorr,1)).*obj.info.ExpTime]';
+            Tau(end) = [];
+            FitRange = 10;
             for c = 1:obj.calibrated{1, 1}.nPlanes
-                
+                C     = obj.Omegas{1, 1}.wAvg*10^(-6);               % your fixed C
+                data = obj.AutocorrMap;
+                blockSize = obj.info.TICSWindow;
+
+                newX = floor(size(data,1)/blockSize);
+                newY = floor(size(data,2)/blockSize); 
+
+                B = mean(reshape(data(1:newX*blockSize, 1:newY*blockSize, :), ...
+                                 blockSize, newX, blockSize, newY, size(data,3)), [1 3]);
+                data = squeeze(B);
+
+                n = 0;
+                rows = size(data, 1);
+                cols = size(data, 2);
+                options = optimoptions('lsqcurvefit','Display','off');
+                for i = 1:rows
+                    for j = 1:cols
+                        n = n+1;
+                        waitbar(n./(rows*cols), hh, append('Fitting on TACF ', num2str(n), '/',...
+                            num2str(rows*cols), ' - plane ', num2str(c)));
+                        AutoCorr = squeeze(data(i,j,:)./max(data(i,j,:)));
+
+                        f = fit(Tau, AutoCorr(:), '(1./(1+x/a))');
+                        coeff = coeffvalues(f);
+                        LifeTime = coeff(1);
+                        
+
+                        D = sqrt(C)./(4*LifeTime);
+                        eta(i,j) = (1.380649*10^-23*296.15)./(6*pi*20*10^(-9)*D*10^(-12))*10^3;
+                    end
+                end
             end
+            close(hh)
+            toc
         end
 
         function sacf = SACF(obj, Frame)
