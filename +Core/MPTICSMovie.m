@@ -6,8 +6,9 @@ classdef MPTICSMovie < Core.MPMovie
         AllFrames
         Omegas
         AutocorrMap
-        FitResults
-        Diffusionmap
+        DiffusionMap
+        ViscosityMap
+        Results
     end
     
     methods
@@ -31,36 +32,81 @@ classdef MPTICSMovie < Core.MPMovie
         end
 
         function calculateOmega(obj)
-            h = waitbar(0, 'initializing');
-            for c = 1:obj.calibrated{1, 1}.nPlanes
-                Movie = obj.AllFrames{c,1};
-                MaxFrame = 50; %size(obj.AllFrames, 3)
-                for frame = 1:MaxFrame
-                    waitbar(frame./MaxFrame, h, append('calc sacf frame ', num2str(frame), '/',...
-                            num2str(MaxFrame), ' - Plane ', num2str(c)));
-                    Frame = Movie(:,:,frame);
-                    sacf = obj.SACF(Frame);
-                    List(frame) = obj.fitSACF(sacf,0)*obj.info.PxSize;
+            if strcmp(obj.info.runMethod, 'run')
+                run = 1;
+            else
+                if exist(append(obj.raw.movInfo.Path, filesep, 'OmegaResults.mat'))
+                    run = 0;
+                else
+                    run = 1;
                 end
-                Results.wList = List;
-                Results.wAvg = mean(List);
-                obj.Omegas{c,1} = Results;
             end
-            close(h)
+
+            if run == 1
+                h = waitbar(0, 'initializing');
+                for c = 1:obj.calibrated{1, 1}.nPlanes
+                    Movie = obj.AllFrames{c,1};
+                    MaxFrame = obj.info.SACFframes; %size(obj.AllFrames, 3)
+
+                    nanMask = mean(Movie, 3);
+                    nanMask(nanMask == 0) = NaN;
+                    nanIdx = isnan(nanMask);
+                    
+                    Movie(repmat(nanIdx, [1 1 size(Movie,3)])) = NaN;
+                    for frame = 1:MaxFrame
+                        waitbar(frame./MaxFrame, h, append('calc sacf frame ', num2str(frame), '/',...
+                                num2str(MaxFrame), ' - Plane ', num2str(c)));
+                        Frame = Movie(:,:,frame);
+                        sacf = obj.SACF(Frame);
+                        List(frame) = obj.fitSACF(sacf)*obj.info.PxSize;
+                    end
+                    Results.wList = List;
+                    Results.wAvg = mean(List);
+                    obj.Omegas{c,1} = Results;
+                end
+                close(h)
+    
+                OmegaResults = obj.Omegas;
+                FilePath = append(obj.raw.movInfo.Path, filesep, 'OmegaResults.mat');
+                save(FilePath, "OmegaResults")
+            else 
+                load(append(obj.raw.movInfo.Path, filesep, 'OmegaResults.mat'));
+                obj.Omegas = OmegaResults;
+                disp('Found omegas - loaded that one')
+            end
         end
 
         function getAutocorrmap(obj)
-            h = waitbar(0, 'initializing');
-            for c = 1:obj.calibrated{1, 1}.nPlanes
-                [rows, cols, nLags] = size(obj.AllFrames{c, 1});
-                autoCorr = zeros(rows, cols, nLags, 'single');
-                TACFMatrix = nan(rows, cols);
-                frames = obj.AllFrames{c,1};
-                n = 0;
-                for i = 1:rows
-                    for j = 1:cols   
-                        n = n+1;
-                        waitbar(n./(rows*cols), h, append('computing TACF plane ', num2str(c))) ;
+            if strcmp(obj.info.runMethod, 'run')
+                run = 1;
+            else
+                if exist(append(obj.raw.movInfo.Path, filesep, 'AutocorrMap.mat'))
+                    run = 0;
+                else
+                    run = 1;
+                end
+            end
+
+            if run == 1
+                h = waitbar(0, 'initializing');
+                for c = 1:obj.calibrated{1, 1}.nPlanes
+                    [rows, cols, nLags] = size(obj.AllFrames{c, 1});
+                    autoCorr = zeros(rows, cols, nLags, 'single');
+                    TACS_Matrix = nan(rows, cols, nLags, 'single');
+                    frames = obj.AllFrames{c,1};
+    
+                    nanIm = mean(frames, 3);
+                    nanIm(nanIm == 0) = NaN;
+                    idx = ~isnan(nanIm);
+                    
+                    % Get linear indices of valid pixels
+                    validPix = find(idx);       % vector of linear indices
+                    nValid = numel(validPix);
+    
+                    for k = 1:nValid
+                        lin = validPix(k);
+                        [i, j] = ind2sub([rows, cols], lin);
+                        waitbar(k / nValid, h, append('computing TACF plane ', num2str(c))) ;
                         ts = double(squeeze(frames(i,j,:)));
                         ts = ts - mean(ts, 'omitnan');
                         tsTrend = medfilt1(ts, 150);
@@ -68,53 +114,137 @@ classdef MPTICSMovie < Core.MPMovie
                         [ac] = obj.TACF(ts);
                         TACS_Matrix(i, j,:) = ac;
                     end
+                    obj.AutocorrMap{c,1} = TACS_Matrix;
                 end
-                obj.AutocorrMap{c,1} = TACS_Matrix;
-            end
-            close(h)
-            
+                close(h)
+    
+                AutocorrMap = obj.AutocorrMap;
+                FilePath = append(obj.raw.movInfo.Path, filesep, 'AutocorrMap.mat');
+                save(FilePath, "AutocorrMap")
+            else
+                load(append(obj.raw.movInfo.Path, filesep, 'AutocorrMap.mat'));
+                obj.AutocorrMap = AutocorrMap;
+                disp('Found Autocorrelation map - loaded that one')
+            end           
         end
 
         function getDiffusionmap(obj)
-            tic
-            hh = waitbar(0, 'initializing');
-            Tau = [0, (1:size(obj.AutocorrMap{1,1},3)).*obj.info.ExpTime]';
-            Tau(end) = [];
-            FitRange = 10;
-            for c = 1:obj.calibrated{1, 1}.nPlanes
-                C = obj.Omegas{1, 1}.wAvg*10^(-6);               % your fixed C
-                data = obj.AutocorrMap{c,1};
-                blockSize = obj.info.TICSWindow;
+            if strcmp(obj.info.runMethod, 'run')
+                run = 1;
+            else
+                if exist(append(obj.raw.movInfo.Path, filesep, 'ViscosityMap.mat'))
+                    run = 0;
+                else
+                    run = 1;
+                end
+            end
 
-                newX = floor(size(data,1)/blockSize);
-                newY = floor(size(data,2)/blockSize); 
-
-                B = mean(reshape(data(1:newX*blockSize, 1:newY*blockSize, :), ...
-                                 blockSize, newX, blockSize, newY, size(data,3)), [1 3]);
-                data = squeeze(B);
-
-                n = 0;
-                rows = size(data, 1);
-                cols = size(data, 2);
-                options = optimoptions('lsqcurvefit','Display','off');
-                for i = 1:rows
-                    for j = 1:cols
-                        n = n+1;
-                        waitbar(n./(rows*cols), hh, append('Fitting on TACF ', num2str(n), '/',...
-                            num2str(rows*cols), ' - plane ', num2str(c)));
+            if run == 1
+                j = jet(256);
+                ramp = linspace(0,1,256)';   % fades from black → jet
+                BlackJet = j .* ramp;
+    
+                hh = waitbar(0, 'initializing');
+                Tau = [0, (1:size(obj.AutocorrMap{1,1},3)).*obj.info.ExpTime]';
+                Tau(end) = [];
+                FitRange = 10;
+                for c = 1:obj.calibrated{1, 1}.nPlanes
+                    C = obj.Omegas{1, 1}.wAvg*10^(-6);               % your fixed C
+                    data = obj.AutocorrMap{c,1};
+                    blockSize = obj.info.TICSWindow;
+    
+                    newX = floor(size(data,1)/blockSize);
+                    newY = floor(size(data,2)/blockSize); 
+    
+                    B = mean(reshape(data(1:newX*blockSize, 1:newY*blockSize, :), ...
+                                     blockSize, newX, blockSize, newY, size(data,3)), [1 3]);
+                    data = squeeze(B);
+    
+                    n = 0;
+                    rows = size(data, 1);
+                    cols = size(data, 2);
+                    options = optimoptions('lsqcurvefit','Display','off');
+                    eta = nan(rows, cols);
+                    diff = nan(rows, cols);
+    
+                    nanIm = mean(data, 3);
+                    nanIm(nanIm == 0) = NaN;
+                    idx = ~isnan(nanIm);
+                    validPix = find(idx);       % vector of linear indices
+                    nValid = numel(validPix);
+    
+                    for k = 1:nValid
+                        lin = validPix(k);
+                        [i, j] = ind2sub([rows, cols], lin);
+                        waitbar(k./nValid, hh, append('Fitting on TACF ', num2str(k), '/',...
+                            num2str(nValid), ' - plane ', num2str(c)));
                         AutoCorr = squeeze(data(i,j,:)./max(data(i,j,:)));
-
+    
                         f = fit(Tau, AutoCorr(:), '(1./(1+x/a))');
                         coeff = coeffvalues(f);
                         LifeTime = coeff(1);
-
+    
                         D = sqrt(C)./(4*LifeTime);
-                        eta(i,j) = (1.380649*10^-23*296.15)./(6*pi*20*10^(-9)*D*10^(-12))*10^3;
+                        eta(i,j) = (1.380649*10^-23*obj.info.Temperature)./(6*pi*obj.info.Radius*10^(-9)*D*10^(-12))*10^3;
+                        diff(i,j) = D;
                     end
+                    
+                    etaRes = imresize(eta, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
+                    diffRes = imresize(diff, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
+
+                    Fig1 = figure(); 
+                    imagesc(etaRes)
+                    colormap(BlackJet);          % <-- apply colormap here
+                    cb = colorbar;               % <-- no arguments here
+                    cb.Label.String = 'Viscosity (cP)';
+                    caxis([0 20])
+                    title('Viscosity map')
+                    Fig1Path = append(obj.raw.movInfo.Path, filesep, 'ViscosityMap_Plane', num2str(c), '.png');
+                    saveas(Fig1, Fig1Path);
+    
+                    Fig2 = figure();
+                    imagesc(diffRes)
+                    set(gca, 'ColorScale', 'log');
+                    colormap(BlackJet);          % <-- apply colormap here
+                    cb = colorbar; 
+                    cb.Label.String = 'Diffusion coefficient (µm^2/s)';
+                    title('Diffusion map')
+                    Fig2Path = append(obj.raw.movInfo.Path, filesep, 'DiffusionMap_Plane', num2str(c), '.png');
+                    saveas(Fig2, Fig2Path);
+
+                    Results.ViscMean = nanmean(etaRes, 'all');
+                    Results.ViscStd = nanstd(etaRes(:));
+                    Results.DiffMean = nanmean(diffRes, 'all');
+                    Results.DiffStd = nanstd(diffRes(:));
+    
+                    obj.ViscosityMap{c,1} = etaRes;
+                    obj.DiffusionMap{c,1} = diffRes;
+                    obj.Results{c,1} = Results;
+                    close all
                 end
+                close(hh)
+    
+                ViscMap = obj.ViscosityMap;
+                DiffMap = obj.DiffusionMap;
+                TICSResults = obj.Results;
+    
+                FilePathVisc = append(obj.raw.movInfo.Path, filesep, 'ViscosityMap.mat');
+                FilePathDiff = append(obj.raw.movInfo.Path, filesep, 'DiffusionMap.mat');
+                FilePathRes = append(obj.raw.movInfo.Path, filesep, 'TICSResults.mat');
+                save(FilePathVisc, "ViscMap");
+                save(FilePathDiff, "DiffMap");
+                save(FilePathRes, "TICSResults");
+            else
+                load(append(obj.raw.movInfo.Path, filesep, 'ViscosityMap.mat'));
+                load(append(obj.raw.movInfo.Path, filesep, 'DiffusionMap.mat'));
+                load(append(obj.raw.movInfo.Path, filesep, 'TICSResults.mat'));
+                obj.ViscosityMap = ViscMap;
+                obj.DiffusionMap = DiffMap;
+                obj.Results = TICSResults;
+                disp('Found Viscosity map - loaded that one')
+                disp('Found Diffusion map - loaded that one')
+                disp('Found TICS results - loaded that one')
             end
-            close(hh)
-            toc
         end
 
         function sacf = SACF(obj, Frame)
@@ -157,7 +287,7 @@ classdef MPTICSMovie < Core.MPMovie
             end
         end
 
-        function [omega] = fitSACF(obj, sacf, ToPlot)
+        function [omega] = fitSACF(obj, sacf)
             sacf(sacf < 0) = 0;
             r_map = sacf;
             [nx, ny] = size(sacf);
@@ -236,11 +366,11 @@ classdef MPTICSMovie < Core.MPMovie
             omega  = p_fit(2);
             Ginf   = p_fit(3);
             
-            if ToPlot == 1
+            if strcmp(obj.info.PlotSACFfit, 'on')
                 % -------------------------------------------------------------
                 % 7. Plot results
                 % -------------------------------------------------------------
-                figure; hold on;
+                Fig = figure; hold on;
                 plot(rho_fit, r_fit, 'ko', 'MarkerFaceColor','k','DisplayName','Radial Average');
                 rho_plot = linspace(0, max(rho_fit), 200);
                 plot(rho_plot, model_fun(p_fit, rho_plot), 'r-', 'LineWidth',2, ...
@@ -251,6 +381,8 @@ classdef MPTICSMovie < Core.MPMovie
                 legend();
                 title(sprintf('Fit Result:  \\omega_0 = %.3f pixels', omega));
                 grid on;
+
+                saveas(Fig, append(obj.raw.movInfo.Path, filesep, 'SacfPlot.png'))
             end
         end
     end

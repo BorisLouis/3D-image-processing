@@ -6,8 +6,7 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-
-file.path  = 'D:\Data Steven - GEMs\data paper\KM12C';
+file.path  = 'D:\Data Steven - GEMs\test';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
@@ -18,3 +17,4 @@ MultiModalExp = Core.MultiModalExperiment(file,path2Cal, info, info1, info2,path
 %% get Movies
 MultiModalExp.RetrieveMovies;
 MultiModalExp.RunAnalysis;
+disp('=== Analysis done ===')

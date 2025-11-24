@@ -337,9 +337,12 @@ function controls = addChannelControls(layout, type, controlsName)
 
        case 'TICS'
             controls.ExpTime = addLabelField(layout, 'Exp time (s):', '0.0305');
+            controls.Radius = addLabelField(layout, 'Particle Radius (nm):', '20');
+            controls.Temperature = addLabelField(layout, 'Temperature (K):', '296.15');
             controls.TICSWindow = addLabelField(layout, 'TICS window:', '3');
-            controls.UseSinglePrecision = addDropdown(layout, ...
-                'Use single precision', {'on','off'}, 'on');     
+            controls.PlotSACFfit = addDropdown(layout, ...
+                'Plot fit on SACF', {'on','off'}, 'off'); 
+            controls.SACFframes = addLabelField(layout, 'Frames to calc SACF:', '50');
     end
 
     %% --- Nested scanning callback ---
