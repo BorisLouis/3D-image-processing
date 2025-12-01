@@ -3,6 +3,9 @@ clear ;
 close all;
 
 <<<<<<< HEAD
+MainMainFolders = {'D:\Data Steven - GEMs\20250725_GEMScarlet_37kPa_48h_KM12\KM12SM'};
+=======
+<<<<<<< HEAD
 MainMainFolders = {'D:\DDM_TestData\PS_500nm_highconc'};
 =======
 <<<<<<< HEAD
@@ -11,6 +14,7 @@ MainMainFolders = {'D:\Polymer Dynamics\20251009\PAA_2x_AA', 'D:\Polymer Dynamic
 MainMainFolders = {'E:\Polymer Dynamics\20251009\PAA_2x_AA', 'E:\Polymer Dynamics\20251009\PAA_3x_AA'};
 >>>>>>> 133fe8e4af0e3ff3c4d41c493f3be6f4d016e670
 >>>>>>> 8523accb315caf610eafe58ed871c9e563a9ca48
+>>>>>>> db0cfca37ae0e23ff0cf171a44caeb95b904c125
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
@@ -121,9 +125,22 @@ for bigstart = 1:numel(MainMainFolders)
                         if isempty(DataCurrent)
                             currMov = [];
                         else
+<<<<<<< HEAD
+                            allHeight = cellfun(@height,DataCurrent(:,1));
+                            if numel(allHeight) == 1
+                                allHeight = cellfun(@height,DataCurrent(1,:));
+                            end
+                            idx = allHeight>MinSize;
+                            try
+                                currMov = dataMatrix{k,1}(idx, 1);
+                            catch
+                                currMov = dataMatrix{k,1}(1, idx);
+                            end
+=======
                             allHeight = cellfun(@height,DataCurrent(1,:));
                             idx = allHeight>MinSize;
                             currMov = dataMatrix{k,1}(1,idx);
+>>>>>>> db0cfca37ae0e23ff0cf171a44caeb95b904c125
                         end
     
                         if ~isempty(currMov)

@@ -8,7 +8,6 @@ classdef MPTICSMovie < Core.MPMovie
         AutocorrMap
         DiffusionMap
         ViscosityMap
-        Results
     end
     
     methods
@@ -188,12 +187,8 @@ classdef MPTICSMovie < Core.MPMovie
                         eta(i,j) = (1.380649*10^-23*obj.info.Temperature)./(6*pi*obj.info.Radius*10^(-9)*D*10^(-12))*10^3;
                         diff(i,j) = D;
                     end
-                    
-                    etaRes = imresize(eta, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
-                    diffRes = imresize(diff, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
-
                     Fig1 = figure(); 
-                    imagesc(etaRes)
+                    imagesc(eta)
                     colormap(BlackJet);          % <-- apply colormap here
                     cb = colorbar;               % <-- no arguments here
                     cb.Label.String = 'Viscosity (cP)';
@@ -203,7 +198,7 @@ classdef MPTICSMovie < Core.MPMovie
                     saveas(Fig1, Fig1Path);
     
                     Fig2 = figure();
-                    imagesc(diffRes)
+                    imagesc(diff)
                     set(gca, 'ColorScale', 'log');
                     colormap(BlackJet);          % <-- apply colormap here
                     cb = colorbar; 
@@ -211,6 +206,9 @@ classdef MPTICSMovie < Core.MPMovie
                     title('Diffusion map')
                     Fig2Path = append(obj.raw.movInfo.Path, filesep, 'DiffusionMap_Plane', num2str(c), '.png');
                     saveas(Fig2, Fig2Path);
+
+                    etaRes = imresize(eta, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
+                    diffRes = imresize(diff, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
 
                     Results.ViscMean = nanmean(etaRes, 'all');
                     Results.ViscStd = nanstd(etaRes(:));
@@ -241,9 +239,9 @@ classdef MPTICSMovie < Core.MPMovie
                 obj.ViscosityMap = ViscMap;
                 obj.DiffusionMap = DiffMap;
                 obj.Results = TICSResults;
+     
                 disp('Found Viscosity map - loaded that one')
                 disp('Found Diffusion map - loaded that one')
-                disp('Found TICS results - loaded that one')
             end
         end
 

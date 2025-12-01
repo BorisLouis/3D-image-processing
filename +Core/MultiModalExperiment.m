@@ -415,6 +415,8 @@ classdef MultiModalExperiment < handle
                                 nFrames1 = obj.MoviesCh1.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                             elseif strcmp(obj.info.Channel1, 'DDM')
                                 nFrames1 = obj.MoviesCh1.DDMMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                            elseif strcmp(obj.info.Channel1, 'TICS')
+                                nFrames1 = obj.MoviesCh1.TICSMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                             else
                                 nFrames1 = obj.MoviesCh1.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                             end
@@ -426,6 +428,8 @@ classdef MultiModalExperiment < handle
                                     nFrames2 = obj.MoviesCh2.PhaseMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                                 elseif strcmp(obj.info.Channel2, 'DDM')
                                     nFrames2 = obj.MoviesCh2.DDMMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
+                                elseif strcmp(obj.info.Channel2, 'TICS')
+                                    nFrames2 = obj.MoviesCh2.TICSMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                                 else
                                     nFrames2 = obj.MoviesCh2.trackMovies.(append('mov', num2str(((i-2)*2)-1))).raw.maxFrame;
                                 end

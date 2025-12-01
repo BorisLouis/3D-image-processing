@@ -18,20 +18,20 @@ state = struct();
 %% Column 1 – General Parameters
 col1 = uigridlayout(gl, [14, 2]);
 
-state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.ome.tif');
+state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.his');
 state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
-state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'load');
+state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
 state.calibrate = addDropdown(col1, 'calibrate', {'true', 'false'}, 'false');
 
 state.drawROI = addDropdown(col1, 'draw ROI:', {'off', 'channel1', 'channel2'}, 'off');
-state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
-state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'on');
+state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '2D');
+state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'off');
 
 channelTypes = {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase', 'DDM', 'TICS'};
-ch1Dropdown = addDropdown(col1, 'Channel 1:', channelTypes, 'Rotational Tracking');
+ch1Dropdown = addDropdown(col1, 'Channel 1:', channelTypes, 'TICS');
 ch2Dropdown = addDropdown(col1, 'Channel 2:', channelTypes, 'Rotational Tracking');
 
-state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
+state.PxSize = addLabelField(col1, 'PxSize (nm):', '81');
 state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
 state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
 state.TestFrame = addLabelField(col1, 'Test Frame:', '10');
@@ -337,9 +337,12 @@ function controls = addChannelControls(layout, type, controlsName)
 
        case 'TICS'
             controls.ExpTime = addLabelField(layout, 'Exp time (s):', '0.0305');
+            controls.Radius = addLabelField(layout, 'Particle Radius (nm):', '20');
+            controls.Temperature = addLabelField(layout, 'Temperature (K):', '296.15');
             controls.TICSWindow = addLabelField(layout, 'TICS window:', '3');
-            controls.UseSinglePrecision = addDropdown(layout, ...
-                'Use single precision', {'on','off'}, 'on');     
+            controls.PlotSACFfit = addDropdown(layout, ...
+                'Plot fit on SACF', {'on','off'}, 'off'); 
+            controls.SACFframes = addLabelField(layout, 'Frames to calc SACF:', '50');
     end
 
     %% --- Nested scanning callback ---
