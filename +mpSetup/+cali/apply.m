@@ -211,6 +211,8 @@ function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal,
             BackgroundCorr.Ch2 = bg2;
             BackgroundCorr.Ratio = CorrBgFactor;
         else 
+            data2 = [];
+            isTransmission2 = [];
         end
         data = {data1; data2};
         isTransmission = {isTransmission1; isTransmission2};

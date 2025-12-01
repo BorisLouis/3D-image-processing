@@ -912,6 +912,7 @@ classdef MPMovie < Core.Movie
                     save(fName,'calib');
     
                 else
+                    calib2 = [];
                 end
             
             calib = struct([]);
