@@ -49,20 +49,31 @@ classdef MPPhaseMovie < Core.MPMovie
                         waitbar(n./nFrames,f,append('Calculating phase map ', num2str(n),' out of ', num2str(nFrames)));
                         Stack = obj.getFrame(n, q);
                         [Stack, StartX, StartY] = QP_package.cropXY(Stack);
-                        PadValues = 134;
-                        for l = 1:size(Stack, 3)
-                            StackPadded(:,:,l) = padarray(Stack(:,:,l), [50 50], PadValues);
-                        end
-                        QPmap(:,:,:,i-Startidx) = QP_package.getQP(StackPadded,s);
+                        % PadValues = 134;
+                        % for l = 1:size(Stack, 3)
+                        %     StackPadded(:,:,l) = padarray(Stack(:,:,l), [50 50], PadValues);
+                        % end
+                        % QPmap(:,:,:,i-Startidx) = QP_package.getQP(StackPadded,s);
+                        QPmap(:,:,:,i-Startidx) = QP_package.getQP(Stack,s);
                         n = n+1;
                     end
-                    QPmap = QPmap(51:end-50, 51:end-50, :,:);
+                    % QPmap = QPmap(51:end-50, 51:end-50, :,:);
                     Filename = append(obj.raw.movInfo.Path, filesep, 'PhaseMovie', filesep, 'PhaseMovie', num2str(Step), '.mat');
                     save(Filename, 'QPmap');
                     QPmap = [];
                 end
                 close(f)
     
+                load(Filename);
+                MeanQP = mean(QPmap, 4);
+                Filename = append(obj.raw.movInfo.Path, filesep, 'MeanQP.mat');
+                save(Filename, 'MeanQP');
+                for i = 1:size(MeanQP,3)
+                    Fig = figure();
+                    imagesc(MeanQP(:,:,i));
+         
+                    saveas(Fig, append(obj.raw.movInfo.Path, filesep, 'MeanQP_plane', num2str(i), '.png'))
+                end
                 obj.Cropped.StartX = StartX;
                 obj.Cropped.StartY = StartY;
             else

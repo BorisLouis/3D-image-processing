@@ -18,24 +18,24 @@ state = struct();
 %% Column 1 – General Parameters
 col1 = uigridlayout(gl, [14, 2]);
 
-state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.his');
+state.Ext = addDropdown(col1, 'Ext:', {'.ome.tif', '.tif', '.his', '.mpg', '.spe', '.lif'}, '.ome.tif');
 state.Type = addDropdown(col1, 'Type:', {'normal', 'transmission'}, 'normal');
 state.RunMethod = addDropdown(col1, 'Run Method:', {'run', 'load'}, 'run');
 state.calibrate = addDropdown(col1, 'calibrate', {'true', 'false'}, 'false');
 
 state.drawROI = addDropdown(col1, 'draw ROI:', {'off', 'channel1', 'channel2'}, 'off');
-state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '2D');
+state.Dimension = addDropdown(col1, 'Dimension:', {'2D', '3D'}, '3D');
 state.multiModal = addDropdown(col1, 'multiModal:', {'on', 'off'}, 'off');
 
 channelTypes = {'Translational Tracking', 'Rotational Tracking', 'Segmentation', 'Phase', 'DDM', 'TICS'};
-ch1Dropdown = addDropdown(col1, 'Channel 1:', channelTypes, 'TICS');
+ch1Dropdown = addDropdown(col1, 'Channel 1:', channelTypes, 'Phase');
 ch2Dropdown = addDropdown(col1, 'Channel 2:', channelTypes, 'Rotational Tracking');
 
-state.PxSize = addLabelField(col1, 'PxSize (nm):', '81');
+state.PxSize = addLabelField(col1, 'PxSize (nm):', '95');
 state.FWHM = addLabelField(col1, 'FWHM (px):', '3');
 state.Frame2Load = addLabelField(col1, 'Frame2Load:', 'all');
 state.TestFrame = addLabelField(col1, 'Test Frame:', '10');
-state.Rotational = addDropdown(col1, 'Rotational:', {'on', 'off'}, 'on');
+state.Rotational = addDropdown(col1, 'Rotational:', {'on', 'off'}, 'off');
 state.Bipyramid = addLabelField(col1, 'Bipyramid (nm):', '[184 92]');
 state.RotationalCalib = addDropdown(col1, 'Rotational Calib:', {'on', 'off'}, 'off');
 state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
@@ -302,17 +302,17 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.diskDim = addLabelField(layout, 'Disk dim:', '2');
 
         case 'Phase'
-            controls.dz = addLabelField(layout, 'PxSize z (µm):', '0.56');
+            controls.dz = addLabelField(layout, 'PxSize z (µm):', '1.350');
             controls.NA = addLabelField(layout, 'NA detection:', '1.20');
-            controls.NA_ill = addLabelField(layout, 'NA illumination:', '0.26');
+            controls.NA_ill = addLabelField(layout, 'NA illumination:', '0');
             controls.n = addLabelField(layout, 'Refractive index:', '1.33');
-            controls.lambda = addLabelField(layout, 'Central wavelength:', '0.58');
-            controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.075');
+            controls.lambda = addLabelField(layout, 'Central wavelength:', '0.48');
+            controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.060');
             controls.alpha = addLabelField(layout, 'Alpha:', '3.15');
-            controls.kzT = addLabelField(layout, 'axial cutoff:', '0.01');
-            controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'false');
+            controls.kzT = addLabelField(layout, 'axial cutoff:', '0');
+            controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'true');
             controls.mirrorZ = addDropdown(layout, 'Mirror along z', {'true', 'false'}, 'true');
-            controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'true');
+            controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'false');
 
         case 'DDM'
             controls.ParticleSize = addLabelField(layout, 'Particle radius (nm):', '20');
