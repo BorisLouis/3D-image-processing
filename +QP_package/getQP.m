@@ -101,9 +101,9 @@ csd = csd(1:size(stack,1),1:size(stack,2),1:size(stack,3));
 Amplitude = abs(csd);
 QP = angle(csd + mean(stack(:))/s.optics.alpha);
 close all
-for i = 1:8
-figure()
-imagesc(QP(:,:,i))
-clim([-2 2])
-end
+% for i = 1:8
+% figure()
+% imagesc(QP(:,:,i))
+% clim([-2 2])
+% end
 end

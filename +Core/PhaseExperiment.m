@@ -85,6 +85,7 @@ classdef PhaseExperiment < handle
                     currentTrackMov = obj.PhaseMovies.(fieldsN{i});
     
                     currentTrackMov.getPhaseMovie(q);
+                    currentTrackMov.calibrateAlpha(q);
                 catch
                     disp(append('Failed phase masking - Movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end

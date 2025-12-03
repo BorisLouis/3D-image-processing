@@ -121,7 +121,7 @@ classdef MPPhaseMovie < Core.MPMovie
         function calibrateAlpha(obj, q)
             QPmap = obj.QPmap(:, 25:360,:,:);
             MeanQP = mean(QPmap, 4);
-            BigFig = figure()
+            BigFig = figure();
             PlaneInFocus = 1;
             for plane = 1:size(obj.QPmap, 3)
 
@@ -151,11 +151,21 @@ classdef MPPhaseMovie < Core.MPMovie
                     for pixel = 1:size(ParticlePixels, 1)
                         ParticleROI = Frame(round(ParticlePixels(pixel,1)-5:ParticlePixels(pixel,1)+5),...
                             round(ParticlePixels(pixel,2)-5:ParticlePixels(pixel,2)+5));
-                        ParticleROI = imgaussfilt(ParticleROI, 5);
+                        %ParticleROI = imgaussfilt(ParticleROI, 5);
                         Particle(frame, pixel) = min(ParticleROI, [], 'all'); 
                     end 
                     Bg = QPmap(:,:,plane, frame);
+                    Bg(blobMaskDilated == 1) = NaN;
+                    Background(frame, 1) = nanmedian(Bg, 'all');
                 end
+
+                figure()
+                for i = 1:61
+                    plot(Particle(:,i), 'g')
+                    hold on
+                end
+                plot(Background, 'r')
+                ylim([-1.6 1.6])
 
                 % subplot(2, size(QPmap,3)./2, plane)
                 for i = 1:size(Particle, 2)
