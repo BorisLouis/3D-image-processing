@@ -85,11 +85,13 @@ classdef PhaseExperiment < handle
                     currentTrackMov = obj.PhaseMovies.(fieldsN{i});
     
                     currentTrackMov.getPhaseMovie(q);
-                    currentTrackMov.calibrateAlpha(q);
+                    [MinPhasePart(:,i)] = currentTrackMov.calibrateAlpha(q);
                 catch
                     disp(append('Failed phase masking - Movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
+            save(append(obj.path, filesep, "CalcAlpha_alpha1_70.mat"), "MinPhasePart");
+            disp(append('saved min projection values to calc alpha - file ', obj.path))
         end
     end
 end
