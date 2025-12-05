@@ -371,6 +371,7 @@ classdef MultiModalExperiment < handle
                                 error('Did not specify channel to draw ROI on');
                             end 
         
+ 
                             f = figure;          
                             imagesc(double(Frame))
                             colormap("gray");

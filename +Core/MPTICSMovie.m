@@ -385,6 +385,8 @@ classdef MPTICSMovie < Core.MPMovie
                 saveas(Fig, append(obj.raw.movInfo.Path, filesep, 'SacfPlot.png'))
             end
         end
+
+        
     end
 end
 
