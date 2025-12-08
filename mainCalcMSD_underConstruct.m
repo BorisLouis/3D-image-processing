@@ -2,19 +2,7 @@ clc ;
 clear ;
 close all;
 
-<<<<<<< HEAD
 MainMainFolders = {'D:\Data Steven - GEMs\20250725_GEMScarlet_37kPa_48h_KM12\KM12SM'};
-=======
-<<<<<<< HEAD
-MainMainFolders = {'D:\DDM_TestData\PS_500nm_highconc'};
-=======
-<<<<<<< HEAD
-MainMainFolders = {'D:\Polymer Dynamics\20251009\PAA_2x_AA', 'D:\Polymer Dynamics\20251009\PAA_3x_AA'};
-=======
-MainMainFolders = {'E:\Polymer Dynamics\20251009\PAA_2x_AA', 'E:\Polymer Dynamics\20251009\PAA_3x_AA'};
->>>>>>> 133fe8e4af0e3ff3c4d41c493f3be6f4d016e670
->>>>>>> 8523accb315caf610eafe58ed871c9e563a9ca48
->>>>>>> db0cfca37ae0e23ff0cf171a44caeb95b904c125
 
 %% USER INPUT
 [FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
@@ -40,8 +28,7 @@ for bigstart = 1:numel(MainMainFolders)
             else
                 Loop = 1;
             end
-            for l = 1:Loop
-                if strcmp(Experiment, 'Dual color tracking')
+            for l = 1:Loop                if strcmp(Experiment, 'Dual color tracking')
                     if l == 1
                         Filename = append(FilenameRaw, '1');
                         Radius = Radius1;
@@ -60,24 +47,8 @@ for bigstart = 1:numel(MainMainFolders)
                 tmpData = load(f2Load);
                 name = fieldnames(tmpData);
                 data = tmpData.(name{1});
-                % 
-                % if strcmp(Path(end-4:end), 'n0_1')
-                %     Temp = 303.15;
-                % elseif strcmp(Path(end-4:end), 'n2_1')
-                %     Temp = 304.15;
-                % elseif strcmp(Path(end-4:end), 'n4_1')
-                %     Temp = 305.15;
-                % elseif strcmp(Path(end-4:end), 'n6_1')
-                %     Temp = 306.15;
-                % elseif strcmp(Path(end-4:end), 'n8_1')
-                %     Temp = 307.15;
-                % elseif strcmp(Path(end-4:end), '10_1')
-                %     Temp = 308.15;
-                % elseif strcmp(Path(end-4:end), '13_1')
-                %     Temp = 296.15;
-                % end
-    
-            %% Processing
+
+                %% Processing
                 if ~strcmp(Experiment, 'Rotational Tracking')
                     %%% cut up traces
                     if ~isnan(CutTraces)
@@ -125,7 +96,6 @@ for bigstart = 1:numel(MainMainFolders)
                         if isempty(DataCurrent)
                             currMov = [];
                         else
-<<<<<<< HEAD
                             allHeight = cellfun(@height,DataCurrent(:,1));
                             if numel(allHeight) == 1
                                 allHeight = cellfun(@height,DataCurrent(1,:));
@@ -136,11 +106,6 @@ for bigstart = 1:numel(MainMainFolders)
                             catch
                                 currMov = dataMatrix{k,1}(1, idx);
                             end
-=======
-                            allHeight = cellfun(@height,DataCurrent(1,:));
-                            idx = allHeight>MinSize;
-                            currMov = dataMatrix{k,1}(1,idx);
->>>>>>> db0cfca37ae0e23ff0cf171a44caeb95b904c125
                         end
     
                         if ~isempty(currMov)
@@ -505,57 +470,6 @@ for bigstart = 1:numel(MainMainFolders)
         end
     
         save(append(MainFolder(j).folder, filesep, MainFolder(j).name, filesep, 'msadResCuttedTraces.mat'), "TimeLoopResults");
-        fig = figure;
-        baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];
-        try
-            TimeStamp = str2num(erase(MainFolder(j).name(strfind(MainFolder(j).name, 'min') + 3 : strfind(MainFolder(j).name, 'min') + 4), '_'));
-        catch
-            TimeStamp = 0;
-        end
-        for i = 1:size(TimeLoopResults, 2)
-            try
-                TimeValid = (TimeLoopResults{i}.Time)./100 + TimeStamp;              % 1×N vector
-                DiffMean = TimeLoopResults{i}.DiffMean;      % 1×N vector
-                DiffStd = TimeLoopResults{i}.DiffStd;        % 1×N vector
-                DiffMeanValid = DiffMean;
-                DiffStdValid = DiffStd;
-                
-                % Choose a nice color (blueish in this example)
-                baseColor = baseColors(i, :);  % MATLAB default blue
-                lighterColor = baseColor + 0.5 * (1 - baseColor); % lighter for shading
-        
-                hold on;
-                
-                % --- Shaded error region ---
-                upper = DiffMeanValid + DiffStdValid;
-                lower = DiffMeanValid - DiffStdValid;
-                
-                fill([TimeValid; flipud(TimeValid)], ...
-                     [upper; flipud(lower)], ...
-                     [0.3010 0.7450 0.9330], ...  % light blue
-                     'EdgeColor', 'none', ...
-                     'FaceAlpha', 0.5);
-                hold on;
-                plot(TimeValid, DiffMeanValid, 'Color', [0 0.4470 0.7410], 'LineWidth', 2);
-                
-                % --- Mean diffusion line ---
-                plot(TimeValid, DiffMean, 'Color', baseColor, 'LineWidth', 2);
-                
-                % --- Axes labels and formatting ---
-                xlabel('Time (s)', 'FontSize', 12);
-                ylabel('Diffusion coefficient (µm^2/s)', 'FontSize', 12);
-                grid on;
-                box on;
-                axis tight;
-                set(gca, 'FontSize', 10);
-                
-                legend({'Standard deviation', 'Mean diffusion'}, 'Location', 'best');
-                title('Diffusion over Time');
-            catch
-            end
-        end
-        saveas(fig, append(MainFolder(j).folder, filesep, MainFolder(j).name, filesep, 'CuttedTracesDiff.png'));
-        saveas(fig, append(MainFolder(j).folder, filesep, MainFolder(j).name, filesep, 'CuttedTracesDiff.svg'));
     
         fig = figure;
         baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];

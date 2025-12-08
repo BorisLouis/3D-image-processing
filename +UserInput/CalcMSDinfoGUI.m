@@ -22,26 +22,21 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
 
     % FilePath
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'File Path:');
-    editFilePath = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', '');
+    editFilePath = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', 'S:\Dual Color\20250121_dualcolor\PS_200g_100r\20250122_PS_200_green_PS_100_red\sample2');
 
     % Experiment
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Experiment:');
     dropdownExperiment = uidropdown(fig, 'Position', [130 y 280 22], ...
         'Items', {'Tracking', 'Tracking-Segmentation', 'Tracking-Phase', 'Rotational Tracking', 'Dual color tracking'}, ...
-        'Value', 'Tracking-Segmentation');
+        'Value', 'Dual color tracking');
 
     % Filename
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Filename:');
-    dropdownFilename = uidropdown(fig, 'Position', [130 y 280 22], ...
-<<<<<<< HEAD
+    dropdownFilename = uidropdown(fig, 'Position', [130 y 280 22],...
         'Items', {'trackResults', 'trackResults1', 'trackResults2', 'TracesWMask', 'TraceswPhase', 'Traces3DCommon', 'traces3D_', 'traces3D_noSRCal', 'Traces3D'}, ...
-        'Value', 'Traces3D');
-=======
-        'Items', {'trackResults', 'trackResults1', 'trackResults2', 'TracesWMask', 'TraceswPhase', 'Traces3DCommon', 'traces3D_', 'Traces3D', 'traces3D_noSRCal'}, ...
-        'Value', 'traces3D_noSRCal');
->>>>>>> db0cfca37ae0e23ff0cf171a44caeb95b904c125
+        'Value', 'trackResults');
 
     % Dimension
     y = y - dy;
@@ -49,12 +44,12 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     dropdownDimension = uidropdown(fig, ...
         'Position', [130 y 280 22], ...
         'Items', {'2D', '3D'}, ...
-        'Value', '2D');
+        'Value', '3D');
 
     % ExpTime
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'ExpTime (s):');
-    editExpTime = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0.030);
+    editExpTime = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0.010);
 
     % Temp
     y = y - dy;
@@ -64,13 +59,13 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     % Radius (numeric default)
     y = y - dy;
     labelRadius = uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Radius (µm):');
-    editRadiusNumeric = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0.020);
+    editRadiusNumeric = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0.150);
     editRadiusArray   = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', '[184 92]', 'Visible', 'off');
 
     % Radius2 (for Dual color tracking, hidden initially)
     y = y - dy;
     labelRadius2 = uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Radius 2 (µm):', 'Visible', 'off');
-    editRadius2 = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0, 'Visible', 'off');
+    editRadius2 = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0.10, 'Visible', 'off');
 
     % DiffFit
     y = y - dy;
@@ -85,7 +80,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     % CutTraces
     y = y - dy;
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'CutTraces:');
-    editCutTraces = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 0);
+    editCutTraces = uieditfield(fig, 'numeric', 'Position', [130 y 280 22], 'Value', 50);
 
     % Extension
     y = y - dy;

@@ -1,0 +1,209 @@
+classdef TranslationalTracking < handle
+
+    properties
+        raw
+        info
+        Traces
+        Results
+    end
+    
+    methods
+        function obj = TranslationalTracking(Path, info)
+            obj.raw.Path = Path;
+            obj.info = info;
+        end
+
+        function LoadTraces(obj, Filename)
+            f2Load = [obj.raw.Path filesep Filename '.mat'];
+            tmpData = load(f2Load);
+            name = fieldnames(tmpData);
+            data = tmpData.(name{1});
+
+            if ~isnan(obj.info.CutTraces)
+                if isfield(data, 'traces')
+                    data = data.traces;
+                end
+
+                mSizes = cellfun(@(t) size(t,1), data(:,1));
+                mask = mSizes > obj.info.MinSize;
+                data = data(mask, :);
+
+                Length = obj.info.CutTraces;
+                f = waitbar(0, 'initializing');
+                for step = 1:max([data{end,1}.t])-Length
+                    waitbar(step./(max([data{end,1}.t])-Length), f, 'cutting traces')
+                    CurrTraceCell = {};
+                    for i = 1:size(data,1)
+                        CurrTrace = data{i,1};
+                        CurrTraceCutted = CurrTrace(ismember(CurrTrace.t, (step:(step+Length))), :);    
+                        if ~isempty(CurrTraceCutted)
+                            if size(CurrTraceCutted, 1) > obj.info.MinSize
+                                CurrTraceCell{end+1,1} = CurrTraceCutted;
+                            end
+                        end
+                    end
+                    dataMatrix{step, 1} = CurrTraceCell;
+                end
+                close(f)
+            else
+                try
+                    dataMatrix{1,1} = data.traces;
+                catch
+                    dataMatrix{1,1} = data;
+                end
+            end
+            obj.Traces = dataMatrix;
+        end
+
+        function Analysis(obj, Radius, Loop)
+            if exists(append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat' ...
+                    ))
+                load(append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat'));
+                save(filename, "Results");
+            else
+                nRows = size(obj.Traces, 1);
+    
+                Time     = nan(nRows, 1);
+                DiffMean = nan(nRows, 1);
+                DiffStd  = nan(nRows, 1);
+                ViscMean = nan(nRows, 1);
+                ViscStd  = nan(nRows, 1);
+                AnExpMean = nan(nRows, 1);
+                AnExpStd  = nan(nRows, 1);
+                DiffAll = cell(nRows, 1);
+                ViscAll = cell(nRows, 1);
+                AnExpAll = cell(nRows, 1);
+                TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
+    
+                f = waitbar(0, 'initializing');
+                %for k = 1:nRows
+                for k = 1:20
+                    currMov = obj.Traces{k, 1};
+    
+                    if ~isempty(currMov)
+                        allRes = struct('msdX',0,'msdY',0,'msdZ',0,'msdR',0,'tau',0,'DX',0,'DY',0,'DZ',0,'DR',0,...
+                            'nX',0,'nY',0,'nZ',0,'nR',0,'aX',0,'aY',0,'aZ',0,'aR',0,'vX',0,'vY',0,...
+                            'vZ',0,'vR',0);
+                        if strcmp(obj.info.Experiment, 'Tracking-Segmentation')
+                            allRes.Mask = 0;
+                        elseif strcmp(obj.info.Experiment, 'Tracking-Phase')
+                            allRes.Phase = 0;
+                        end
+                        allRes(length(currMov)).msdX = [];
+                        maxLength = max(cellfun(@height, currMov(:,1)));
+    
+                        for i = 1:length(currMov)
+                            waitbar(i./length(currMov), f, append('Microrheology analysis - part ', num2str(k), '/', num2str(size(obj.Traces, 1))));
+                            currPart = currMov{i};
+                        
+                            coordinates = [currPart.col, currPart.row, currPart.z];
+                            CM = mean(coordinates,1);
+                            coordinates = coordinates-CM;
+                        
+                            %in X
+                            coord = coordinates(:,1)/10^3;
+                            Dimension = '1D';
+                            [~, allRes(i).msdx, allRes(i).tau, allRes(i).DX, allRes(i).nX, allRes(i).aX, allRes(i).vX] = obj.TraceAnalysis(coord, Dimension, Radius);
+    
+                            %in Y
+                            coord = coordinates(:,2)/10^3;
+                            Dimension = '1D';
+                            [~, allRes(i).msdy, ~, allRes(i).DY, allRes(i).nY, allRes(i).aY, allRes(i).vY] = obj.TraceAnalysis(coord, Dimension, Radius);
+      
+                            %inZ
+                            if strcmp(obj.info.Dimension, '3D')
+                                coord = coordinates(:,3)/10^3;
+                                Dimension = '1D';
+                                [~, allRes(i).msdz, ~, allRes(i).DZ, allRes(i).nZ, allRes(i).aZ, allRes(i).vZ] = obj.TraceAnalysis(coord, Dimension, Radius);
+                            else
+                                allRes(i).msdz = [];
+                                allRes(i).DZ = NaN;
+                                allRes(i).nZ = NaN;
+                                allRes(i).aZ = NaN;
+                                allRes(i).vZ = NaN;
+                            end
+    
+                            %inR
+                            if strcmp(Dimension, '3D')
+                                coord = coordinates(:,1:3)/10^3;
+                                Dimension = '3D';
+                            elseif strcmp(Dimension, '2D')
+                                coord = coordinates(:,1:2)/10^3;
+                                Dimension = '2D';
+                            end          
+                            [~, allRes(i).msdr, ~, allRes(i).DR, allRes(i).nR, allRes(i).aR, allRes(i).vR] = obj.TraceAnalysis(coord, Dimension, Radius);
+    
+                            allRes(i).num  = length(allRes(i).msdr);
+                    
+                            if strcmp(obj.info.Experiment, 'Tracking-Segmentation')
+                                allRes(i).Mask = round(mean(currPart.InSegment));
+                            elseif strcmp(obj.info.Experiment, 'Tracking-Phase')
+                                try
+                                    allRes(i).Phase = nanmean(currPart.Phase);
+                                    allRes(i).IntPhaseCh = nanmean(currPart.IntPhaseCh);
+                                    allRes(i).GradientMagnitude = nanmean(currPart.GradientMagnitude);
+                                    allRes(i).LocalVariance = nanmean(currPart.LocalVariance);
+                                    allRes(i).SharpnessLaplacian = nanmean(currPart.SharpnessLaplacian);
+                                catch
+                                    allRes(i).Phase = NaN;
+                                    allRes(i).IntPhaseCh = NaN;
+                                    allRes(i).GradientMagnitude = NaN;
+                                    allRes(i).LocalVariance = NaN;
+                                    allRes(i).SharpnessLaplacian = NaN;
+                                end
+                            end
+                        end
+    
+                        disp(['The diffusion coefficient is ', num2str(mean([allRes.DR], 'omitnan')), ' \mum^2/s and the viscosity is ', num2str(mean([allRes.nR], 'omitnan')), ' cp']);
+    
+                        TimeResults.Time(k) = k;
+                        TimeResults.DiffMean(k) = mean([allRes.DR]); 
+                        TimeResults.DiffStd(k)  = std([allRes.DR]);
+                        TimeResults.ViscMean(k) = mean([allRes.nR]);
+                        TimeResults.ViscStd(k)  = std([allRes.nR]);
+                        TimeResults.AnExpMean(k) = mean([allRes.aR]);
+                        TimeResults.AnExpStd(k)  = std([allRes.aR]);
+                        TimeResults.DiffAll{k} = [allRes.DR];
+                        TimeResults.ViscAll{k} = [allRes.nR];
+                        TimeResults.AnExpAll{k} = [allRes.aR];  
+                    else
+                        %disp(append('No traces found that are longer than MinSize (', num2str(MinSize), ' datapoints)'))
+                        TimeResults.Time(k) = k;
+                    end
+    
+                    Results{k,1} = allRes;
+                    Results{k,2} = TimeResults;
+                end
+                obj.Results{Loop, 1} = Results;
+    
+                filename = append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat');
+                save(filename, "Results");
+            end
+        end
+
+        function PlotTrends(obj)
+            if loop == 1
+            elseif loop == 2
+            end
+        end
+
+        function [AvStep, msdx, tau, D, n, a, v] = TraceAnalysis(obj, coord, Dimension, Radius)
+            AvStep = MSD.getAvStepSize(coord); 
+            msdx = MSD.calc(coord);%convert to um;
+            tau = (1:length(msdx))'*obj.info.expTime;
+            D  = MSD.getDiffCoeff(msdx,tau,obj.info.DiffFit,Dimension);
+            n  = MSD.getViscosity(D,Radius,obj.info.Temp);
+            a  = MSD.getDiffTypeAlpha2(msdx,obj.info.expTime, AvStep);
+            if strcmp(Dimension, '1D')
+                v  = abs(coord(1,1) - coord(end,1)/10^3/(length(coord)*obj.info.expTime)); %um/s
+            elseif strcmp(Dimension, '3D')
+                d   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2 + (coord(1,3)-coord(end,3))^2);
+                v = d/(length(coord)*obj.info.expTime); %um/s
+            elseif strcmp(Dimension, '2D')
+                d   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
+                v = d/(length(coord)*obj.info.expTime); %um/s
+            end
+        end
+    end
+end
+
