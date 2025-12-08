@@ -186,8 +186,8 @@ classdef TranslationalTracking < handle
         end
 
         function PlotTrends(obj)
-            if loop == 1
-            elseif loop == 2
+            if size(obj.Results, 1)
+            elseif size(obj.Results, 2)
             end
         end
 
