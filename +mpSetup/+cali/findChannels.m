@@ -101,6 +101,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         % change points
         
         chP2 = findCp(s2,'bottom',1);
+        chP2(chP2 < 15) = 15;
         % windown size
         chYw(i) =  chP2(2) - chP2(1) + 1;
         chC(i,2) = chP2(1) + chYw(i)/2;

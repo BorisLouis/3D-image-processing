@@ -24,9 +24,9 @@ classdef TranslationalTracking < handle
                     data = data.traces;
                 end
 
-                mSizes = cellfun(@(t) size(t,1), data(:,1));
+                mSizes = cellfun(@(t) size(t,1), data(1,:));
                 mask = mSizes > obj.info.MinSize;
-                data = data(mask, :);
+                data = data(:,mask)';
 
                 Length = obj.info.CutTraces;
                 f = waitbar(0, 'initializing');
@@ -47,25 +47,46 @@ classdef TranslationalTracking < handle
                 close(f)
             else
                 try
-                    dataMatrix{1,1} = data.traces;
+                    Data = data.traces;
                 catch
-                    dataMatrix{1,1} = data;
+                    Data = data;
                 end
+                mSizes = cellfun(@(t) size(t,1), Data(1,:));
+                mask = mSizes > obj.info.MinSize;
+                Data = Data(:,mask)';
+                dataMatrix{1, 1} = Data;
             end
             obj.Traces = dataMatrix;
         end
 
         function Analysis(obj, Radius, Loop)
-            if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'))
-                Loaded = load(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'));
-                Results{1, 1} = Loaded.Results;
+            if Loop == 1
+                if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'))
+                    Loaded = load(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'));
+                    Results{1, 1} = Loaded.Results;
+                    run = 0;
+                else
+                    run = 1;
+                end
+            elseif Loop == 2
                 if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(2), '.mat'))
                     Loaded2 = load(append(obj.raw.Path, filesep, 'msdRes', num2str(2), '.mat'));
                     Results{2, 1} = Loaded2.Results;
+                    run = 0;
+                else
+                    run = 1;
                 end
+            end
+                
+
+            if run == 0 
                 obj.Results = Results;
-            else
+            elseif run == 1
                 nRows = size(obj.Traces, 1);
+
+                MinIdx = strfind(obj.raw.Path, 'min');
+                TimeStamp = obj.raw.Path(MinIdx+3:MinIdx+4);
+                TimeStamp = str2num(erase(TimeStamp, '_'));
     
                 Time     = nan(nRows, 1);
                 DiffMean = nan(nRows, 1);
@@ -80,7 +101,7 @@ classdef TranslationalTracking < handle
                 TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
     
                 f = waitbar(0, 'initializing');
-                %for k = 1:nRows
+                % for k = 1:nRows
                 for k = 1:20
                     currMov = obj.Traces{k, 1};
     
@@ -160,7 +181,7 @@ classdef TranslationalTracking < handle
     
                         disp(['The diffusion coefficient is ', num2str(mean([allRes.DR], 'omitnan')), ' \mum^2/s and the viscosity is ', num2str(mean([allRes.nR], 'omitnan')), ' cp']);
     
-                        TimeResults.Time(k) = k;
+                        TimeResults.Time(k) = TimeStamp + k*obj.info.expTime;
                         TimeResults.DiffMean(k) = mean([allRes.DR]); 
                         TimeResults.DiffStd(k)  = std([allRes.DR]);
                         TimeResults.ViscMean(k) = mean([allRes.nR]);
@@ -179,16 +200,82 @@ classdef TranslationalTracking < handle
                     Results{k,2} = TimeResults;
                 end
                 obj.Results{Loop, 1} = Results;
-    
                 filename = append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat');
                 save(filename, "Results");
             end
         end
 
         function PlotTrends(obj)
-            if size(obj.Results, 1)
-            elseif size(obj.Results, 2)
+            fig = figure;
+            baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];
+            for i = 1:size(obj.Results, 1)
+                try  
+                    Data = obj.Results{i,1}{end,2};
+                    Data(isnan([Data.Time]),:) = [];
+                    Time = Data.Time;
+                    DiffMean = Data.DiffMean;
+                    DiffStd = Data.DiffStd; 
+
+                    baseColor = baseColors(i, :);  % MATLAB default blue
+                    lighterColor = baseColor + 0.5 * (1 - baseColor); % lighter for shading
+
+                    upper = DiffMean + DiffStd;
+                    lower = DiffMean - DiffStd;
+
+                    hold on;
+                    fill([Time; flipud(Time)], ...
+                         [upper; flipud(lower)], ...
+                         lighterColor, ...
+                         'FaceAlpha', 0.8, 'EdgeColor', 'none');
+                    hold on
+                    plot(Time, DiffMean, 'Color', baseColor, 'LineWidth', 2);
+                catch
+                end
             end
+            xlabel('Time (s)', 'FontSize', 12);
+            ylabel('Diffusion (µm^2/s)', 'FontSize', 12);
+            grid on; box on; axis tight;
+            set(gca, 'FontSize', 10);
+            legend({'', append(num2str(obj.info.Radius1*100), ' nm'), '', append(num2str(obj.info.Radius2*100), ' nm')}, 'Location', 'best');
+            title('Diffusion over Time');
+            saveas(fig, append(obj.raw.Path, filesep, 'DiffusionTrend.png'));
+
+
+            fig = figure;
+            baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];
+            for i = 1:size(obj.Results, 1)
+                try  
+                    Data = obj.Results{i,1}{end,2};
+                    Data(isnan([Data.Time]),:) = [];
+                    Time = Data.Time;
+                    ViscMean = Data.ViscMean;
+                    ViscStd = Data.ViscStd; 
+
+                    baseColor = baseColors(i, :);  % MATLAB default blue
+                    lighterColor = baseColor + 0.5 * (1 - baseColor); % lighter for shading
+
+                    upper = ViscMean + ViscStd;
+                    lower = ViscMean - ViscStd;
+
+                    hold on;
+                    fill([Time; flipud(Time)], ...
+                         [upper; flipud(lower)], ...
+                         lighterColor, ...
+                         'FaceAlpha', 0.8, 'EdgeColor', 'none');
+                    hold on
+                    plot(Time, ViscMean, 'Color', baseColor, 'LineWidth', 2);
+                catch
+                end
+            end
+            xlabel('Time (s)', 'FontSize', 12);
+            ylabel('Viscosity (cP)', 'FontSize', 12);
+            grid on; box on; axis tight;
+            set(gca, 'FontSize', 10);
+            set(gca, 'YScale', 'log');
+            legend({'', append(num2str(obj.info.Radius1*1000), ' nm'), '', append(num2str(obj.info.Radius2*1000), ' nm')}, 'Location', 'best');
+            title('Viscosity over Time');
+            ylim([0 50]);
+            saveas(fig, append(obj.raw.Path, filesep, 'ViscosityTrend.png'));
         end
 
         function [AvStep, msdx, tau, D, n, a, v] = TraceAnalysis(obj, coord, Dimension, Radius)
@@ -207,6 +294,41 @@ classdef TranslationalTracking < handle
                 d   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2);
                 v = d/(length(coord)*obj.info.expTime); %um/s
             end
+        end
+
+        function PlotDistributions(obj, Loop)
+            m = size(obj.Results{Loop,1},1);
+            DR_all = cell(m,1);
+            allDR = []; 
+            for i = 1:m
+                DR = [obj.Results{Loop,1}{i,1}.DR];
+                DR_all{i} = DR(:);      % ensure column vector
+                allDR = [allDR, DR];
+            end
+            lowEdge  = prctile(allDR, 2);     % lower bound: 1st percentile
+            highEdge = prctile(allDR, 98);    % upper bound: 99th percentile
+
+            numBins = 50;                     % adjust as needed
+            edges = linspace(lowEdge, highEdge, numBins+1);
+            binCenters = edges(1:end-1) + diff(edges)/2;
+            H = zeros(m, numBins);
+
+            for t = 1:m
+                H(t,:) = histcounts(DR_all{t}, edges);
+            end
+
+            Fig = figure;
+            surf(binCenters, [1:m].*obj.info.expTime, H, 'EdgeColor', 'none');
+            view(2); % optional: use view(3) for perspective
+            
+            xlabel('Diffusion coefficient (µm^2/s)');
+            ylabel('Time (s)');
+            zlabel('Counts (abs)');
+            title(append('Diffusion coefficient over time - ', num2str(1000*obj.info.(append('Radius', num2str(Loop)))), ' nm'));
+            a=colorbar;
+            a.Label.String = 'Counts (abs)';
+
+            saveas(Fig, append(obj.raw.Path, filesep, 'DistributionPlot_Diffusion', num2str(Loop), '.png'));
         end
     end
 end

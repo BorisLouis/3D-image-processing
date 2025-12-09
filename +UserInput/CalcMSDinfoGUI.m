@@ -22,7 +22,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
 
     % FilePath
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'File Path:');
-    editFilePath = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', 'S:\Dual Color\20250121_dualcolor\PS_200g_100r\20250122_PS_200_green_PS_100_red\sample2');
+    editFilePath = uieditfield(fig, 'text', 'Position', [130 y 280 22], 'Value', 'F:\Polymer Dynamics\20251004\PAA_1x_bAA\time3');
 
     % Experiment
     y = y - dy;
@@ -36,7 +36,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     uilabel(fig, 'Position', [20 y 100 22], 'Text', 'Filename:');
     dropdownFilename = uidropdown(fig, 'Position', [130 y 280 22],...
         'Items', {'trackResults', 'trackResults1', 'trackResults2', 'TracesWMask', 'TraceswPhase', 'Traces3DCommon', 'traces3D_', 'traces3D_noSRCal', 'Traces3D'}, ...
-        'Value', 'trackResults');
+        'Value', 'traces3D_');
 
     % Dimension
     y = y - dy;
