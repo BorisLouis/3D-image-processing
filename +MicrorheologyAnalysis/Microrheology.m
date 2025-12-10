@@ -41,7 +41,8 @@ classdef Microrheology < handle
                  try
                      CurrentMovie = obj.Movies.(Movies{j});
                      if strcmp(obj.info.Experiment, "Rotational Tracking")
-                         
+                        CurrentMovie.LoadTraces(obj.info.FilenameRaw);
+                        CurrentMovie.Analysis;
                      elseif strcmp(obj.info.Experiment, "Dual color tracking")
                         for loop = 1:2
                             Radius = obj.info.(append("Radius", num2str(loop)));

@@ -141,6 +141,9 @@ classdef RotationalTracking < handle
             nR   = nanmean([allRes.nr]);
             disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
                 'the viscosity is ' num2str(nR) ' cp']);
+            %%
+            filenameAllRes = [folder(1).folder filesep 'msadRes.mat'];
+            save(filenameAllRes,'allRes');
         end
     end
 end
