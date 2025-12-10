@@ -34,7 +34,7 @@ classdef TranslationalTracking < handle
                 Length = obj.info.CutTraces;
                 f = waitbar(0, 'initializing');
                 for step = 1:max([data{end,1}.t])-Length
-                    waitbar(step./(max([data{end,1}.t])-Length), f, append('Cutting traces - Frame ', num2str(step), '/', num2str(max([data{end,1}.t])-Length)))
+                    waitbar(step./(max([data{end,1}.t])-Length), f, 'cutting traces')
                     CurrTraceCell = {};
                     for i = 1:size(data,1)
                         CurrTrace = data{i,1};
@@ -398,7 +398,7 @@ classdef TranslationalTracking < handle
 
             r_mean = mean(coords, 1);
             R = coords - r_mean;
-            G = (R' * R) / N;
+            G = (R' .* R) / N;
             Rg = sqrt(trace(G));
         end
 

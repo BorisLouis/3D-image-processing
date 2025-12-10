@@ -22,10 +22,18 @@ function D = getDiffCoeff(msd,tau,fitRange,dim)
     try
         tofit = msd(1:fitRange);
         tau   = tau(1:fitRange);
-        f     = fit(tau(:),tofit(:),'a*x');
-        
-        g = coeffvalues(f);
-        D = g(1)/div;
+        % f     = fit(tau(:),tofit(:),'a*x+b');
+        % g = coeffvalues(f);
+        % D = g(1)/div;
+
+        %% Faster to solve it analytically then with a linear fit
+        x = tau(:);
+        y = tofit(:);
+        xm = mean(x);
+        ym = mean(y);
+        a = sum((x - xm) .* (y - ym)) / sum((x - xm).^2);
+        b = ym - a * xm;
+        D = a/div;
     catch
         D = NaN;
     end

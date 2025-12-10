@@ -37,9 +37,16 @@ function [alpha] = detDiffTypeAlpha2(msd,expTime,stepsize)
     end
     if FitRange >= 4
         t = (1:FitRange)*expTime;
-        toFit = log(msd(1:FitRange));
-        fitPar = fit(log(t(:)),toFit(:),'a*x+b');
-        alpha = fitPar.a;
+        % toFit = log(msd(1:FitRange));
+        % fitPar = fit(log(t(:)),toFit(:),'a*x+b');
+        % alpha = fitPar.a;
+
+        %% faster to solve analytically then to do linear fit
+        x = log(t(:));
+        y = log(msd(1:FitRange));
+        xm = mean(x);
+        ym = mean(y);
+        alpha = sum((x - xm) .* (y - ym)) / sum((x - xm).^2);
     else
         alpha = NaN;
     end
