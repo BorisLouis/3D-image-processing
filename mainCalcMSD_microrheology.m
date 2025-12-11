@@ -2,11 +2,11 @@ clc ;
 clear ;
 close all;
 
-[raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel] = UserInput.CalcMSDinfoGUI;
+[raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel, info.StepsizeAnalysis] = UserInput.CalcMSDinfoGUI;
 
-MainFolder = 'F:\Polymer Dynamics';
-SubFolders = {'PAA_3x_bAA'}; %, 
-SubSubFolders = {'time12'}; %, , 'time6'
+MainFolder = 'S:\';
+SubFolders = {'Dual Color'}; %, 
+SubSubFolders = {'test'}; %, , 'time6'
 ExpTimes = [0.05, 0.01, 0.01];
 CutTraces = [50, NaN, NaN];
 
@@ -15,7 +15,7 @@ for i = 1:numel(SubFolders)
         raw.FilePath = append(MainFolder, filesep, SubFolders{i}, filesep, SubSubFolders{j});
         info.exptime = ExpTimes(j);
         info.CutTraces = CutTraces(j);
-        info.FilenameRaw = "traces3D_";
+        info.FilenameRaw = "trackResults";
 
         Microrheology = MicrorheologyAnalysis.Microrheology(raw, info);
         Microrheology.setMovies;
