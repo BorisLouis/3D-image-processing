@@ -6,8 +6,8 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'F:\Polymer Dynamics\PAA_2x_bAA\time12';
-path2Cal = 'F:\Polymer Dynamics\20251004\2DCal';
+file.path  = 'D:\Polymer Dynamics\PAA_1x_bAA\time12\test';
+path2Cal = 'D:\Polymer Dynamics\20251004\2DCal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

@@ -4,8 +4,8 @@ close all;
 
 [raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel, info.StepsizeAnalysis] = UserInput.CalcMSDinfoGUI;
 
-MainFolder = 'S:\';
-SubFolders = {'Dual Color'}; %, 
+MainFolder = 'D:\Polymer Dynamics\PAA_1x_bAA';
+SubFolders = {'time12'}; %, 
 SubSubFolders = {'test'}; %, , 'time6'
 ExpTimes = [0.05, 0.01, 0.01];
 CutTraces = [50, NaN, NaN];
@@ -15,7 +15,7 @@ for i = 1:numel(SubFolders)
         raw.FilePath = append(MainFolder, filesep, SubFolders{i}, filesep, SubSubFolders{j});
         info.exptime = ExpTimes(j);
         info.CutTraces = CutTraces(j);
-        info.FilenameRaw = "trackResults";
+        info.FilenameRaw = "traces3D_";
 
         Microrheology = MicrorheologyAnalysis.Microrheology(raw, info);
         Microrheology.setMovies;

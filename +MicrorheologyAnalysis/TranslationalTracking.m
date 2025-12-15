@@ -5,6 +5,7 @@ classdef TranslationalTracking < handle
         info
         Traces
         Results
+        ResultsStepsize
     end
     
     methods
@@ -503,6 +504,8 @@ classdef TranslationalTracking < handle
             cdf1 = @(r2, m1) 1 - exp(-r2./m1);
             cdf2 = @(r2, a, m1, m2) 1 - ( a .* exp(-r2./m1) + (1-a).*exp(-r2./m2) );
             cdf3 = @(r2, a1, a2, m1, m2, m3) 1 - ( a1.*exp(-r2./m1) + a2.*exp(-r2./m2) + (1-a1-a2).*exp(-r2./m3));
+            TableOfDiffusionCoeff = [];
+            TableOfFractions = [];
 
             for Frame = 1:size(obj.Results{Loop,1},1)
                 steps = obj.Results{Loop,1}{end,2}.AllStepSizes{Frame,1};
@@ -524,20 +527,32 @@ classdef TranslationalTracking < handle
                     m3_0 = 3*m1_0;
                 
                     % Fit one-component
-                    model1 = @(p,x) cdf1(x,p(1));
-                    p1{k} = nlinfit(r2_sorted, F_emp, model1, m1_0);
+                    try
+                        model1 = @(p,x) cdf1(x,p(1));
+                        p1{k} = nlinfit(r2_sorted, F_emp, model1, m1_0);
+                    catch
+                        p1{k} = [nan];
+                    end
                 
                     % % Fit two-component
-                    model2 = @(p,x) cdf2(x,p(1),p(2),p(3));
-                    p2{k} = nlinfit(r2_sorted, F_emp, model2, [0.5, m1_0, m2_0]);
-    
+                    try
+                        model2 = @(p,x) cdf2(x,p(1),p(2),p(3));
+                        p2{k} = nlinfit(r2_sorted, F_emp, model2, [0.5, m1_0, m2_0]);
+                    catch
+                        p2{k} = [nan nan];
+                    end
+        
                     % % Fit three-component
-                    model3 = @(p,x) cdf3(x,p(1),p(2),p(3), p(4), p(5));
-                    p3{k} = nlinfit(r2_sorted, F_emp, model3, [0.33, 0.33, m1_0, m2_0, m3_0]);
+                    try
+                        model3 = @(p,x) cdf3(x,p(1),p(2),p(3), p(4), p(5));
+                        p3{k} = nlinfit(r2_sorted, F_emp, model3, [0.33, 0.33, m1_0, m2_0, m3_0]);
+                    catch
+                        p3{k} = [nan nan nan];
+                    end
     
                     r2 = (steps(:,k)).^2;
                     if and(all(p3{k}(1:2) > 0.05),  all(p3{k}(1:2) < 1))
-                        bestModel{k} = 'three-component';
+                        bestModel{Frame, k} = 'three-component';
                         m(1) = p3{k}(3);
                         m(2) = p3{k}(4);
                         m(3) = p3{k}(5);
@@ -550,24 +565,67 @@ classdef TranslationalTracking < handle
                         pop{k,3} = r2(minIdx == 3); 
                         maxPops = 3;
                     elseif abs(min(p2{k}(2:3))./max(p2{k}(2:3))) < 0.90
-                        bestModel{k} = 'two-component';
-                        m1 = p2{k}(2);
-                        m2 = p2{k}(3);
+                        bestModel{Frame, k} = 'two-component';
+                        m(1) = p2{k}(2);
+                        m(2) = p2{k}(3);
                         a(1) = p2{k}(1);
                         a(2) = 1 - a(1);
-                        [~, minIdx] = min([abs(r2 - m1*k), abs(r2 - m2*k)],[],2);
+                        [~, minIdx] = min([abs(r2 - m(1)*k), abs(r2 - m(2)*k)],[],2);
                         pop{k,1} = r2(minIdx == 1);
                         pop{k,2} = r2(minIdx == 2);
                         maxPops = 2;
                     else
-                        bestModel{k} = 'one-component';
-                        m(1) = p1{k};
-                        a(1) = 1;
-                        pop{k,1} = r2;
-                        maxPops = 1;
+                        try
+                            bestModel{Frame, k} = 'one-component';
+                            m(1) = p1{k};
+                            a(1) = 1;
+                            pop{k,1} = r2;
+                            maxPops = 1;
+                        catch
+                            m = NaN;
+                            a = NaN;
+                            pop{k,1} = r2;
+                            maxPops = 1;
+                        end
                     end
                 end  
+
+                if strcmp(obj.info.Dimension, '1D')
+                    n = 1;
+                elseif strcmp(obj.info.Dimension, '2D')
+                    n = 2;
+                elseif strcmp(obj.info.Dimension, '3D')
+                    n = 3;
+                end
+                m = [m, nan(1, 3 - size(m, 2))];
+                % TableOfDiffusionCoeff = [TableOfDiffusionCoeff; m];
+                TableOfDiffusionCoeff = [TableOfDiffusionCoeff; (m)./(2*n*obj.info.expTime)];
+                a = [a, nan(1, 3 - size(a, 2))];
+                TableOfFractions = [TableOfFractions; a];
+                m = [];
+                a = [];
+                Time(Frame, 1) = Frame.*obj.info.expTime;
             end
+
+            Results.Diff = TableOfDiffusionCoeff;
+            Results.Fraction = TableOfFractions;
+            obj.ResultsStepsize = Results;
+
+            save(append(obj.raw.Path, filesep, 'ResultsStepsizeAnalysis_', num2str(Loop), '.mat'), "Results");
+
+            Fig = figure; hold on
+            colors = lines(3);  % 3 distinct color         
+            for k = 1:3
+                scatter(Time, TableOfDiffusionCoeff(:,k), 30, colors(k,:),'filled', ...
+                    'MarkerFaceAlpha','flat', 'AlphaData', TableOfFractions(:,k) );
+                LegendNames{1,k} = append('Population ', num2str(k));
+            end
+            
+            xlabel('Polymerization time (s)');
+            ylabel('Diffusion coefficient (µm^2/s)');
+            legend(LegendNames);
+            grid on
+            saveas(Fig, append(obj.raw.Path, filesep, 'DiffusionTrend_', num2str(Loop), '.png'));
         end
     end
 end

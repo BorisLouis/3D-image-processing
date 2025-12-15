@@ -284,7 +284,8 @@ classdef MPParticleMovie < Core.MPMovie
                     path = append(obj.raw.movInfo.Path, filesep, folder);
                     [run, particle] = obj.existParticles(path, '.mat');
 
-                    
+                    run = 1;
+
                     if run
                         %Check the number of function input
                         switch nargin
@@ -315,7 +316,7 @@ classdef MPParticleMovie < Core.MPMovie
                         
                         %Consolidation occurs here
                         for i = 1 :nFrames
-                            disp(['Consolidating frame ' num2str(i) ' / ' num2str(nFrames)]);
+                            %disp(['Consolidating frame ' num2str(i) ' / ' num2str(nFrames)]);
                             idx = frames(i);
                             %#1 Extract localized Position for specific frame
                             z = NaN;
@@ -695,7 +696,7 @@ classdef MPParticleMovie < Core.MPMovie
                         ParticleFull(3,:) = candMet(i,:);
                         candidateList{i,1} = ParticleFull;
                     end
-                else strcmp(obj.info.Dimension, '3D')
+                elseif strcmp(obj.info.Dimension, '3D')
                     while and(~isempty(focusMetric), ~isnan(nanmax(focusMetric)))
                         
                         if counter> maxIt
@@ -832,14 +833,11 @@ classdef MPParticleMovie < Core.MPMovie
             
             PossCand = find(isPart);
             if(length(find(isPart))>1)
-                if size(PossCand, 1) == 2
-                    D = sqrt((next.row(PossCand(1)) - next.row(PossCand(2))).^2 + (next.col(PossCand(1)) - next.col(PossCand(2))).^2);
-                    if D < consThresh
-                        isPart(PossCand(2)) = 0;
-                    else
-                        warning('Could not choose which particle was the partner of the requested particle, killed them both');
-                        isPart(isPart==1) = 0;
-                    end
+                if size(PossCand, 1) > 1
+                    % D = sqrt((next.row(PossCand(1)) - next.row(PossCand(2))).^2 + (next.col(PossCand(1)) - next.col(PossCand(2))).^2);
+                    [~, ToChose] = min(sqrt((current.row - next.row).^2 + (current.col - next.col).^2 + (current.z - next.z).^2));
+                    isPart = zeros(size(isPart));
+                    isPart(ToChose,1) = 1;
                 else
                     warning('Could not choose which particle was the partner of the requested particle, killed them both');
                     isPart(isPart==1) = 0;
