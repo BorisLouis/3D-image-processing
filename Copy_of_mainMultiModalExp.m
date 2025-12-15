@@ -2,20 +2,16 @@ clc
 clear 
 close all;
 %file info
-Paths = {'F:\Polymer Dynamics\PAA_1x_bAA', 'F:\Polymer Dynamics\PAA_2x_bAA',...
-        'F:\Polymer Dynamics\PAA_3x_bAA', 'F:\Polymer Dynamics\PAA_4x_bAA',...
-        'F:\Polymer Dynamics\PAA_2x_AA', 'F:\Polymer Dynamics\PAA_3x_AA'};
-Paths2DCal = {'F:\Polymer Dynamics\20251004\2DCal', 'F:\Polymer Dynamics\20251004\2DCal',...
-    'F:\Polymer Dynamics\20251008\2DCal', 'F:\Polymer Dynamics\20251008\2DCal',...
-    'F:\Polymer Dynamics\20251009\2DCal', 'F:\Polymer Dynamics\20251009\2DCal'};
-TimePaths = {'time3', 'time6', 'time12'};
+Paths = {'D:\Data Hannah\20251211\200 nm PS beads'};
+Paths2DCal = {''};
+TimePaths = {'200nm_PS_phase_filter_480_60'};
 file.path = Paths{1};
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 for j = 1:numel(Paths)
     for i = 1:numel(TimePaths)
         file.path  = append(Paths{j}, filesep, TimePaths{i});   
-        path2Cal = Paths2DCal{j};
+        path2Cal = 'D:\Data Hannah\20251211\2D Cal';
         path2ZCal = [];
         path2SRCal = [];
     

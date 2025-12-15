@@ -120,13 +120,9 @@ classdef MPPhaseMovie < Core.MPMovie
 
         function [MeanPhasePart] = calibrateAlpha(obj, q)
             QPmap = obj.QPmap(:, 25:360,:,:);
-<<<<<<< HEAD
             MeanQP = mean(QPmap, 4);
             BigFig = figure();
             PlaneInFocus = 1;
-=======
-            close all
->>>>>>> ff593990d91bb5f62c2cc6749de627b10fcb99db
             for plane = 1:size(obj.QPmap, 3)
                 try
                     PlaneImage = squeeze(QPmap(:,:,plane, :));
@@ -145,7 +141,7 @@ classdef MPPhaseMovie < Core.MPMovie
                     [N, edges] = histcounts(x(:));
                     [~, Idx] = min(abs(edges - threshold));
                     SecondDeriv = diff(smooth(smooth(N(1:Idx-1))));
-                    figure()
+                    figure();
                     subplot(1,2,1)
                     fitty = fit(edges(1:Idx-2)', SecondDeriv, 'gauss1');
                     plot(fitty, edges(1:Idx-2)', SecondDeriv)
@@ -169,7 +165,7 @@ classdef MPPhaseMovie < Core.MPMovie
                     MeanPhasePart(plane,1) = NaN;
                 end
                 %%% find particle centers
-<<<<<<< HEAD
+
                 MeanImage = MeanQP(:,:,plane);
                 [ParticlePixels, radii, metric] = imfindcircles(-imgaussfilt(MeanImage, 5), [5 10], 'Sensitivity', 0.93);
                 fig = figure;
@@ -178,6 +174,7 @@ classdef MPPhaseMovie < Core.MPMovie
                 plot(ParticlePixels(:,1), ParticlePixels(:,2), 'r.', 'MarkerSize', 20);   % red dots on centers
                 viscircles(ParticlePixels, radii, 'EdgeColor', 'b');               % optional: draw circles
                 ParticlePixels(sum(or(ParticlePixels-5 < 1, ParticlePixels+5 > min(size(MeanImage))),2) == 1, :) = [];
+                saveas(fig, append(obj.raw.movInfo.Path, filesep, 'PhaseIm_minProjection_plane', num2str(plane), '.png'));
 
                 %%% find background pixels
                 I_filt = imgaussfilt(MeanImage, 10);
@@ -203,8 +200,8 @@ classdef MPPhaseMovie < Core.MPMovie
                     Background(frame, 1) = nanmedian(Bg, 'all');
                 end
 
-                figure()
-                for i = 1:61
+                Fig2 = figure();
+                for i = 1:size(Particle,2)
                     plot(Particle(:,i), 'g')
                     hold on
                 end
@@ -214,9 +211,9 @@ classdef MPPhaseMovie < Core.MPMovie
                 % subplot(2, size(QPmap,3)./2, plane)
                 for i = 1:size(Particle, 2)
                     try
-                        h1 =  plot(Particle(:,i), 'g')
+                        h1 =  plot(Particle(:,i), 'g');
                         hold on
-                        h2 = plot(Background(:,i), 'r')
+                        h2 = plot(Background(:,i), 'r');
                         hold on
                         if i == 1
                             firstGreen = h1;
@@ -229,7 +226,7 @@ classdef MPPhaseMovie < Core.MPMovie
 
                 Particle = [];
                 Background = [];
-=======
+                saveas(Fig2, append(obj.raw.movInfo.Path, filesep, 'ParticlePhase_minProjection_plane', num2str(plane), '.png'));
                 % MeanImage = MeanQP(:,:,plane);
                 % [ParticlePixels, radii, metric] = imfindcircles(-imgaussfilt(MeanImage, 5), [5 10], 'Sensitivity', 0.93);
                 % fig = figure;
@@ -279,7 +276,6 @@ classdef MPPhaseMovie < Core.MPMovie
                 % 
                 % Particle = [];
                 % Background = [];
->>>>>>> ff593990d91bb5f62c2cc6749de627b10fcb99db
             end
         end
     end

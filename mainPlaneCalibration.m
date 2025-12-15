@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'F:\Polymer Dynamics\20251004\2DCal';
+file.path  = 'D:\Data Hannah\20251211\2D Cal';
 file.ext   = '.ome.tif';
 info.runMethod = 'load';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
