@@ -4,9 +4,9 @@ clc
 close all;
 %% get path to SRCalibration
 
-file.path = 'S:\Dual Color\20251015_localisation_error\2DCal';
+file.path = 'D:\Polymer Dynamics\20251004\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'S:\Dual Color\20251015_localisation_error\2DCal';
+path2Cal  = 'D:\Polymer Dynamics\20251004\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';

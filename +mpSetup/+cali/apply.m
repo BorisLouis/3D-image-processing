@@ -1,4 +1,4 @@
-function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam2, cam1, cal, info, ROI)
+function [data,isTransmission, ROInew, BackgroundCorr] = apply( cam1, cam2, cal, info, ROI)
 %APPLY rearranges data and corrects for intensity diffecences
 %between channels
 %   Detailed explanation goes here
