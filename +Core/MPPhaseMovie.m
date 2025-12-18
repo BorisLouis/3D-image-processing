@@ -120,7 +120,7 @@ classdef MPPhaseMovie < Core.MPMovie
 
         function [MeanPhasePart] = calibrateAlpha(obj, q)
             QPmap = obj.QPmap(:, 25:360,:,:);
-            MeanQP = mean(QPmap, 4);
+            MeanQP = min(QPmap, 4);
             BigFig = figure();
             PlaneInFocus = 1;
             for plane = 1:size(obj.QPmap, 3)
@@ -175,7 +175,7 @@ classdef MPPhaseMovie < Core.MPMovie
                 viscircles(ParticlePixels, radii, 'EdgeColor', 'b');               % optional: draw circles
                 ParticlePixels(sum(or(ParticlePixels-5 < 1, ParticlePixels+5 > min(size(MeanImage))),2) == 1, :) = [];
                 saveas(fig, append(obj.raw.movInfo.Path, filesep, 'PhaseIm_minProjection_plane', num2str(plane), '.png'));
-
+                save(append(obj.raw.movInfo.Path, filesep, 'PhaseIm_minProjection_plane', num2str(plane), '.mat'), "MeanImage");
                 %%% find background pixels
                 I_filt = imgaussfilt(MeanImage, 10);
                 blobMaskmin = imregionalmin(I_filt,4);

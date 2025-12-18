@@ -90,8 +90,8 @@ classdef PhaseExperiment < handle
                     disp(append('Failed phase masking - Movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
-            save(append(obj.path, filesep, "CalcAlpha_alpha1_70.mat"), "MinPhasePart");
-            disp(append('saved min projection values to calc alpha - file ', obj.path))
+            % save(append(obj.path, filesep, "CalcAlpha_alpha1_70.mat"), "MinPhasePart");
+            % disp(append('saved min projection values to calc alpha - file ', obj.path))
         end
     end
 end
