@@ -120,7 +120,7 @@ classdef MPPhaseMovie < Core.MPMovie
 
         function [MeanPhasePart] = calibrateAlpha(obj, q)
             QPmap = obj.QPmap(:, 25:360,:,:);
-            MeanQP = min(QPmap, 4);
+            MeanQP = min(QPmap,[], 4);
             BigFig = figure();
             PlaneInFocus = 1;
             for plane = 1:size(obj.QPmap, 3)

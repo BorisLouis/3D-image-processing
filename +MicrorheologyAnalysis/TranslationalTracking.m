@@ -64,25 +64,25 @@ classdef TranslationalTracking < handle
         end
 
         function Analysis(obj, Radius, Loop)
-            if Loop == 1
-                if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'))
-                    Loaded = load(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'));
-                    Results{1, 1} = Loaded.Results;
-                    run = 0;
-                else
-                    run = 1;
-                end
-            elseif Loop == 2
-                if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(2), '.mat'))
-                    Loaded2 = load(append(obj.raw.Path, filesep, 'msdRes', num2str(2), '.mat'));
-                    Results{2, 1} = Loaded2.Results;
-                    run = 0;
-                else
-                    run = 1;
-                end
-            end
+            % if Loop == 1
+            %     if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'))
+            %         Loaded = load(append(obj.raw.Path, filesep, 'msdRes', num2str(1), '.mat'));
+            %         Results{1, 1} = Loaded.Results;
+            %         run = 0;
+            %     else
+            %         run = 1;
+            %     end
+            % elseif Loop == 2
+            %     if exist(append(obj.raw.Path, filesep, 'msdRes', num2str(2), '.mat'))
+            %         Loaded2 = load(append(obj.raw.Path, filesep, 'msdRes', num2str(2), '.mat'));
+            %         Results{2, 1} = Loaded2.Results;
+            %         run = 0;
+            %     else
+            %         run = 1;
+            %     end
+            % end
                 
-
+            run = 1;
             if run == 0 
                 obj.Results = Results;
             elseif run == 1
@@ -109,8 +109,8 @@ classdef TranslationalTracking < handle
                 TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
     
                 f = waitbar(0, 'initializing');
-                % for k = 1:nRows
-                for k = 1:20
+                for k = 1:nRows
+                %for k = 1:20
                     currMov = obj.Traces{k, 1};
                     AllStepSizes = [];
                     if ~isempty(currMov)
@@ -247,11 +247,15 @@ classdef TranslationalTracking < handle
                     end
     
                     Results{k,1} = allRes;
-                    Results{k,2} = TimeResults;
+                    %Results{k,2} = TimeResults;
                 end
                 obj.Results{Loop, 1} = Results;
                 filename = append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat');
                 save(filename, "Results");
+                Results{end,2} = TimeResults;
+                obj.Results{Loop, 1} = Results;
+                filename = append(obj.raw.Path, filesep, 'msd_TimeResults', num2str(Loop), '.mat');
+                save(filename, "TimeResults");
             end
         end
 
@@ -362,7 +366,7 @@ classdef TranslationalTracking < handle
                 end
             end
             lowEdge  = prctile(allDR, 2);     % lower bound: 1st percentile
-            highEdge = prctile(allDR, 90);    % upper bound: 99th percentile
+            highEdge = prctile(allDR, 75);    % upper bound: 99th percentile
 
             numBins = 50;                     % adjust as needed
             edges = linspace(lowEdge, highEdge, numBins+1);

@@ -82,7 +82,7 @@ classdef TranslationalTracking < handle
                 end
             end
                 
-
+            run = 1;
             if run == 0 
                 obj.Results = Results;
             elseif run == 1
@@ -110,6 +110,7 @@ classdef TranslationalTracking < handle
     
                 f = waitbar(0, 'initializing');
                 for k = 1:nRows
+                %for k = 1:20
                     currMov = obj.Traces{k, 1};
                     AllStepSizes = [];
                     if ~isempty(currMov)
@@ -248,14 +249,9 @@ classdef TranslationalTracking < handle
                     Results{k,1} = allRes;
                     Results{k,2} = TimeResults;
                 end
-                TableEnd = Results{end, 2};
-                Results(:,2) = [];
-                Results{1,2} = TableEnd;
                 obj.Results{Loop, 1} = Results;
                 filename = append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat');
                 save(filename, "Results");
-                filename = append(obj.raw.Path, filesep, 'msdRes', num2str(Loop), '.mat');
-                save(filename, "Results", "-v7.3");
             end
         end
 
