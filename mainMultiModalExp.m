@@ -6,7 +6,7 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'D:\Data Steven - GEMs\test_laser_fluctuations\data2';
+file.path  = 'C:\Users\steve\OneDrive\Documenten\data multicolor\testdata Hannah\500 nm';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

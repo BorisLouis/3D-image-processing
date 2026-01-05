@@ -109,8 +109,8 @@ classdef TranslationalTracking < handle
                 TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
     
                 f = waitbar(0, 'initializing');
-                for k = 1:nRows
-                %for k = 1:20
+                %for k = 1:nRows
+                for k = 1:20
                     currMov = obj.Traces{k, 1};
                     AllStepSizes = [];
                     if ~isempty(currMov)
@@ -143,30 +143,30 @@ classdef TranslationalTracking < handle
                             %in X
                             coord = coordinates(:,1)/10^3;
                             Dimension = '1D';
-                            [~, allRes(i).msdx, allRes(i).tau, allRes(i).DX, allRes(i).nX, allRes(i).aX, allRes(i).vX] = obj.TraceAnalysis(coord, Dimension, Radius);
+                            % [~, allRes(i).msdx, allRes(i).tau, allRes(i).DX, allRes(i).nX, allRes(i).aX, allRes(i).vX] = obj.TraceAnalysis(coord, Dimension, Radius);
                             [allRes(i).StepSizes_x] = obj.GetStepSizes(coord);
-                            [allRes(i).Gcomplex_x, allRes(i).Gstorage_x, allRes(i).Gloss_x] = obj.PassiveMicrorheology(allRes(i).msdx, allRes(i).tau, Radius, 0.5);
-                            [allRes(i).RoGTensor_x, allRes(i).RoG_x] = obj.GyrationTensor(coord);
-                            [allRes(i).Lp_x, allRes(i).EndToEnd_x] = obj.PersistenceLength(coord);
-    
+                            % [allRes(i).Gcomplex_x, allRes(i).Gstorage_x, allRes(i).Gloss_x] = obj.PassiveMicrorheology(allRes(i).msdx, allRes(i).tau, Radius, 0.5);
+                            % [allRes(i).RoGTensor_x, allRes(i).RoG_x] = obj.GyrationTensor(coord);
+                            % [allRes(i).Lp_x, allRes(i).EndToEnd_x] = obj.PersistenceLength(coord);
+                            % 
                             %in Y
                             coord = coordinates(:,2)/10^3;
                             Dimension = '1D';
-                            [~, allRes(i).msdy, ~, allRes(i).DY, allRes(i).nY, allRes(i).aY, allRes(i).vY] = obj.TraceAnalysis(coord, Dimension, Radius);
+                            % [~, allRes(i).msdy, ~, allRes(i).DY, allRes(i).nY, allRes(i).aY, allRes(i).vY] = obj.TraceAnalysis(coord, Dimension, Radius);
                             [allRes(i).StepSizes_y] = obj.GetStepSizes(coord);
-                            [allRes(i).Gcomplex_y, allRes(i).Gstorage_y, allRes(i).Gloss_y] = obj.PassiveMicrorheology(allRes(i).msdy, allRes(i).tau, Radius, 0.5);
-                            [allRes(i).RoGTensor_y, allRes(i).RoG_y] = obj.GyrationTensor(coord);
-                            [allRes(i).Lp_y, allRes(i).EndToEnd_y] = obj.PersistenceLength(coord);
+                            % [allRes(i).Gcomplex_y, allRes(i).Gstorage_y, allRes(i).Gloss_y] = obj.PassiveMicrorheology(allRes(i).msdy, allRes(i).tau, Radius, 0.5);
+                            % [allRes(i).RoGTensor_y, allRes(i).RoG_y] = obj.GyrationTensor(coord);
+                            % [allRes(i).Lp_y, allRes(i).EndToEnd_y] = obj.PersistenceLength(coord);
 
                             %inZ
                             if strcmp(obj.info.Dimension, '3D')
                                 coord = coordinates(:,3)/10^3;
                                 Dimension = '1D';
-                                [~, allRes(i).msdz, ~, allRes(i).DZ, allRes(i).nZ, allRes(i).aZ, allRes(i).vZ] = obj.TraceAnalysis(coord, Dimension, Radius);
+                                % [~, allRes(i).msdz, ~, allRes(i).DZ, allRes(i).nZ, allRes(i).aZ, allRes(i).vZ] = obj.TraceAnalysis(coord, Dimension, Radius);
                                 [allRes(i).StepSizes_z] = obj.GetStepSizes(coord);
-                                [allRes(i).Gcomplex_z, allRes(i).Gstorage_z, allRes(i).Gloss_z] = obj.PassiveMicrorheology(allRes(i).msdz, allRes(i).tau, Radius, 0.5);
-                                [allRes(i).RoGTensor_z, allRes(i).RoG_z] = obj.GyrationTensor(coord);
-                                [allRes(i).Lp_z, allRes(i).EndToEnd_z] = obj.PersistenceLength(coord);
+                                % [allRes(i).Gcomplex_z, allRes(i).Gstorage_z, allRes(i).Gloss_z] = obj.PassiveMicrorheology(allRes(i).msdz, allRes(i).tau, Radius, 0.5);
+                                % [allRes(i).RoGTensor_z, allRes(i).RoG_z] = obj.GyrationTensor(coord);
+                                % [allRes(i).Lp_z, allRes(i).EndToEnd_z] = obj.PersistenceLength(coord);
                             else
                                 allRes(i).msdz = [];
                                 allRes(i).DZ = NaN;
@@ -190,31 +190,31 @@ classdef TranslationalTracking < handle
                                 coord = coordinates(:,1:2)/10^3;
                                 Dimension = '2D';
                             end          
-                            [~, allRes(i).msdr, ~, allRes(i).DR, allRes(i).nR, allRes(i).aR, allRes(i).vR] = obj.TraceAnalysis(coord, Dimension, Radius);
+                            % [~, allRes(i).msdr, ~, allRes(i).DR, allRes(i).nR, allRes(i).aR, allRes(i).vR] = obj.TraceAnalysis(coord, Dimension, Radius);
                             [allRes(i).StepSizes_r] = obj.GetStepSizes(coord);
-                            [allRes(i).Gcomplex_r, allRes(i).Gstorage_r, allRes(i).Gloss_r] = obj.PassiveMicrorheology(allRes(i).msdr, allRes(i).tau, Radius, 0.5);
-                            [allRes(i).RoGTensor_r, allRes(i).RoG_r] = obj.GyrationTensor(coord);
-                            [allRes(i).Lp_r, allRes(i).EndToEnd_r] = obj.PersistenceLength(coord);
+                            % [allRes(i).Gcomplex_r, allRes(i).Gstorage_r, allRes(i).Gloss_r] = obj.PassiveMicrorheology(allRes(i).msdr, allRes(i).tau, Radius, 0.5);
+                            % [allRes(i).RoGTensor_r, allRes(i).RoG_r] = obj.GyrationTensor(coord);
+                            % [allRes(i).Lp_r, allRes(i).EndToEnd_r] = obj.PersistenceLength(coord);
     
                             allRes(i).num  = length(allRes(i).msdr);
                     
-                            if strcmp(obj.info.Experiment, 'Tracking-Segmentation')
-                                allRes(i).Mask = round(mean(currPart.InSegment));
-                            elseif strcmp(obj.info.Experiment, 'Tracking-Phase')
-                                try
-                                    allRes(i).Phase = nanmean(currPart.Phase);
-                                    allRes(i).IntPhaseCh = nanmean(currPart.IntPhaseCh);
-                                    allRes(i).GradientMagnitude = nanmean(currPart.GradientMagnitude);
-                                    allRes(i).LocalVariance = nanmean(currPart.LocalVariance);
-                                    allRes(i).SharpnessLaplacian = nanmean(currPart.SharpnessLaplacian);
-                                catch
-                                    allRes(i).Phase = NaN;
-                                    allRes(i).IntPhaseCh = NaN;
-                                    allRes(i).GradientMagnitude = NaN;
-                                    allRes(i).LocalVariance = NaN;
-                                    allRes(i).SharpnessLaplacian = NaN;
-                                end
-                            end
+                            % if strcmp(obj.info.Experiment, 'Tracking-Segmentation')
+                            %     allRes(i).Mask = round(mean(currPart.InSegment));
+                            % elseif strcmp(obj.info.Experiment, 'Tracking-Phase')
+                            %     try
+                            %         allRes(i).Phase = nanmean(currPart.Phase);
+                            %         allRes(i).IntPhaseCh = nanmean(currPart.IntPhaseCh);
+                            %         allRes(i).GradientMagnitude = nanmean(currPart.GradientMagnitude);
+                            %         allRes(i).LocalVariance = nanmean(currPart.LocalVariance);
+                            %         allRes(i).SharpnessLaplacian = nanmean(currPart.SharpnessLaplacian);
+                            %     catch
+                            %         allRes(i).Phase = NaN;
+                            %         allRes(i).IntPhaseCh = NaN;
+                            %         allRes(i).GradientMagnitude = NaN;
+                            %         allRes(i).LocalVariance = NaN;
+                            %         allRes(i).SharpnessLaplacian = NaN;
+                            %     end
+                            % end
                             if all(size(AllStepSizes) == [0 0])
                                 AllStepSizes = [AllStepSizes; allRes(i).StepSizes_r];
                             elseif size(AllStepSizes, 2) > size(allRes(i).StepSizes_r, 2)
@@ -365,8 +365,8 @@ classdef TranslationalTracking < handle
                     allDR = [allDR, DR];
                 end
             end
-            lowEdge  = prctile(allDR, 2);     % lower bound: 1st percentile
-            highEdge = prctile(allDR, 75);    % upper bound: 99th percentile
+            lowEdge  = 0;     % lower bound: 1st percentile
+            highEdge = 10;    % upper bound: 99th percentile
 
             numBins = 50;                     % adjust as needed
             edges = linspace(lowEdge, highEdge, numBins+1);
@@ -627,6 +627,7 @@ classdef TranslationalTracking < handle
             
             xlabel('Polymerization time (s)');
             ylabel('Diffusion coefficient (µm^2/s)');
+            ylim([0 5])
             legend(LegendNames);
             grid on
             saveas(Fig, append(obj.raw.Path, filesep, 'DiffusionTrend_', num2str(Loop), '.png'));

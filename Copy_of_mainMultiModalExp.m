@@ -2,8 +2,8 @@ clc
 clear 
 close all;
 %file info
-Paths = {'F:\Data Hannah\202512117\Brightfield', 'F:\Data Hannah\202512117\Darkfield'};
-Paths2DCal = {''};
+Paths = {'D:\Data Hannah\202512117\Brightfield', 'D:\Data Hannah\202512117\Darkfield'};
+Paths2DCal = {'D:\Data Hannah\202512117\2D-cal', 'D:\Data Hannah\202512117\2D-cal'};
 TimePaths = {'500nmPS', '1000nmPS', '2000nmPS'};
 file.path = Paths{1};
 
@@ -11,7 +11,7 @@ file.path = Paths{1};
 for j = 1:numel(Paths)
     for i = 1:numel(TimePaths)
         file.path  = append(Paths{j}, filesep, TimePaths{i});   
-        path2Cal = 'F:\Data Hannah\202512117\2D-cal';
+        path2Cal = 'D:\Data Hannah\202512117\2D-cal';
         path2ZCal = [];
         path2SRCal = [];
     
