@@ -48,12 +48,16 @@ classdef Microrheology < handle
                             Radius = obj.info.(append("Radius", num2str(loop)));
                             FileName = append(obj.info.FilenameRaw, num2str(loop));
                             CurrentMovie.LoadTraces(FileName);
-                            CurrentMovie.Analysis(Radius, loop);
+                            if strcmp(obj.info.StepsizeAnalysis, 'on')
+                                CurrentMovie.StepSizeAnalysis(loop);
+                            else
+                                CurrentMovie.TracesAnalysis(Radius, loop);
+                            end
                             if ~isnan(obj.info.CutTraces)
                                 CurrentMovie.PlotDistributions(loop);
                             end
                             if strcmp(obj.info.StepsizeAnalysis, 'on')
-                                CurrentMovie.StepSizeAnalysis(loop);
+                                %CurrentMovie.StepSizeAnalysis(loop);
                             end
                         end
                         if ~isnan(obj.info.CutTraces)
