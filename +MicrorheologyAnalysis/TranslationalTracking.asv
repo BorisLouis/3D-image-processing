@@ -41,8 +41,12 @@ classdef TranslationalTracking < handle
                         CurrTrace = data{i,1};
                         CurrTraceCutted = CurrTrace(ismember(CurrTrace.t, (step:(step+Length))), :);    
                         if ~isempty(CurrTraceCutted)
-                            if size(CurrTraceCutted, 1) > obj.info.MinSize
+                            if strcmp(obj.info.StepsizeAnalysis, 'on')
                                 CurrTraceCell{end+1,1} = CurrTraceCutted;
+                            else
+                                if size(CurrTraceCutted, 1) > obj.info.MinSize
+                                    CurrTraceCell{end+1,1} = CurrTraceCutted;
+                                end
                             end
                         end
                     end
@@ -486,6 +490,7 @@ classdef TranslationalTracking < handle
                 catch
                     TimeStamp = 0;
                 end
+                allRes = struct('StepSizes_x',0,'StepSizes_y',0,'StepSizes_z',0,'StepSizes_r',0);
     
                 f = waitbar(0, 'initializing');
                 for k = 1:nRows
@@ -569,6 +574,9 @@ classdef TranslationalTracking < handle
             FitResults.alpha = nan(nI, Kmax); 
             FitResults.N = nan(nI, 1);     
 
+            OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
+            mkdir(OutputFolder);
+
             for i = 1:size(Results{end, 2}.AllStepSizes, 2)
                 waitbar(i./nI, f, append('fitting ecdf - part ', num2str(i), ' out of ', num2str(nI)));
                 r = Results{end, 2}.AllStepSizes{1,i}(:,1)';
@@ -621,17 +629,21 @@ classdef TranslationalTracking < handle
                         F_mix = F_mix + w_best(j) * ...
                             gammainc(r_sorted.^2 ./ theta_best(j), 3/2);
                     end
-                    
-                    % figure;
-                    % plot(r_sorted, F_emp, 'k.', 'DisplayName', 'Empirical');
-                    % hold on;
-                    % plot(r_sorted, F_mix, 'b-', 'LineWidth', 2, ...
-                    %     'DisplayName', sprintf('%d-pop mixture', Kbest));
-                    % xlabel('Step size r');
-                    % ylabel('CDF');
-                    % legend;
-                    % grid on;
-                    % 
+
+                    if mod(i, 100) == 0
+                        Fig = figure;
+                        plot(r_sorted, F_emp, 'k.', 'DisplayName', 'Empirical');
+                        hold on;
+                        plot(r_sorted, F_mix, 'b-', 'LineWidth', 2, ...
+                            'DisplayName', sprintf('%d-pop mixture', Kbest));
+                        xlabel('Step size r');
+                        ylabel('CDF');
+                        title(append('cdf fit, timepoint ', num2str(i)))
+                        legend;
+                        grid on;
+                        saveas(Fig, append(OutputFolder, filesep, 'TimePoint', num2str(i), '.png'));
+                    end
+
 
                     if i == 1
                         K = numel(D_best);
@@ -698,10 +710,10 @@ classdef TranslationalTracking < handle
             ylabel('Number of populations')
             xlabel('Polymerisation time (s)');
 
-            filename = append(obj.raw.Path, filesep, 'Diffusion_populations.png');
+            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_channel', num2str(Loop), '.png');
             saveas(Fig, filename);
             filename = append(obj.raw.Path, filesep, 'Diffusion_populations_results.mat');
-            save(filename, "FitResults")
+            save(filename, "FitResults");
         end
 
         function [theta, w, logL] = EM_gamma_fixedshape(obj, s, K, maxIter)

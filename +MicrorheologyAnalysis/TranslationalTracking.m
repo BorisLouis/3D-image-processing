@@ -41,8 +41,12 @@ classdef TranslationalTracking < handle
                         CurrTrace = data{i,1};
                         CurrTraceCutted = CurrTrace(ismember(CurrTrace.t, (step:(step+Length))), :);    
                         if ~isempty(CurrTraceCutted)
-                            if size(CurrTraceCutted, 1) > obj.info.MinSize
+                            if strcmp(obj.info.StepsizeAnalysis, 'on')
                                 CurrTraceCell{end+1,1} = CurrTraceCutted;
+                            else
+                                if size(CurrTraceCutted, 1) > obj.info.MinSize
+                                    CurrTraceCell{end+1,1} = CurrTraceCutted;
+                                end
                             end
                         end
                     end
@@ -486,6 +490,7 @@ classdef TranslationalTracking < handle
                 catch
                     TimeStamp = 0;
                 end
+                allRes = struct('StepSizes_x',0,'StepSizes_y',0,'StepSizes_z',0,'StepSizes_r',0);
     
                 f = waitbar(0, 'initializing');
                 for k = 1:nRows
@@ -569,7 +574,7 @@ classdef TranslationalTracking < handle
             FitResults.alpha = nan(nI, Kmax); 
             FitResults.N = nan(nI, 1);     
 
-            OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits');
+            OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
             mkdir(OutputFolder);
 
             for i = 1:size(Results{end, 2}.AllStepSizes, 2)
@@ -705,9 +710,9 @@ classdef TranslationalTracking < handle
             ylabel('Number of populations')
             xlabel('Polymerisation time (s)');
 
-            filename = append(obj.raw.Path, filesep, 'Diffusion_populations.png');
+            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_channel', num2str(Loop), '.png');
             saveas(Fig, filename);
-            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_results.mat');
+            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_results_channel', num2str(Loop), '.mat');
             save(filename, "FitResults");
         end
 
