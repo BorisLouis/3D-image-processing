@@ -568,113 +568,103 @@ classdef TranslationalTracking < handle
             nI = numel(nRows);   
             Kmax = 3;           
             
-            FitResults.i = nan(nI, 1);
-            FitResults.D = nan(nI, Kmax);    
-            FitResults.w = nan(nI, Kmax);     
-            FitResults.alpha = nan(nI, Kmax); 
-            FitResults.N = nan(nI, 1);     
 
             OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
             mkdir(OutputFolder);
 
-            for i = 1:size(Results{end, 2}.AllStepSizes, 2)
-                waitbar(i./nI, f, append('fitting ecdf - part ', num2str(i), ' out of ', num2str(nI)));
-                r = Results{end, 2}.AllStepSizes{1,i}(:,1)';
-                r(isnan(r)) = [];
-                r = rmoutliers(r);
-                N = numel(r);
-                [r_sorted, idx] = sort(r);
-                F_emp = (1:N)'/N;
+            f = waitbar(0, 'Initializing');
+            for K = 1:3
+                OutputFolder2 = append(OutputFolder, filesep, 'FitPopulations', num2str(K));
+                mkdir(OutputFolder2);
 
-                % D_hat = mean(r.^2, 'omitnan') / (6*dt);
-                % MBcdf = @(r,D) erf(r./sqrt(4*D*dt))  - sqrt(4/pi) .* (r./sqrt(4*D*dt)) .* exp(-r.^2./(4*D*dt));
-                % F_fit = MBcdf(r_sorted, D_hat);
-                % 
-                % [ks_h, ks_p, ks_stat] = kstest(r, 'CDF', [r_sorted', F_fit']);
-                % fprintf('Single population:\n');
-                % fprintf('  D_hat = %.4g\n', D_hat);
-                % fprintf('  KS p-value = %.4g\n', ks_p);
-                ks_h = 1;
+                I = nan([size(Results{end, 2}.AllStepSizes, 2),1]);
+                BIC = nan([size(Results{end, 2}.AllStepSizes, 2),1]);
+                D = nan([size(Results{end, 2}.AllStepSizes, 2),K]);
+                w = nan([size(Results{end, 2}.AllStepSizes, 2),K]);
+                N = nan([size(Results{end, 2}.AllStepSizes, 2),1]);
 
-                if ks_h == 1
-                    s = r.^2;
-                    k_shape = 3/2;
-
-                    gamma_pdf = @(s,theta) (1./(gamma(k_shape)*theta.^k_shape)) .* s.^(k_shape-1) .* exp(-s./theta);
-                    BIC = zeros(Kmax,1);
-                    models = struct();
+                for i = 1:size(Results{end, 2}.AllStepSizes, 2)
+                    try
+                        waitbar(i./nI, f, append('fitting ecdf - part ', num2str(i), ' out of ', num2str(nI)));
+                        r = Results{end, 2}.AllStepSizes{1,i}(:,1)';
+                        r(isnan(r)) = [];
+                        r = rmoutliers(r);
+                        N(i,:) = numel(r);
+                        [r_sorted, idx] = sort(r);
+                        F_emp = (1:N(i,:))'/N(i,:);
                     
-                    for K = 1:Kmax
-                        [theta, w, logL] = obj.EM_gamma_fixedshape(s, K, 200);
+                        s = r.^2;
+                        k_shape = 3/2;
+    
+                        gamma_pdf = @(s,theta) (1./(gamma(k_shape)*theta.^k_shape)) .* s.^(k_shape-1) .* exp(-s./theta);
+                        models = struct();
+
+                        [theta, w(i,:), logL] = obj.EM_gamma_fixedshape(s, K, 200);
                     
                         numParams = (K-1) + K; % weights + theta
-                        BIC(K) = -2*logL(end) + numParams*log(N);
-                    
-                        models(K).theta = theta;
-                        models(K).w = w;
-                        models(K).logL = logL(end);
-                    end
-                    
-                    [~, Kbest] = min(BIC);
-                    fprintf('\nBest model: %d populations\n', Kbest);
-
-                    theta_best = models(Kbest).theta;
-                    w_best     = models(Kbest).w;
-                    D_best = theta_best ./ (4*dt);
-                    disp('Diffusion populations:');
-                    table(D_best, w_best)
-
-                    F_mix = zeros(size(r_sorted));
-                    for j = 1:Kbest
-                        F_mix = F_mix + w_best(j) * ...
-                            gammainc(r_sorted.^2 ./ theta_best(j), 3/2);
-                    end
-
-                    if mod(i, 100) == 0
-                        Fig = figure;
-                        plot(r_sorted, F_emp, 'k.', 'DisplayName', 'Empirical');
-                        hold on;
-                        plot(r_sorted, F_mix, 'b-', 'LineWidth', 2, ...
-                            'DisplayName', sprintf('%d-pop mixture', Kbest));
-                        xlabel('Step size r');
-                        ylabel('CDF');
-                        title(append('cdf fit, timepoint ', num2str(i)))
-                        legend;
-                        grid on;
-                        saveas(Fig, append(OutputFolder, filesep, 'TimePoint', num2str(i), '.png'));
-                    end
-
-
-                    if i == 1
-                        K = numel(D_best);
-                        FitResults.D(i, 1:K) = D_best;
-                        FitResults.w(i, 1:K) = w_best;
-                        FitResults.alpha(i, 1:K) = w_best;
-                    else
-                        Dprev = FitResults.D(i-1, :);
-                        for k = 1:numel(D_best)
-                            Dk = D_best(k);
-                            wk = w_best(k);
-                            dist = abs(Dprev - Dk);
-                            [minDist, idx] = min(dist);
-
-                            if isfinite(minDist)
-                                col = idx;
-                            else    
-                                col = find(isnan(Dprev), 1, 'first');
-                            end
-
-                            FitResults.D(i, col) = Dk;
-                            FitResults.w(i, col) = wk;
-                            FitResults.alpha(i, col) = wk;
-
-                            Dprev(col) = nan;
+                        BIC(i,1) = -2*logL(end) + numParams*log(N(i,:));
+                        D(i,:) = theta ./ (6*dt);
+    
+                        F_mix = zeros(size(r_sorted));
+                        for j = 1:K
+                            F_mix = F_mix + w(i,:) * gammainc(r_sorted.^2 ./ theta, 3/2);
                         end
+    
+                        if mod(i, 100) == 0
+                            Fig = figure;
+                            plot(r_sorted, F_emp, 'k.', 'DisplayName', 'Empirical');
+                            hold on;
+                            plot(r_sorted, F_mix, 'b-', 'LineWidth', 2, ...
+                                'DisplayName', sprintf('%d-pop mixture', K));
+                            xlabel('Step size r');
+                            ylabel('CDF');
+                            title(append('cdf fit - ', num2str(K), ' populations, timepoint ', num2str(i)))
+                            grid on;
+                            saveas(Fig, append(OutputFolder, filesep, 'TimePoint', num2str(i), '.png'));
+                        end
+                        I(i, 1) = i;
+                    catch
+                        I(i, 1) = i;
+                        BIC(i,1) = nan([1,1]);
+                        D(i,1:K) = nan([1,K]);
+                        w(i,1:K) = nan([1,K]);
+                        N(i,1) = nan([1,1]);
                     end
-                    FitResults.i(i) = i*obj.info.expTime;
-                    FitResults.N(i) = N;
-                    FitResults.PopNum(i) = numel(D_best);
                 end
+
+                FitResults.I = I;
+                FitResults.BIC(:,K) = BIC;
+                FitResults.N = N;
+                if K == 1
+                    FitResults.D(:,1) = D;
+                    FitResults.w(:,1) = w;
+                elseif K == 2
+                    FitResults.D(:,2:3) = D;
+                    FitResults.w(:,2:3) = w;
+                elseif K == 3
+                    FitResults.D(:,4:6) = D;
+                    FitResults.w(:,4:6) = w;
+                end
+                close all
+
+                Fig = figure; 
+                hold on;
+                subplot(6, 1, 1:4)
+                hold on
+                for Pop = 1:K
+                    Time = FitResults.i;
+                    Dk = FitResults.D(:,k);
+                    ak = FitResults.alpha(:,k);
+    
+                    valid = ~isnan(Dk) & ak >= 0.10 & Dk <= 4;
+                
+                    if any(valid)
+                        scatter(Time(valid),  Dk(valid), 20, colors(k,:), 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', ak(valid));
+                    end
+                end
+            end
+
+
             end
             close(f);
 
@@ -712,7 +702,7 @@ classdef TranslationalTracking < handle
 
             filename = append(obj.raw.Path, filesep, 'Diffusion_populations_channel', num2str(Loop), '.png');
             saveas(Fig, filename);
-            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_results.mat');
+            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_results_channel', num2str(Loop), '.mat');
             save(filename, "FitResults");
         end
 
