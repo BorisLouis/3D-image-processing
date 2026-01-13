@@ -494,7 +494,6 @@ classdef TranslationalTracking < handle
     
                 f = waitbar(0, 'initializing');
                 for k = 1:nRows
-                %for k = 1:20
                     currMov = obj.Traces{k, 1};
                     AllStepSizes = [];
                     if ~isempty(currMov)
@@ -567,7 +566,6 @@ classdef TranslationalTracking < handle
             dt = obj.info.expTime;
             nI = numel(nRows);   
             Kmax = 3;           
-            
 
             OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
             mkdir(OutputFolder);
@@ -587,6 +585,11 @@ classdef TranslationalTracking < handle
                     try
                         waitbar(i./nI, f, append('fitting ecdf - part ', num2str(i), ' out of ', num2str(nI)));
                         r = Results{end, 2}.AllStepSizes{1,i}(:,1)';
+                        if Loop == 1
+                            r(r > 0.750) = [];
+                        elseif Loop == 2
+                            r(r > 0.450) = [];
+                        end
                         r(isnan(r)) = [];
                         r = rmoutliers(r);
                         N(i,:) = numel(r);
@@ -609,6 +612,7 @@ classdef TranslationalTracking < handle
                         for j = 1:K
                             F_mix = F_mix + w(i,:) * gammainc(r_sorted.^2 ./ theta, 3/2);
                         end
+                        F_mix = F_mix./K;
     
                         if mod(i, 100) == 0
                             Fig = figure;
@@ -620,11 +624,12 @@ classdef TranslationalTracking < handle
                             ylabel('CDF');
                             title(append('cdf fit - ', num2str(K), ' populations, timepoint ', num2str(i)))
                             grid on;
-                            saveas(Fig, append(OutputFolder, filesep, 'TimePoint', num2str(i), '.png'));
+                            saveas(Fig, append(OutputFolder2, filesep, 'TimePoint', num2str(i), '.svg'));
+                            saveas(Fig, append(OutputFolder2, filesep, 'TimePoint', num2str(i), '.svg'));
                         end
-                        I(i, 1) = i;
+                        I(i, 1) = i*obj.info.expTime + TimeStamp*60;
                     catch
-                        I(i, 1) = i;
+                        I(i, 1) = i*obj.info.expTime + TimeStamp*60;
                         BIC(i,1) = nan([1,1]);
                         D(i,1:K) = nan([1,K]);
                         w(i,1:K) = nan([1,K]);
@@ -637,73 +642,86 @@ classdef TranslationalTracking < handle
                 FitResults.N = N;
                 if K == 1
                     FitResults.D(:,1) = D;
-                    FitResults.w(:,1) = w;
+                    FitResults.fractions(:,1) = w;
                 elseif K == 2
                     FitResults.D(:,2:3) = D;
-                    FitResults.w(:,2:3) = w;
+                    FitResults.fractions(:,2:3) = w;
                 elseif K == 3
                     FitResults.D(:,4:6) = D;
-                    FitResults.w(:,4:6) = w;
+                    FitResults.fractions(:,4:6) = w;
                 end
                 close all
 
+                colors = lines(Kmax);
                 Fig = figure; 
                 hold on;
-                subplot(6, 1, 1:4)
-                hold on
+                Time = FitResults.I;
                 for Pop = 1:K
-                    Time = FitResults.i;
-                    Dk = FitResults.D(:,k);
-                    ak = FitResults.alpha(:,k);
-    
-                    valid = ~isnan(Dk) & ak >= 0.10 & Dk <= 4;
-                
-                    if any(valid)
-                        scatter(Time(valid),  Dk(valid), 20, colors(k,:), 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', ak(valid));
-                    end
+                    Dk = FitResults.D(:,Pop);
+                    ak = FitResults.fractions(:,Pop);
+                    scatter(Time,  Dk, 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', ak);
+                    plot(Time,  medfilt1(Dk, 50), 'Color', 'k', 'LineWidth', 2)
                 end
-            end
-
-
+                title(append('Diffusion ', num2str(K), ' populations'))
+                xlabel('Polymerisation Time (s)')
+                ylabel('Diffusion coefficient (µm^2/s)')
+                saveas(Fig, append(OutputFolder2, filesep, 'DiffusionTrend.png'))
+                saveas(Fig, append(OutputFolder2, filesep, 'DiffusionTrend.svg'))
             end
             close(f);
 
-            colors = lines(Kmax);
-            Fig = figure; 
-            hold on;
-            subplot(6, 1, 1:4)
+            [~, SelectPopRaw] = min(FitResults.BIC, [], 2);
+            SelectPop = SelectPopRaw;
+            SelectPop(SelectPop == 3) = 2;
+            SelectPop = round(medfilt1(SelectPop,50));
+            Start2Pop = find(SelectPop == 2, 1, 'first');
+            Start2PopTime = Time(Start2Pop);
+
+            Fig2 = figure();
+            subplot(2,1,1)
+            plot(Time, FitResults.BIC)
+            ylabel('BIC score per population')
+            xlabel('Polymerisation Time (s)')
+            legend({'1-num Pop', '2-num Pop', '3-num Pop'}, 'Location', 'Best')
+            subplot(2,1,2)
+            scatter(Time, SelectPopRaw, 1, 'color', 'b', 'MarkerFaceAlpha', 0.3);
             hold on
-            for k = 1:Kmax
-                Time = FitResults.i;
-                Dk = FitResults.D(:,k);
-                ak = FitResults.alpha(:,k);
+            plot(Time, SelectPop, 'Color', 'k');
+            ylim([0 4])
+            ylabel('Population of preference')
+            xlabel('Polymerisation Time (s)')
+            sgtitle('Evaluation of population fits')
+            saveas(Fig2, append(OutputFolder, filesep, 'FitEvaluations.png'))
+            saveas(Fig2, append(OutputFolder, filesep, 'FitEvaluations.png'))
 
-                valid = ~isnan(Dk) & ak >= 0.10 & Dk <= 4;
-            
-                if any(valid)
-                    scatter(Time(valid),  Dk(valid), 20, colors(k,:), 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', ak(valid));
-                end
+            ToPlot(1:Start2Pop, 1) = FitResults.D(1:Start2Pop, 1);
+            ToPlot(1:Start2Pop, 2) = nan([Start2Pop, 1]);
+            ToPlot(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(FitResults.D(Start2Pop:end, 2:3));
+            Alpha(1:Start2Pop, 1) = ones([Start2Pop, 1]);
+            Alpha(1:Start2Pop, 2) = zeros([Start2Pop, 1]);
+            Alpha(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(FitResults.fractions(Start2Pop:end, 2:3));
+            Alpha(isnan(Alpha)) = 0;
+
+            Fig3 = figure;
+            hold on
+            for Pop = 1:size(ToPlot, 2)
+                scatter(FitResults.I, ToPlot(:,Pop), 5, 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', Alpha(:,Pop));
+                LegendNames{Pop} = append('Population ', num2str(Pop));
             end
-            ylabel('Diffusion coefficient');
-            title('Diffusion populations vs i');
-            grid on;
-            box on
-            ylim([0 5])
+            xline(Start2PopTime);
+            xlabel('Polymerisation Time (s)');
+            ylabel('Diffusion coefficient (µm^2/s)');
+            legend(LegendNames);
+            title('Diffusion trend')
+            saveas(Fig3, append(OutputFolder, filesep, 'DiffusionTrend.png'))
+            saveas(Fig3, append(OutputFolder, filesep, 'DiffusionTrend.svg'))
 
-            subplot(6, 1, 5)
-            plot(FitResults.i, FitResults.N', 'LineWidth', 1, 'Color', 'b');
-            ylabel('N')
+            FitResults.Start2Pop = Start2PopTime;
+            obj.ResultsStepsize = FitResults;
 
-            subplot(6,1,6)
-            plot(FitResults.i, FitResults.PopNum);
-            ylim([0 4]);
-            ylabel('Number of populations')
-            xlabel('Polymerisation time (s)');
 
-            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_channel', num2str(Loop), '.png');
-            saveas(Fig, filename);
-            filename = append(obj.raw.Path, filesep, 'Diffusion_populations_results_channel', num2str(Loop), '.mat');
-            save(filename, "FitResults");
+
+            append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop))
         end
 
         function [theta, w, logL] = EM_gamma_fixedshape(obj, s, K, maxIter)

@@ -56,15 +56,7 @@ classdef Microrheology < handle
                                     CurrentMovie.PlotDistributions(loop);
                                 end
                             end
-                            
-                            if strcmp(obj.info.StepsizeAnalysis, 'on')
-                                %CurrentMovie.StepSizeAnalysis(loop);
-                            end
                         end
-                        if ~isnan(obj.info.CutTraces)
-                            %CurrentMovie.PlotTrends;
-                        end
-                        %Results{j} = CurrentMovie.Results;
                      else
                          Radius = obj.info.Radius1;
                          FileName = append(obj.info.FilenameRaw, "1");
