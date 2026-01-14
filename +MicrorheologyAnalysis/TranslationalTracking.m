@@ -109,8 +109,8 @@ classdef TranslationalTracking < handle
                 TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
     
                 f = waitbar(0, 'initializing');
-                %for k = 1:nRows
-                for k = 1:20
+                for k = 1:nRows
+                % for k = 1:20
                     currMov = obj.Traces{k, 1};
                     AllStepSizes = [];
                     if ~isempty(currMov)
