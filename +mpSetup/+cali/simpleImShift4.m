@@ -23,27 +23,43 @@ function [ imShifts ] = simpleImShift( inFocus, cam1, cam2)
         end
         bgChi = imopen(imChi, se);
         imChi = imChi - bgChi;
-        
-        % 
-        % figure()
-        % subplot(1,2,1)
-        % imshowpair(imCh1,imChi);
-        % title("before correction");
-        % hold on 
+
+
+        figure()
+        subplot(1,2,1)
+        imshowpair(imCh1,imChi);
+        title("before correction");
+        hold on 
 
         config = "monomodal";
         transf = "similarity";
         [optimizer,metric] = imregconfig(config);
         tform = imregcorr(imChi,imCh1,transf);
+        if any(or(tform.Translation > 25, tform.Translation < -25))
+            transf = "rigid";
+            tform2 = imregcorr(imChi,imCh1,transf);
+            if any(or(tform.Translation > 25, tform.Translation < -25))
+                transf = "translation";
+                tform3 = imregcorr(imChi,imCh1,transf);
+                tform.Translation = tform3.Translation;
+            end
+        end
         tformChanged = tform;
+
         tformChanged.RotationAngle = 0;
         tformChanged.R = [1, 0; 0, 1];
         tformChanged.A = [tformChanged.Scale, 0, tformChanged.Translation(1); 0, tformChanged.Scale, tformChanged.Translation(2); 0, 0, 1];
+
         movingRegistered = imwarp(imChi,tformChanged, "OutputView",imref2d(size(imCh1)));
-  
-        imShifts{chIdx,2} = {multissim(imChi, imCh1)};
+
+        subplot(1,2,2)
+        imshowpair(imCh1,movingRegistered);
+        title("after correction");
+        hold on 
+
+        imShifts{chIdx,2} = {multissim(movingRegistered, imCh1)};
         imShifts{chIdx,1} = tform;        
-    end
-    
+        imShifts{chIdx,3} = transf;
+    end  
 end
 

@@ -6,9 +6,9 @@ close all;
 
 MainFolder = 'F:\Polymer Dynamics';
 SubFolders = {'PAA_1x_bAA', 'PAA_2x_bAA', 'PAA_3x_bAA', 'PAA_4x_bAA', 'PAA_2x_AA', 'PAA_3x_AA'};
-SubSubFolders = {'time12', 'time6', 'time3'};
-ExpTimes = [0.05, 0.01, 0.01];
-CutTraces = [50, NaN, NaN];
+SubSubFolders = {'time12'};
+ExpTimes = [0.05];
+CutTraces = [50];
 
 for i = 1:numel(SubFolders)
     for j = 1:numel(SubSubFolders)

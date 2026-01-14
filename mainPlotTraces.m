@@ -6,24 +6,24 @@ close all
 
 %% User input
 
-path2Save = 'D:\Dual Color\20250121\Multicolor_particles\In_water\0_min1';
+path2Save = 'D:\Polymer Dynamics\PAA_3x_bAA\time12\20251008_3xbAA_sample1_min12_1';
 ext = '.gif';
-filename=sprintf('%s%sdata%s', path2Save,filesep,ext);
+filename=sprintf('%s%sdatamovie%s', path2Save,filesep,ext);
 
-minSize = 30;%number of frame the traces needs to last to be plotted.
+minSize = 10;%number of frame the traces needs to last to be plotted.
 expTime = 0.010; %sec
 sizeParticles = 200; % diameter in nm
 frameRate = 10;
 trailing = 20; %frame the traces stays in the movie
 
 %% Plot all Traces with time color-coding (4D plot)
-CM = zeros(size(trackRes.traces,1),3);
-maxFr = zeros(size(trackRes.traces,1),1);
+CM = zeros(size(traces,2),3);
+maxFr = zeros(size(traces,2),1);
 figure
 hold on
-for i = 1:size(trackRes.traces,1)
+for i = 1:size(traces,2)
     
-    currTrace = trackRes.traces{i,1};
+    currTrace = traces{1,i};
     
     if height(currTrace) > minSize
         colPlot = currTrace.col;
@@ -67,8 +67,8 @@ z = z*sizeParticles/2;
 camlight
 lighting('gouraud');
 for i = 1 :maxFr
-    for j = 1:size(trackRes.traces,1)
-        currTrace = trackRes.traces{j,1};
+    for j = 1:size(traces,2)
+        currTrace = traces{1,j};
         if height(currTrace) > minSize
             idx2Frame = currTrace.t==i;
             idx = i-trailing:i;

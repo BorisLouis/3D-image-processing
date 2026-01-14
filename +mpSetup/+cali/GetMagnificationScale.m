@@ -44,9 +44,30 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         %% old approach
         [optimizer,metric] = imregconfig(config);
         tform = imregcorr(Plane9infocus,Plane1infocus,transf);
-        transformations{chIdx, 1} = tform;
         movingRegistered = imwarp(Plane9infocus,tform,"OutputView",imref2d(size(Plane1infocus)));
+        SS = multissim(movingRegistered,Plane1infocus);
+        % if SS < 0.2
+        %     transf = "rigid";
+        %     tform2 = imregcorr(Plane9infocus,Plane1infocus,transf);
+        %     tform.Translation = tform2.Translation;
+        %     tform.Scale = 1;
+        %     if SS < 0.2
+        %         transf = "translation";
+        %         tform3 = imregcorr(Plane9infocus,Plane1infocus,transf);
+        %         tform.Translation = tform3.Translation;
+        %         tform.Scale = 1;
+        %     end
+        % end
+
+        tformChanged = tform;
+        tformChanged.RotationAngle = 0;
+        tformChanged.R = [1, 0; 0, 1];
+        tformChanged.A = [tformChanged.Scale, 0, tformChanged.Translation(1); 0, tformChanged.Scale, tformChanged.Translation(2); 0, 0, 1];
+
+        movingRegistered = imwarp(Plane9infocus,tformChanged,"OutputView",imref2d(size(Plane1infocus)));
+
         SimilarityScore(chIdx, 1) = multissim(movingRegistered,Plane1infocus);
+        transformations{chIdx, 1} = tform;
         transformations{chIdx, 2} = SimilarityScore(chIdx, 1);
         transformations{chIdx, 3} = config;
         transformations{chIdx, 4} = transf;
