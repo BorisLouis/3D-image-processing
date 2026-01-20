@@ -97,6 +97,10 @@ classdef TranslationalTracking < handle
     
                 f = waitbar(0, 'initializing');
                 for k = 1:nRows
+<<<<<<< HEAD
+                % for k = 1:20
+=======
+>>>>>>> 993f27cf128d9f5dcd429c780b2a6171a35e8a72
                     currMov = obj.Traces{k, 1};
                     AllStepSizes = [];
                     if ~isempty(currMov)

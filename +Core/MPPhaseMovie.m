@@ -76,7 +76,7 @@ classdef MPPhaseMovie < Core.MPMovie
             end
         end
 
-        function [MeanPhasePart] = calibrateAlpha(obj, q)
+        function [Results] = calibrateAlpha(obj, q)
             QPmap = obj.QPmap(:, 25:400, :,:);
             MinQP = min(QPmap,[], 4);
             PlaneInFocus = 1;
@@ -113,21 +113,66 @@ classdef MPPhaseMovie < Core.MPMovie
                 subplot(2,4,plane)
                 for i = 1:numel(PartCoord)
                     c = round(PartCoord(i).Centroid);
-                    plot(zpos, squeeze(QPmap(c(2), c(1), plane, :)));
-                    Values(i, plane) = min(squeeze(QPmap(c(2), c(1), plane, :)));
-                    ParticleNames{i} = append('Particle ', num2str(i));
-                    hold on
+                    List = squeeze(QPmap(c(2), c(1), plane, :));
+                    CorrectAngle = 0;
+                    Angle(1) = List(1);
+                    for j = 2:size(List)
+                        if List(j) - List(j-1) < -2
+                            CorrectAngle = CorrectAngle + pi*2;
+                        elseif List(j) - List(j-1) > 2
+                            CorrectAngle = CorrectAngle - pi*2;
+                        end
+                        Angle(j) = List(j) + CorrectAngle;
+                    end
+                    y = Angle(:);                 % column vector
+                    x = zpos';            % x-axis
+                    
+                    % Initial guesses
+                    A0 = max(y) - min(y);
+                    [~, idx] = max(y);
+                    mu0 = x(idx);
+                    sigma0 = numel(y)/10;
+                    C0 = min(y);
+                    
+                    % Fit
+                    ft = fittype('A*exp(-(x-mu)^2/(2*sigma^2)) + C', ...
+                                 'independent','x','coefficients',{'A','mu','sigma','C'});
+                    
+                    opts = fitoptions(ft);
+                    opts.StartPoint = [A0 mu0 sigma0 C0];
+                    opts.Lower = [0 0 0 -Inf];     % constrain amplitude & width
+                    
+                    [curve, gof] = fit(x, y, ft, opts);
+
+                    if gof.rsquare > 0.70
+                        height = curve.A;
+                        width  = curve.sigma;
+                        center = curve.mu;
+                        baseline = curve.C;
+    
+                        plot(curve, zpos, Angle);
+                        legend off
+                        Results.height(i, plane) = height;
+                        Results.width(i,plane) = width;
+                        Results.center(i,plane) = center;
+                        Results.baseline(i,plane) = baseline;
+     
+                        ParticleNames{i} = append('Particle ', num2str(i));
+                        hold on
+                    else
+                        Results.height(i, plane) = nan;
+                        Results.width(i,plane) = nan;
+                        Results.center(i,plane) = nan;
+                        Results.baseline(i,plane) = nan;
+                    end
                 end
                 title(append('Plane ', num2str(plane)))
-                ylim([-3.15 3.15])
                 xlabel('z-position in stack');
                 ylabel('Phase (°)')
             end
             filename = append(OutputFolder, filesep, 'PhaseProfiles.png');
             saveas(Fig2, filename);
-
-            Values(Values == 0) = NaN;
-            save(append(OutputFolder, filesep, 'MinPhases.png'), Values);
+            save(append(OutputFolder, filesep, 'CalcAlphaFitResults.png'), "Results");
         end
     end
 end
