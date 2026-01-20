@@ -32,16 +32,26 @@ function [ imShifts ] = simpleImShift( inFocus, cam1, cam2)
         hold on 
 
         config = "monomodal";
-        transf = "similarity";
+        transf = "rigid";
         [optimizer,metric] = imregconfig(config);
         tform = imregcorr(imChi,imCh1,transf);
-        if any(or(tform.Translation > 25, tform.Translation < -25))
+        if any(or(tform.Translation > 5, tform.Translation < -5))
             transf = "rigid";
             tform2 = imregcorr(imChi,imCh1,transf);
-            if any(or(tform.Translation > 25, tform.Translation < -25))
+            if any(or(tform.Translation > 5, tform.Translation < -5))
                 transf = "translation";
                 tform3 = imregcorr(imChi,imCh1,transf);
                 tform.Translation = tform3.Translation;
+                if any(or(tform.Translation > 5, tform.Translation < -5))
+                    config = "multimodal";
+                    [optimizer,metric] = imregconfig(config);
+                    tform4 = imregcorr(imChi,imCh1,transf);
+                    tform.Translation = tform4.Translation;
+                    if any(or(tform.Translation > 5, tform.Translation < -5))
+                        tform4 = tform;
+                        tform.Translation = [0 0];
+                    end
+                end
             end
         end
         tformChanged = tform;
