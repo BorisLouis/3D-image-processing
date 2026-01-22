@@ -47,26 +47,26 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         SS = multissim(movingRegistered,Plane1infocus);
         imChi = Plane9infocus;
         imCh1 = Plane1infocus;
-        if any(or(tform.Translation > 5, tform.Translation < -5))
-            transf = "rigid";
-            tform2 = imregcorr(imChi,imCh1,transf);
-            tform.Translation = tform2.Translation;
-            if any(or(tform.Translation > 5, tform.Translation < -5))
-                transf = "translation";
-                tform3 = imregcorr(imChi,imCh1,transf);
-                tform.Translation = tform3.Translation;
-                if any(or(tform.Translation > 5, tform.Translation < -5))
-                    config = "multimodal";
-                    [optimizer,metric] = imregconfig(config);
-                    tform4 = imregcorr(imChi,imCh1,transf);
-                    tform.Translation = tform4.Translation;
-                    if any(or(tform.Translation > 5, tform.Translation < -5))
-                        tform4 = tform;
-                        tform.Translation = [0 0];
-                    end
-                end
-            end
-        end
+        % if any(or(tform.Translation > 5, tform.Translation < -5))
+        %     transf = "rigid";
+        %     tform2 = imregcorr(imChi,imCh1,transf);
+        %     tform.Translation = tform2.Translation;
+        %     if any(or(tform.Translation > 5, tform.Translation < -5))
+        %         transf = "translation";
+        %         tform3 = imregcorr(imChi,imCh1,transf);
+        %         tform.Translation = tform3.Translation;
+        %         if any(or(tform.Translation > 5, tform.Translation < -5))
+        %             config = "multimodal";
+        %             [optimizer,metric] = imregconfig(config);
+        %             tform4 = imregcorr(imChi,imCh1,transf);
+        %             tform.Translation = tform4.Translation;
+        %             if any(or(tform.Translation > 5, tform.Translation < -5))
+        %                 tform4 = tform;
+        %                 tform.Translation = [0 0];
+        %             end
+        %         end
+        %     end
+        % end
 
         tformChanged = tform;
         tformChanged.RotationAngle = 0;
