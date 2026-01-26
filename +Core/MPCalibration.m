@@ -34,26 +34,41 @@ classdef MPCalibration < Core.Movie
             %Calculate from the raw path stored in the movie
             path = obj.raw.movInfo.Path;
             [file2Analyze] = obj.getFileInPath( path, 'calibration.mat');
+
+            if ~isempty(file2Analyze)
+                if strcmp(obj.info.runMethod, 'run')
+                    run = 1;
+                else
+                    run = 0;
+                end
+            else
+                run = 1;
+            end
             
-            if (~isempty(file2Analyze))
+            if run == 0
                 %If calibration already exist we load it
                 disp('The calibration was already calculated, Loading from existing file');
                 fullPath = [file2Analyze.folder filesep file2Analyze.name];
                 tmp = load(fullPath);
                 calibration = tmp.calibration;
 
-            else
+            elseif run == 1
                 %Otherwise we Calculate it
                 path = obj.raw.fullPath;
                 [frameInfo, movInfo, ~ ] = Load.Movie.ome.getInfo(path);
                 assert(length(movInfo.Cam)==2,'Only 1 camera found in the selected file, code only works with 2 cameras, will be updated later.');
                 assert(length(unique(cellfun(@str2num,{frameInfo.Z})))>2,'Z position is not changing across the selected calibration file, this is strange.');
-                if strcmp(obj.info.method, 'Darkfield Phase')
+                if contains(obj.info.Modality, 'Darkfield Phase')
                     DarkfieldPhase = 1;
                 else
                     DarkfieldPhase = 0;
                 end
-                [calib, inform, transformations] = mpSetup.cali.calculate(path,nChan,DarkfieldPhase);
+                if or(contains(obj.info.Method, 'Phase'), contains(obj.info.Method, 'phase'))
+                    Phase = 1;
+                else
+                    Phase = 0;
+                end
+                [calib, inform, transformations] = mpSetup.cali.calculate(path,nChan,DarkfieldPhase, Phase);
 
                 calibration.info = inform;
                 calibration.file = calib;
