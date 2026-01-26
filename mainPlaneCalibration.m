@@ -14,11 +14,12 @@ clear
 close all
 clc
 
-file.path  = 'D:\Polymer Dynamics\20260121\2DCal_after';
+file.path  = 'D:\Data Hannah\202512117\2D-cal';
 file.ext   = '.ome.tif';
-info.runMethod = 'load';
+info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
-info.method = 'Fluorescence'; %Darkfield Phase, Fluorescence,....
+info.Method = 'Phase'; %Darkfield Phase, Fluorescence,....
+info.Modality = 'Fluorescence'; %Darkfield phase
 %% 
 calib = Core.MPPlaneCalibration(file,info);
 
