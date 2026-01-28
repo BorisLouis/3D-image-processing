@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'D:\Data Hannah\202512117\2D-cal';
+file.path  = 'C:\Users\steve\data_no_onedrive\Data Hannah\202512117\2D-cal';
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)

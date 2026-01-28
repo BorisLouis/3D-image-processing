@@ -152,6 +152,17 @@ classdef MPPhaseMovie < Core.MPMovie
                     end
                     plot(List);
                     hold on
+                end
+            end
+
+            for i = 1:numel(PartCoord)
+                PartCoord = CleanCoordsOverPlanes(i,:);
+                for plane = 1:numPlanes
+                    c = PartCoord{:,plane};
+                    ROI(:,:,plane,:) = QPmap(c(2)-6:c(2)+6, c(1)-6:c(1)+6, plane, :);
+                end
+                ROIs = squeeze(sum(ROI, 3));
+            end
                     % CorrectAngle = 0;
                     % Angle(1) = List(1);
                     % for j = 2:size(List)

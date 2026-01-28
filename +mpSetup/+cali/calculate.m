@@ -1,21 +1,21 @@
-function [cal, movInfo, MagnificationFactors] = calculate(fPath,nChan, DarkFieldPhase, correctInt, flipCam2, Phase)
+function [cal, movInfo, MagnificationFactors] = calculate(fPath,nChan, DarkFieldPhase, Phase, correctInt, flipCam2)
 %CALCULATE calculates calibration for the multiplane setup. NOTE that if
 %you choose to correct for intensity differences the data changes form
 %uint16 to double because we have to multiply by a correction factor
 %(double).
 
 switch nargin
-    case 2
+    case 3
         
         nChan = 4;
         flipCam2 = true;
         
-    case 3
+    case 4
         % this is the normal way, I cant see how it would be different
         correctInt = true;
         flipCam2 = true;
         
-    case 4
+    case 5
         
         flipCam2 = true;
         
