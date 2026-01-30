@@ -302,12 +302,12 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.diskDim = addLabelField(layout, 'Disk dim:', '2');
 
         case 'Phase'
-            controls.dz = addLabelField(layout, 'PxSize z (µm):', '1.350');
+            controls.dz = addLabelField(layout, 'PxSize z (µm):', '1.415');
             controls.NA = addLabelField(layout, 'NA detection:', '1.20');
             controls.NA_ill = addLabelField(layout, 'NA illumination:', '0');
-            controls.n = addLabelField(layout, 'Refractive index:', '1.33');
-            controls.lambda = addLabelField(layout, 'Central wavelength:', '0.48');
-            controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.060');
+            controls.n = addLabelField(layout, 'Refractive index:', '1.00');
+            controls.lambda = addLabelField(layout, 'Central wavelength:', '0.698');
+            controls.dlambda = addLabelField(layout, 'Spectrum bandwith:', '0.070');
             controls.alpha = addLabelField(layout, 'Alpha:', '3.15');
             controls.kzT = addLabelField(layout, 'axial cutoff:', '0');
             controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'true');

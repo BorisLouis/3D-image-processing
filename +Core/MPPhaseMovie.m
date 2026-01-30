@@ -35,6 +35,7 @@ classdef MPPhaseMovie < Core.MPMovie
     
                 s.optics = obj.info.optics;
                 s.proc = obj.info.proc;
+                s.optics.dz = mean(abs(diff(obj.calibrated{1, 1}.oRelZPos)));
     
                 mkdir(append(obj.raw.movInfo.Path, filesep, 'PhaseMovie'));
     
@@ -48,13 +49,10 @@ classdef MPPhaseMovie < Core.MPMovie
                     for i = idx
                         waitbar(n./nFrames,f,append('Calculating phase map ', num2str(n),' out of ', num2str(nFrames)));
                         Stack = obj.getFrame(n, q);
+
                         [Stack, StartX, StartY] = QP_package.cropXY(Stack);
-                        % PadValues = 134;
-                        % for l = 1:size(Stack, 3)
-                        %     StackPadded(:,:,l) = padarray(Stack(:,:,l), [50 50], PadValues);
-                        % end
-                        % QPmap(:,:,:,i-Startidx) = QP_package.getQP(StackPadded,s);
-                        QPmap(:,:,:,n) = QP_package.getQP(Stack,s);
+                        [QPmap(:,:,n) ,~] = QP_package.getQPFullPhase(Stack,s);
+                         % QPmap(:,:,:,n) = QP_package.getQP(Stack,s);
                         n = n+1;
                     end
                     % QPmap = QPmap(51:end-50, 51:end-50, :,:);
@@ -63,7 +61,6 @@ classdef MPPhaseMovie < Core.MPMovie
                 Filename = append(obj.raw.movInfo.Path, filesep, 'PhaseMovie', filesep, 'PhaseMovie.mat');
                 save(Filename, 'QPmap');
                 obj.QPmap = QPmap;
-                QPmap = [];
                
                 obj.Cropped.StartX = StartX;
                 obj.Cropped.StartY = StartY;
@@ -76,20 +73,94 @@ classdef MPPhaseMovie < Core.MPMovie
             end
         end
 
+        function calibrateAlpha2(obj, q)
+            f = waitbar(0,'Initializing');
+            if strcmp(obj.info.frame2Load, 'all')
+                nFrames = obj.calibrated{1, 1}.nFrames; 
+            elseif isa(obj.info.frame2Load, 'double')
+                nFrames = max(obj.info.frame2Load);
+            end
+
+            s.optics = obj.info.optics;
+            s.optics.dz = 0.1;
+            s.optics.alpha = 1.5;
+            s.optics.lambda = 0.698;
+            s.optics.n = 1.0;
+            s.proc = obj.info.proc;
+
+            for Frame = 1:nFrames
+                waitbar(Frame./nFrames, f, 'Loading Frames');
+                Fullvid(:,:,:,Frame) = obj.getFrame(Frame, q);
+            end
+
+            for Plane = 1:size(Fullvid, 3)
+                waitbar(Plane./size(Fullvid, 3), f, 'Calculating phasemaps');
+                Stack = squeeze(Fullvid(:,:,Plane,:));
+                [Stack, StartX, StartY] = QP_package.cropXY(Stack);
+                QPmap(:,:,:,Plane) = QP_package.getQP(Stack,s);
+            end
+
+            TotQPmap = sum(QPmap,4);
+            Fig = figure();
+            imagesc(mean(TotQPmap, 3))
+            axis image;
+            title('Click points, then press OK');
+            [x, y] = ginput;
+            coords = double([x y]);
+            close(Fig) 
+
+            figure()
+            for i = 1:8%size(coords)
+                Profile = squeeze(QPmap(round(coords(1,2)), round(coords(1,1)) , :, i));     
+                plot(Profile)
+                hold on
+            end
+
+            for Plane = 1:size(Fullvid, 3)
+                Fig = figure();
+                imagesc(mean(QPmap(:,:,:,Plane),3))
+                axis image;
+                colormap gray;
+                title('Click points, then press OK');
+                [x, y] = ginput;
+                coords = double([x y]);
+                close(Fig)  
+
+                CoordsPlanes{Plane} = coords;
+            end
+
+            figure()
+            for Plane = 1:size(Fullvid, 3)
+                subplot(2, ceil(size(Fullvid, 3)./2), Plane)
+                PlaneCoords = CoordsPlanes{1};
+                for i = 1:size(PlaneCoords, 1)
+                    c = round(PlaneCoords(i,:));
+                    % ROI = squeeze(QPmap(c(2), c(1), :, Plane));
+                    ROI = QPmap(c(2)-10:c(2)+10, c(1)-10:c(1)+10, :, Plane);
+                    ROIs = squeeze(sum(sum(ROI,1),2));
+                    plot(ROIs);
+                    hold on
+                    List(:, Plane) = ROIs;
+                end
+            end
+            TotPhase = sum(List, 2);
+                
+        end
+
         function [Results] = calibrateAlpha(obj, q)
             QPmap = obj.QPmap(:, 25:400, :,:);
-            MaxQP = max(QPmap,[], 4);
+            MinQP = min(QPmap,[], 4);
             PlaneInFocus = 1;
             OutputFolder = append(obj.raw.movInfo.Path, filesep, 'Output_CalibrateAlpha');
             mkdir(append(obj.raw.movInfo.Path, filesep, 'Output_CalibrateAlpha'));
             zpos = [1:size(QPmap, 4)];
 
-            for plane = 1:size(MaxQP, 3)
-                I = MaxQP(:,:,plane); 
+            for plane = 1:size(MinQP, 3)
+                I = MinQP(:,:,plane); 
                 h = 1;             
-                I2 = imhmax(I, h);
-                bw = imregionalmax(I2);
-                bw = bw & (I > prctile(I(:), 0.25)); 
+                I2 = imhmin(I, h);
+                bw = imregionalmin(I2);
+                bw = bw & (I < prctile(I(:), 0.25)); 
                 PartCoord = regionprops(bw, 'Centroid');
                 CoordsOverPlanes{plane} = PartCoord;
             end
@@ -124,9 +195,9 @@ classdef MPPhaseMovie < Core.MPMovie
             end
 
             Fig1 = figure();
-            for plane = 1:size(MaxQP, 3)
+            for plane = 1:size(MinQP, 3)
                 subplot(2,4,plane)
-                imagesc(MaxQP(:,:,plane));
+                imagesc(MinQP(:,:,plane));
                 hold on
                 for j = 1:size(CleanCoordsOverPlanes,1)
                     c = CleanCoordsOverPlanes{j,plane};   % [x y]
@@ -139,19 +210,33 @@ classdef MPPhaseMovie < Core.MPMovie
             filename = append(OutputFolder, filesep, 'ParticlePositions.png');
             saveas(Fig1, filename);
 
-            Fig2 = figure();
-            for plane = 1:numPlanes
-                PartCoord = CleanCoordsOverPlanes(:,plane);
-                subplot(2,4,plane)
-                for i = 1:numel(PartCoord)
-                    c = round(PartCoord{i,1});
-                    List = squeeze(QPmap(c(2), c(1), plane, :));
-                    for Frame = 1:size(QPmap, 4)
-                        ROI = imgaussfilt(QPmap(c(2)-6:c(2)+6, c(1)-6:c(1)+6, plane, Frame), 3);
-                        List(Frame,1) = max(ROI, [], 'all');
-                    end
-                    plot(List);
-                    hold on
+            % Fig2 = figure();
+            % for plane = 1:numPlanes
+            %     PartCoord = CleanCoordsOverPlanes(:,plane);
+            %     subplot(2,4,plane)
+            %     for i = 1:numel(PartCoord)
+            %         c = round(PartCoord{i,1});
+            %         List = squeeze(QPmap(c(2), c(1), plane, :));
+            %         for Frame = 1:size(QPmap, 4)
+            %             ROI = imgaussfilt(QPmap(c(2)-6:c(2)+6, c(1)-6:c(1)+6, plane, Frame), 3);
+            %             List(Frame,1) = max(ROI, [], 'all');
+            %         end
+            %         plot(List);
+            %         hold on
+            %     end
+            % end
+
+            figure()
+            for i = 1:size(CleanCoordsOverPlanes, 1)
+                PartCoord = CleanCoordsOverPlanes(i,:);
+                for plane = 1:numPlanes
+                    c = round(PartCoord{:,plane});
+                    ROI(:,:,plane,:) = QPmap(c(2)-10:c(2)+10, c(1)-10:c(1)+10, plane, :);
+                end
+                ROIs = squeeze(sum(sum(sum(ROI,1),2),3));
+                plot(ROIs);
+                hold on
+            end
                     % CorrectAngle = 0;
                     % Angle(1) = List(1);
                     % for j = 2:size(List)
@@ -204,14 +289,14 @@ classdef MPPhaseMovie < Core.MPMovie
                     %     Results.center(i,plane) = nan;
                     %     Results.baseline(i,plane) = nan;
                     % end
-                end
-                title(append('Plane ', num2str(plane)))
-                xlabel('z-position in stack');
-                ylabel('Phase (°)')
-            end
-            filename = append(OutputFolder, filesep, 'PhaseProfiles.png');
-            saveas(Fig2, filename);
+            %     end
+            %     xlabel('z-position in stack');
+            %     ylabel('Phase (°)')
+            % end
+            % filename = append(OutputFolder, filesep, 'PhaseProfiles.png');
+            % saveas(Fig2, filename);
             % save(append(OutputFolder, filesep, 'CalcAlphaFitResults.png'), "Results");
+            Results = [];
         end
     end
 end

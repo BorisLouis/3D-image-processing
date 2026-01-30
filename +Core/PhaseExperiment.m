@@ -88,7 +88,13 @@ classdef PhaseExperiment < handle
                     disp(['Retrieving data from phase file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.PhaseMovies.(fieldsN{i});
     
+                    obj.info.optics.alpha  = 1;
+                    obj.info.optics.lambda = 0.698;
+                    obj.info.optics.dlambda = 0.070;
+                    obj.info.optics.n = 1.00;
                     currentTrackMov.getPhaseMovie(q);
+                    currentTrackMov.calibrateAlpha2(q);
+
                     [Results] = currentTrackMov.calibrateAlpha(q);
 
                     BigResults.height = [BigResults.height; Results.height];
