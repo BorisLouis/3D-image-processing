@@ -4,9 +4,9 @@ close all;
 
 [raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel, info.StepsizeAnalysis] = UserInput.CalcMSDinfoGUI;
 
-MainFolder = 'D:\Polymer Dynamics\PAA_1x_bAA';
-SubFolders = {'time12'}; %, 
-SubSubFolders = {'test'}; %, , 'time6'
+MainFolder = 'D:\Polymer Dynamics';
+SubFolders = {'PAA_1x_bAA'}; %, 'PAA_2x_bAA', 'PAA_3x_bAA', 'PAA_4x_bAA', 'PAA_2x_AA', 'PAA_3x_AA'
+SubSubFolders = {'time12\test'}; %, , 'time6', 'time6', 'time3'
 ExpTimes = [0.05, 0.01, 0.01];
 CutTraces = [50, NaN, NaN];
 

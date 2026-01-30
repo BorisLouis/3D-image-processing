@@ -412,7 +412,6 @@ classdef MPLocMovie < Core.MPParticleMovie
                 else
                     [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
                 end
-                run = 1;
 
                 if run
                     

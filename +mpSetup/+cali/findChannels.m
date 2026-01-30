@@ -48,9 +48,9 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         im(RowsToDelete, :) = bgthr;
         
     else
-        % tHold = Misc.tholdSigBg(bg,sig);
-        tHold = 130;
-        im = im>tHold+20;
+        tHold = Misc.tholdSigBg(bg,sig);
+        % % tHold = 130;
+        im = im>tHold;
         %remove small pixel
         im = bwareaopen(im,21);
         % Clean up boundary
@@ -102,7 +102,10 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         % change points
         
         chP2 = findCp(s2,'bottom',1);
-        chP2(chP2 < 15) = 15;
+        if any(chP2 < 15)
+            idx = find(chP2 < 15);
+            [~, chP2(idx)] = max(mean(Raw(1:20, chP(i,1):chP(i,2)),2));
+        end
         if max(chP2) == size(chIm,1)
             [~, maxIdx] = max(chP2);
             chP2(maxIdx) = size(chIm,1)-10;

@@ -283,9 +283,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
                     [run, particle] = obj.existParticles(path, '.mat');
-
-                    run = 1;
-
+                    
                     if run
                         %Check the number of function input
                         switch nargin
