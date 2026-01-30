@@ -661,7 +661,7 @@ classdef MPMovie < Core.Movie
                         assert(~isempty(obj.cal2D.file),'no calibration file provided, cannot calibrate');
                         MP = true;
                         % load the raw data
-                        [ movC1, movC2] = Load.Movie.ome.load( frameInfo, movInfo, cFrame );
+                        [ movC1, movC2, ~, frameInfo] = Load.Movie.ome.load( frameInfo, movInfo, cFrame );
 
                         %applying the calibration
                         if exist('ROI','var') == 1
@@ -669,6 +669,19 @@ classdef MPMovie < Core.Movie
                         else 
                             [data,isTransmission,~, Bg] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
                         end
+                        % if strcmp(frameInfo(1).C, '0')
+                        %     if exist('ROI','var') == 1
+                        %         [data,isTransmission,ROI, Bg] = mpSetup.cali.apply( movC2, movC1, obj.cal2D.file, obj.info, ROI);
+                        %     else 
+                        %         [data,isTransmission,~, Bg] = mpSetup.cali.apply( movC2, movC1, obj.cal2D.file, obj.info);
+                        %     end
+                        % elseif strcmp(frameInfo(1).C, '1')
+                        %     if exist('ROI','var') == 1
+                        %         [data,isTransmission,ROI, Bg] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info, ROI);
+                        %     else 
+                        %         [data,isTransmission,~, Bg] = mpSetup.cali.apply( movC1, movC2, obj.cal2D.file, obj.info);
+                        %     end
+                        % end
                         %saving data per plane and info to cal
                         [calib] = obj.saveCalibrated(data,endFrame,isTransmission,MP, Bg);
                         

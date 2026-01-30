@@ -31,7 +31,6 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         bgPlane1 = imopen(Plane1infocus, se);
         Plane9infocus = Plane9infocus - bgPlane9;
         Plane1infocus = Plane1infocus - bgPlane1;
-
         figure()
         subplot(1,2,1)
         imshowpair(Plane1infocus,Plane9infocus)
@@ -44,9 +43,40 @@ function [ transformations ] = GetMagnificationScale(cam1, cam2, cam3, cam4, inF
         %% old approach
         [optimizer,metric] = imregconfig(config);
         tform = imregcorr(Plane9infocus,Plane1infocus,transf);
-        transformations{chIdx, 1} = tform;
         movingRegistered = imwarp(Plane9infocus,tform,"OutputView",imref2d(size(Plane1infocus)));
+        SS = multissim(movingRegistered,Plane1infocus);
+        imChi = Plane9infocus;
+        imCh1 = Plane1infocus;
+        % if any(or(tform.Translation > 5, tform.Translation < -5))
+        %     transf = "rigid";
+        %     tform2 = imregcorr(imChi,imCh1,transf);
+        %     tform.Translation = tform2.Translation;
+        %     if any(or(tform.Translation > 5, tform.Translation < -5))
+        %         transf = "translation";
+        %         tform3 = imregcorr(imChi,imCh1,transf);
+        %         tform.Translation = tform3.Translation;
+        %         if any(or(tform.Translation > 5, tform.Translation < -5))
+        %             config = "multimodal";
+        %             [optimizer,metric] = imregconfig(config);
+        %             tform4 = imregcorr(imChi,imCh1,transf);
+        %             tform.Translation = tform4.Translation;
+        %             if any(or(tform.Translation > 5, tform.Translation < -5))
+        %                 tform4 = tform;
+        %                 tform.Translation = [0 0];
+        %             end
+        %         end
+        %     end
+        % end
+
+        tformChanged = tform;
+        tformChanged.RotationAngle = 0;
+        tformChanged.R = [1, 0; 0, 1];
+        tformChanged.A = [tformChanged.Scale, 0, tformChanged.Translation(1); 0, tformChanged.Scale, tformChanged.Translation(2); 0, 0, 1];
+
+        movingRegistered = imwarp(Plane9infocus,tformChanged,"OutputView",imref2d(size(Plane1infocus)));
+
         SimilarityScore(chIdx, 1) = multissim(movingRegistered,Plane1infocus);
+        transformations{chIdx, 1} = tform;
         transformations{chIdx, 2} = SimilarityScore(chIdx, 1);
         transformations{chIdx, 3} = config;
         transformations{chIdx, 4} = transf;

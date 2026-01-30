@@ -1,4 +1,4 @@
-function [ movC1, movC2, idx ] = load( frameInfo, movieInfo, frames )
+function [ movC1, movC2, idx, frameInfo] = load( frameInfo, movieInfo, frames )
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 

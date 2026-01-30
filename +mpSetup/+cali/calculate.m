@@ -1,21 +1,21 @@
-function [cal, movInfo, MagnificationFactors] = calculate(fPath,nChan, DarkFieldPhase, correctInt, flipCam2)
+function [cal, movInfo, MagnificationFactors] = calculate(fPath,nChan, DarkFieldPhase, Phase, correctInt, flipCam2)
 %CALCULATE calculates calibration for the multiplane setup. NOTE that if
 %you choose to correct for intensity differences the data changes form
 %uint16 to double because we have to multiply by a correction factor
 %(double).
 
 switch nargin
-    case 2
+    case 3
         
         nChan = 4;
         flipCam2 = true;
         
-    case 3
+    case 4
         % this is the normal way, I cant see how it would be different
         correctInt = true;
         flipCam2 = true;
         
-    case 4
+    case 5
         
         flipCam2 = true;
         
@@ -171,18 +171,26 @@ if cal.correctInt
     waitbar(.9,h,'Correcting intensity')
     % update the channel data
     [ chData1c, chData2c ] = mpSetup.cali.getChData( movC1, movC2, cal.ROI1, []);
-    % calculate intensity correction
-    [ cal.Icorrf1, IntCh1] = mpSetup.cali.findChInt( chData1c, chData2c, cal.inFocus1 );
+    % calculate intensity correction    
+    if Phase == 1
+        [ cal.Icorrf1, IntCh1] = mpSetup.cali.findChIntPhase( chData1c, chData2c, cal.inFocus1 );
+    else
+        [ cal.Icorrf1, IntCh1] = mpSetup.cali.findChInt( chData1c, chData2c, cal.inFocus1 );
+    end
     cal.Icorrf1 = cal.Icorrf1./(cal.Icorrf1(4));
     % maxInt1 = max(cal.fit1(:,2:2:end),[],1);
     % cal.Icorrf1 = maxInt1./max(maxInt1);
     if multiModal == true
         [ chData3c, chData4c] = mpSetup.cali.getChData( movC1, movC2, cal.ROI2FullCam, []);
-        [cal.Icorrf2, IntCh2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
-        cal.Icorrf2 = cal.Icorrf2/(cal.Icorrf2(4));
-        [cal.Icorrf2] = mpSetup.cali.findChIntChannels(cal.Icorrf1, cal.Icorrf2, IntCh1, IntCh2);
-        % maxInt2 = max(cal.fit2(:, 2:2:end),)( [],1);
-        % cal.Icorrf2 = maxInt2./max(maxInt2);
+        if Phase == 1
+            [cal.Icorrf2, IntCh2] = mpSetup.cali.findChIntPhase( chData3c, chData4c, cal.inFocus2);
+            cal.Icorrf2 = cal.Icorrf2/(cal.Icorrf2(4));
+            [cal.Icorrf2] = mpSetup.cali.findChIntChannels(cal.Icorrf1, cal.Icorrf2, IntCh1, IntCh2);
+        else
+            [cal.Icorrf2, IntCh2] = mpSetup.cali.findChInt( chData3c, chData4c, cal.inFocus2);
+            cal.Icorrf2 = cal.Icorrf2/(cal.Icorrf2(4));
+            [cal.Icorrf2] = mpSetup.cali.findChIntChannels(cal.Icorrf1, cal.Icorrf2, IntCh1, IntCh2);
+        end
         mpSetup.cali.plotCalMultiModal(chData1c, chData2c, chData3c, chData4c, cal.inFocus1, cal.inFocus2)
         sgtitle('All planes corrected')
     else

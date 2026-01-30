@@ -29,10 +29,28 @@ else
 end
 %try to take the threshold that remove 99.9% of background
 
+<<<<<<< HEAD
 [data, p] = islocalmin(smoothdata(diff(sigCDF.y(find(sigCDF.x > 120, 1, "first"):end))), 'MinProminence', 5*10^(-7));
+=======
+Minprominence = 5*10^(-7);
+[data, p] = islocalmin(smoothdata(diff(sigCDF.y(find(sigCDF.x > 120, 1, "first"):end))), 'MinProminence', Minprominence);
+while all(data == 0)
+    Minprominence = Minprominence ./10;
+    [data, p] = islocalmin(smoothdata(diff(sigCDF.y(find(sigCDF.x > 120, 1, "first"):end))), 'MinProminence', Minprominence);
+end
+
+>>>>>>> 1927bfea7804a1814a3277c5899c3d031208d162
 Idx = find(data == 1, 1, "first");
 tHold = sigCDF.x(Idx);
 %previous
 %tHold = mean(bg)+3*std(bg);
+<<<<<<< HEAD
+=======
+if tHold < 110
+    test = abs(diff(medfilt1(sig, 50)));
+    test(test < 10) = [];
+    tHold = 100 + mean(test);
+end
+>>>>>>> 1927bfea7804a1814a3277c5899c3d031208d162
 end
 

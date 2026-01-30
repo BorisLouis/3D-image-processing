@@ -14,14 +14,24 @@ function [ new_ROI ] = refineROI2( ROI, im_shifts, multiModal )
         h = ROIcurrent(4);
 
         %% first apply scaling
-        wScaled = w / (tform.Scale);
-        hScaled = h / (tform.Scale);
+        % if strcmp(im_shifts{i,3}, "translation")
+        %     wScaled = w;
+        %     hScaled = h;
+        % else
+            wScaled = w / (tform.Scale);
+            hScaled = h / (tform.Scale);
+        % end
         xScaled = x;
         yScaled = y;
 
         %% Now do the translation
-        xTransl = xScaled - (tform.Translation(1) / tform.Scale);
-        yTransl = yScaled - (tform.Translation(2) / tform.Scale);
+        % if strcmp(im_shifts{i,3}, "translation")
+        %     xTransl = xScaled - (tform.Translation(1));
+        %     yTransl = yScaled - (tform.Translation(2));
+        % else
+            xTransl = xScaled - (tform.Translation(1) / tform.Scale);
+            yTransl = yScaled - (tform.Translation(2) / tform.Scale);
+        % end
 
         new_ROI(i,:) = [xTransl, yTransl, wScaled, hScaled];
     end

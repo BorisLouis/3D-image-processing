@@ -51,7 +51,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     % ExpTime
     y = y - dy;
     uilabel(fig, 'Position', [20 y 120 22], 'Text', 'ExpTime (s):');
-    editExpTime = uieditfield(fig, 'numeric', 'Position', [150 y 260 22], 'Value', 0.010);
+    editExpTime = uieditfield(fig, 'numeric', 'Position', [150 y 260 22], 'Value', 0.050);
 
     % Temp
     y = y - dy;
@@ -61,13 +61,13 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     % Radius
     y = y - dy;
     labelRadius = uilabel(fig, 'Position', [20 y 120 22], 'Text', 'Radius (µm):');
-    editRadiusNumeric = uieditfield(fig, 'numeric', 'Position', [150 y 260 22], 'Value', 0.150);
+    editRadiusNumeric = uieditfield(fig, 'numeric', 'Position', [150 y 260 22], 'Value', 0.050);
     editRadiusArray   = uieditfield(fig, 'text', 'Position', [150 y 260 22], 'Value', '[184 92]', 'Visible', 'off');
 
     % Radius2 (initially hidden)
     y = y - dy;
     labelRadius2 = uilabel(fig, 'Position', [20 y 120 22], 'Text', 'Radius 2 (µm):', 'Visible', 'off');
-    editRadius2 = uieditfield(fig, 'numeric', 'Position', [150 y 260 22], 'Value', 0.10, 'Visible', 'off');
+    editRadius2 = uieditfield(fig, 'numeric', 'Position', [150 y 260 22], 'Value', 0.250, 'Visible', 'off');
 
     % DiffFit
     y = y - dy;
@@ -94,7 +94,7 @@ function [FilePath, Experiment, Filename, Dimension, ExpTime, Temp, Radius, Radi
     y = y - dy;
     uilabel(fig, 'Position', [20 y 120 22], 'Text', 'StepsizeAnalysis:');
     dropdownStepsize = uidropdown(fig, 'Position', [150 y 260 22], ...
-        'Items', {'on', 'off'}, 'Value', 'off');
+        'Items', {'on', 'off'}, 'Value', 'on');
 
     % ParticleType (hidden)
     y = y - dy;

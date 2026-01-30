@@ -764,7 +764,7 @@ classdef TranslationalTracking < handle
             FitResults.BIC = array2table(FitResults.BIC, 'VariableNames', {'Pop1','Pop2','Pop3'});
             FitResults.D = array2table(FitResults.D, 'VariableNames', {'Pop1', 'Pop2_1','Pop2_2','Pop3_1','Pop3_2','Pop3_3'});
             FitResults.fractions = array2table(FitResults.fractions, 'VariableNames', {'Pop1','Pop2_1','Pop2_2', 'Pop3_1','Pop3_2','Pop3_3'});
-            FitResults.Fit = array2table(p_fit, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+            FitResults.Fit = array2table(p, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
 
             obj.ResultsStepsize = FitResults;
             save(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'), "FitResults");

@@ -4,9 +4,15 @@ clc
 close all;
 %% get path to SRCalibration
 
+<<<<<<< HEAD
 file.path = 'D:\Polymer Dynamics\20251004\2DCal';
 file.ext  = '.ome.tif';
 path2Cal  = 'D:\Polymer Dynamics\20251004\2DCal';
+=======
+file.path = 'D:\Polymer Dynamics\20260121\2DCal';
+file.ext  = '.ome.tif';
+path2Cal  = 'D:\Polymer Dynamics\20260121\2DCal';
+>>>>>>> 1927bfea7804a1814a3277c5899c3d031208d162
 
 %% Initialize a zCalibration Object
 info.type = 'normal';

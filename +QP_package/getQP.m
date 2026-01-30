@@ -89,21 +89,12 @@ Gamma = Ik.*mask; % cross-spectral density
 csd = ifftshift(ifftn(ifftshift(Gamma)));
 csd = csd(1:size(stack,1),1:size(stack,2),1:size(stack,3));
 %csd = csd(1:size(mask,1),1:size(mask,2),1:size(stack,3)); % remove the mirrored input
-% 
-% QP = atan((s.optics.alpha.*imag(csd))./(mean(stack(:)) + s.optics.alpha.*real(csd)));
-% QP(QP < 0) = 0;
-% close all
-% for i = 1:8
-% figure()
-% imagesc(QP(:,:,i))
-% end
+
 
 Amplitude = abs(csd);
 QP = angle(csd + mean(stack(:))/s.optics.alpha);
 close all
-% for i = 1:8
-% figure()
-% imagesc(QP(:,:,i))
-% clim([-2 2])
-% end
+
+
+
 end
