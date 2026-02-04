@@ -13,15 +13,13 @@ CutTraces = [50];
 for i = 1:numel(SubFolders)
     for j = 1:numel(SubSubFolders)
         try
-            raw.FilePath = append(MainFolder, filesep, SubFolders{i}, filesep, SubSubFolders{j});
-            % info.exptime = 0.05;
-            % info.CutTraces = 50;
-            info.FilenameRaw = "traces3D_";
-    
-            Microrheology = MicrorheologyAnalysis.Microrheology(raw, info);
-            Microrheology.setMovies;
-            Microrheology.RunAnalysis;
-        catch
-        end
+        raw.FilePath = append(MainFolder, filesep, SubFolders{i}, filesep, SubSubFolders{j});
+        % info.exptime = 0.05;
+        % info.CutTraces = 50;
+        info.FilenameRaw = "traces3D_";
+
+        Microrheology = MicrorheologyAnalysis.Microrheology(raw, info);
+        Microrheology.setMovies;
+        Microrheology.RunAnalysis;
     end
 end

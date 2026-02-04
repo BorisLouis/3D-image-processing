@@ -6,8 +6,8 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'C:\Users\steve\data_no_onedrive\Data Hannah\202512117\Brightfield\500nmPS';
-path2Cal = 'C:\Users\steve\data_no_onedrive\Data Hannah\202512117\2D-cal';
+file.path  = 'D:\Data Hannah\20260203\2DCal_multimodal_before';
+path2Cal = 'D:\Data Hannah\20260203\2DCal_multimodal_before';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 

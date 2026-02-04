@@ -93,24 +93,24 @@ classdef PhaseExperiment < handle
                     obj.info.optics.dlambda = 0.070;
                     obj.info.optics.n = 1.00;
                     currentTrackMov.getPhaseMovie(q);
-                    currentTrackMov.calibrateAlpha2(q);
-
-                    [Results] = currentTrackMov.calibrateAlpha(q);
-
-                    BigResults.height = [BigResults.height; Results.height];
-                    BigResults.width = [BigResults.width; Results.width];
-                    BigResults.center = [BigResults.center; Results.center];
-                    BigResults.baseline = [BigResults.baseline; Results.baseline];
+                    % currentTrackMov.calibrateAlpha2(q);
+                    % 
+                    % [Results] = currentTrackMov.calibrateAlpha(q);
+                    % 
+                    % BigResults.height = [BigResults.height; Results.height];
+                    % BigResults.width = [BigResults.width; Results.width];
+                    % BigResults.center = [BigResults.center; Results.center];
+                    % BigResults.baseline = [BigResults.baseline; Results.baseline];
                 catch
                     disp(append('Failed phase masking - Movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
-            BigResults.height(BigResults.height == 0) = nan;
-            BigResults.width(BigResults.width == 0) = nan;
-            BigResults.center(BigResults.center == 0) = nan;
-            BigResults.baseline(BigResults.baseline == 0) = nan;
-            save(append(obj.path, filesep, "CalcAlphaResults.mat"), "BigResults");
-            disp(append('saved min projection values to calc alpha - file ', obj.path))
+            % BigResults.height(BigResults.height == 0) = nan;
+            % BigResults.width(BigResults.width == 0) = nan;
+            % BigResults.center(BigResults.center == 0) = nan;
+            % BigResults.baseline(BigResults.baseline == 0) = nan;
+            % save(append(obj.path, filesep, "CalcAlphaResults.mat"), "BigResults");
+            % disp(append('saved min projection values to calc alpha - file ', obj.path))
         end
     end
 end
