@@ -2,7 +2,11 @@ clc
 clear 
 close all;
 %file info
+<<<<<<< HEAD
 Paths = {'D:\Data Hannah\20260203\200nm_in_PAA', 'D:\Data Hannah\20260203\200nm_in_PAA'};
+=======
+Paths = {'D:\Data Hannah\20260203\300nm_in_PAA', 'D:\Data Hannah\20260203\200nm_in_PAA'};
+>>>>>>> 09be1aa3dac6260aa0e3e35225f5da6883189da5
 Paths2DCal = {};
 TimePaths = {'brightfield', 'darkfield'};
 file.path = Paths{1};

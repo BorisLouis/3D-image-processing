@@ -37,6 +37,8 @@ classdef Microrheology < handle
 
         function RunAnalysis(obj)
              Movies = fieldnames(obj.Movies);
+             Results1 = [];
+             Results2 = [];
              for j = 1 : size(Movies, 1)
                  try
                      CurrentMovie = obj.Movies.(Movies{j});
@@ -47,14 +49,28 @@ classdef Microrheology < handle
                         for loop = 1:2
                             Radius = obj.info.(append("Radius", num2str(loop)));
                             FileName = append(obj.info.FilenameRaw, num2str(loop));
-                            CurrentMovie.LoadTraces(FileName);
+                            % CurrentMovie.LoadTraces(FileName);
                             if strcmp(obj.info.StepsizeAnalysis, 'on')
-                                CurrentMovie.StepSizeAnalysis(loop);
+                                % CurrentMovie.CalculateStepsizes(loop);
+                                % CurrentMovie.FitDiffPopulations(loop);
+                                % if loop == 1
+                                %     Results1(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
+                                % elseif loop == 2
+                                %     Results2(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
+                                % end
+                                if ~isnan(obj.info.CutTraces)
+                                    [Results] = CurrentMovie.FitPopulationFractions(loop);
+                                    if loop == 1
+                                        Results1 = [Results1; Results];
+                                    elseif loop == 2
+                                        Results2 = [Results2; Results];
+                                    end
+                                end
                             else
                                 CurrentMovie.TracesAnalysis(Radius, loop);
-                                if ~isnan(obj.info.CutTraces)
-                                    CurrentMovie.PlotDistributions(loop);
-                                end
+                                % if ~isnan(obj.info.CutTraces)
+                                %     CurrentMovie.PlotDistributions(loop);
+                                % end
                             end
                         end
                      else
@@ -72,6 +88,16 @@ classdef Microrheology < handle
                  end
                  close all
              end
+
+             % Results = [Results1, Results2];
+
+             Results1 = array2table(Results1, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+             FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh1.mat');
+             save(FileNameSave, "Results1")
+
+             Results2 = array2table(Results2, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+             FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh2.mat');
+             save(FileNameSave, "Results2")
 
              % varList = fieldnames(Results{1,1}{2,1}{end, 2});
              % Aligned = struct();
