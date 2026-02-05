@@ -6,7 +6,7 @@ close all;
 
 MainFolder = 'D:\Polymer Dynamics';
 SubFolders = {'20260121', '20260120'}; %
-SubSubFolders = {'2x_bAA', '3x_bAA', '2x_AA', '3x_AA'}; 
+SubSubFolders = {'1x_bAA', '2x_bAA', '3x_bAA', '4x_bAA', '2x_AA', '3x_AA'}; 
 ExpTimes = [0.05];
 CutTraces = [50];
 

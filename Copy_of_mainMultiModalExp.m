@@ -2,7 +2,7 @@ clc
 clear 
 close all;
 %file info
-Paths = {'D:\Data Hannah\20260203\500nm_in_PAA', 'D:\Data Hannah\20260203\300nm_in_PAA', 'D:\Data Hannah\20260203\200nm_in_PAA'};
+Paths = {'D:\Data Hannah\20260203\300nm_in_PAA', 'D:\Data Hannah\20260203\200nm_in_PAA'};
 Paths2DCal = {};
 TimePaths = {'brightfield', 'darkfield'};
 file.path = Paths{1};

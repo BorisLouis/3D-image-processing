@@ -646,7 +646,7 @@ classdef TranslationalTracking < handle
                             I(i, 1) = i*obj.info.expTime + TimeStamp*60;
                         else
                             TimeStamp = 0;
-                            I(i, 1) = i*obj.info.expTime
+                            I(i, 1) = i*obj.info.expTime;
                         end
                     catch
                         I(i, 1) = i*obj.info.expTime + TimeStamp*60;
@@ -766,7 +766,8 @@ classdef TranslationalTracking < handle
             save(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'), "FitResults");
         end
 
-        function FitPopulationFractions(obj, Loop)
+        function [p_fit] = FitPopulationFractions(obj, Loop)
+            OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
             % FitResults = obj.PopulationFractions;
             channel = append('ch', num2str(Loop));
             if contains(obj.raw.Path, 'bAA')
@@ -813,23 +814,29 @@ classdef TranslationalTracking < handle
             x = FitResults.I;
             y(toRemove) = [];
             x(toRemove) = [];
-
-            y_smooth = smoothdata(y, 'sgolay', 11);
-
+            % 
+            % y_smooth = smoothdata(y, 'sgolay', 11);
+            y_smooth = medfilt1(y, 200);
+            %y_smooth = y;
             x = [refTime(:); x(:)];
             y_smooth = [refDiff(:); y_smooth(:)];
-            w_ref = 100; 
+            w_ref = 0; 
             w_exp = 1;
             weights = [w_ref * ones(numel(refTime),1); w_exp * ones(numel(x)-2,1)];
 
             a0 = min(y_smooth);
-            b0 = max(y_smooth) - a0;
+            b0 = mean(refDiff) - a0;
             c0 = 1;
             d0 = 1 / (max(x)-min(x));
             e0 = mean(x);
             p0 = [a0, b0, c0, d0, e0];
-            lb = [-Inf, 0, 0, -Inf, min(x)];
-            ub = [ Inf, Inf, Inf, Inf, max(x)];
+            if Loop == 1
+                lb = [0.1, 0.5, 0, 0, min(x)];
+                ub = [0.2, 0.7, Inf, Inf, max(x)];
+            else
+                lb = [0.1, 0.05, 0, 0, min(x)];
+                ub = [0.2, 0.25, Inf, Inf, max(x)];
+            end
             opts = optimoptions('lsqcurvefit', ...
                 'Display','iter', ...
                 'MaxFunctionEvaluations',5000, ...

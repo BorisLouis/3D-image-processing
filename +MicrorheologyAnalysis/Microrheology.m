@@ -59,7 +59,12 @@ classdef Microrheology < handle
                                 %     Results2(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
                                 % end
                                 if ~isnan(obj.info.CutTraces)
-                                    CurrentMovie.FitPopulationFractions(loop);
+                                    [Results] = CurrentMovie.FitPopulationFractions(loop);
+                                    if loop == 1
+                                        Results1 = [Results1; Results];
+                                    elseif loop == 2
+                                        Results2 = [Results2; Results];
+                                    end
                                 end
                             else
                                 CurrentMovie.TracesAnalysis(Radius, loop);
@@ -84,10 +89,15 @@ classdef Microrheology < handle
                  close all
              end
 
-             Results = [Results1, Results2];
+             % Results = [Results1, Results2];
 
-             FileNameSave = append(obj.raw.FilePath, filesep, 'AverageDiffusions.mat');
-             save(FileNameSave, "Results")
+             Results1 = array2table(Results1, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+             FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh1.mat');
+             save(FileNameSave, "Results1")
+
+             Results2 = array2table(Results2, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+             FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh2.mat');
+             save(FileNameSave, "Results2")
 
              % varList = fieldnames(Results{1,1}{2,1}{end, 2});
              % Aligned = struct();
