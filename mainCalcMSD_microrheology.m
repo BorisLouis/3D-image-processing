@@ -5,22 +5,10 @@ close all;
 [raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel, info.StepsizeAnalysis] = UserInput.CalcMSDinfoGUI;
 
 MainFolder = 'D:\Polymer Dynamics';
-<<<<<<< HEAD
 SubFolders = {'20260121', '20260120'}; %
 SubSubFolders = {'1x_bAA', '2x_bAA', '3x_bAA', '4x_bAA', '2x_AA', '3x_AA'}; 
-=======
-<<<<<<< HEAD
-SubFolders = {'PAA_1x_bAA'}; %, 'PAA_2x_bAA', 'PAA_3x_bAA', 'PAA_4x_bAA', 'PAA_2x_AA', 'PAA_3x_AA'
-SubSubFolders = {'time12\test'}; %, , 'time6', 'time6', 'time3'
-ExpTimes = [0.05, 0.01, 0.01];
-CutTraces = [50, NaN, NaN];
-=======
-SubFolders = {'20260121'};
-SubSubFolders = {'2x_AA', '3x_AA'};
->>>>>>> 06f3aa7c780662434d34d2c94a4eb0296e7ae53f
 ExpTimes = [0.05];
 CutTraces = [50];
->>>>>>> 1927bfea7804a1814a3277c5899c3d031208d162
 
 for i = 1:numel(SubFolders)
     for j = 1:numel(SubSubFolders)
