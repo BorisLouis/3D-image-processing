@@ -3,9 +3,10 @@ clear
 close all;
 %file info
 
-Paths = {'D:\Data Hannah\20260203\200nm_in_PAA', 'D:\Data Hannah\20260203\200nm_in_PAA'};
+Paths = {'E:\DDM_TestData\PS_100nm_highconc', 'E:\DDM_TestData\PS_200nm_highconc', 'E:\DDM_TestData\PS_500nm_highconc', 'E:\DDM_TestData\PS_1000nm_highconc',...
+    'E:\DDM_TestData\PS_100nm_lowconc', 'E:\DDM_TestData\PS_200nm_lowconc', 'E:\DDM_TestData\PS_500nm_lowconc', 'E:\DDM_TestData\PS_1000nm_lowconc'};
 Paths2DCal = {};
-TimePaths = {'brightfield', 'darkfield'};
+TimePaths = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6'};
 file.path = Paths{1};
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
@@ -13,7 +14,7 @@ for j = 1:numel(Paths)
     for i = 1:numel(TimePaths)
         try
             file.path  = append(Paths{j}, filesep, TimePaths{i});   
-            path2Cal = 'D:\Data Hannah\20260203\2DCal_multimodal_before';
+            path2Cal = []; %'D:\Data Hannah\20260203\2DCal_multimodal_before';
             path2ZCal = [];
             path2SRCal = [];
         
