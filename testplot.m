@@ -1,31 +1,105 @@
-close all
+%% Diffusion reference values from "Res.xlsx"
 
-FieldNames = fieldnames(BigResults_500);
-Planes = 1:8;
-for i = 1:size(FieldNames, 1)
-    FieldName = FieldNames{i};
-    List500 = nanmean(rmoutliers(BigResults_500.(FieldName),1));
-    List1000 = nanmean(rmoutliers(BigResults_1000.(FieldName),1));
-    List2000 = nanmean(rmoutliers(BigResults_2000.(FieldName),1));
+% Time points (seconds and minutes)
+DiffData.time.min = [3 6];
+DiffData.time.sec = [180 360];
 
-    Fig = figure()
-    hold on
-    scatter(Planes, List500, 'filled');
-    scatter(Planes, List1000, 'filled');
-    scatter(Planes, List2000, 'filled');
-    legend({'500 nm PS', '1000 nm PS', '2000 nm PS'})
-    xlabel('Plane')
-    ylabel('Phase (°)')
-    title(FieldName)   
+%% bAA conditions
+DiffData.bAA(1).name = '1x bAA';
+DiffData.bAA(1).ch1 = [2.22 2.03];
+DiffData.bAA(1).ch2 = [1.35 1.21];
 
-    if i == 1
-        ylim([0 15])
-    elseif i == 2
-        ylim([0 80])
-    elseif i == 3
-        ylim([0 120])
-    elseif i == 4
-        ylim([-1.5 1.5])
-    end
-    saveas(Fig, append('D:\Data Hannah\202512117\Brightfield', filesep, FieldName, '.png'))
+DiffData.bAA(2).name = '2x bAA';
+DiffData.bAA(2).ch1 = [2.62 2.45];
+DiffData.bAA(2).ch2 = [1.56 1.38];
+
+DiffData.bAA(3).name = '3x bAA';
+DiffData.bAA(3).ch1 = [2.36 1.34];
+DiffData.bAA(3).ch2 = [2.39 1.35];
+
+DiffData.bAA(4).name = '4x bAA';
+DiffData.bAA(4).ch1 = [2.32 2.32];
+DiffData.bAA(4).ch2 = [1.23 1.24];
+
+%% AA conditions
+DiffData.AA(1).name = '2x AA';
+DiffData.AA(1).ch1 = [2.04 2.04];
+DiffData.AA(1).ch2 = [1.24 1.23];
+
+DiffData.AA(2).name = '3x AA';
+DiffData.AA(2).ch1 = [1.94 1.91];
+DiffData.AA(2).ch2 = [1.19 1.20];
+
+
+%% Color gradients
+n_bAA = numel(DiffData.bAA);
+n_AA  = numel(DiffData.AA);
+
+colors_bAA = [linspace(0.2,0.8,n_bAA)', zeros(n_bAA,1), linspace(0.8,0.2,n_bAA)']; % blue→purple
+colors_AA  = [linspace(0.2,0.8,n_AA)', linspace(0.8,0.2,n_AA)', zeros(n_AA,1)];   % green→yellow
+
+
+fig = figure; hold on
+for i = 1:n_bAA
+    plot(DiffData.time.min, DiffData.bAA(i).ch1, ...
+        '-o', 'LineWidth', 2, 'Color', colors_bAA(i,:), ...
+        'DisplayName', DiffData.bAA(i).name);
 end
+xlabel('Time (min)')
+ylabel('Diffusion')
+title('Channel 1 – bAA')
+legend show
+legend('Location', 'Best')
+ylim([0.5 2.75])
+grid on
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_bAA.svg'))
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_bAA.png'))
+
+fig = figure; hold on
+for i = 1:n_bAA
+    plot(DiffData.time.min, DiffData.bAA(i).ch2, ...
+        '-o', 'LineWidth', 2, 'Color', colors_bAA(i,:), ...
+        'DisplayName', DiffData.bAA(i).name);
+end
+xlabel('Time (min)')
+ylabel('Diffusion')
+title('Channel 2 – bAA')
+legend show
+legend('Location', 'Best')
+ylim([0.5 2.75])
+grid on
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_bAA.svg'))
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_bAA.png'))
+
+fig = figure; hold on
+for i = 1:n_AA
+    plot(DiffData.time.min, DiffData.AA(i).ch1, ...
+        '-o', 'LineWidth', 2, 'Color', colors_AA(i,:), ...
+        'DisplayName', DiffData.AA(i).name);
+end
+xlabel('Time (min)')
+ylabel('Diffusion')
+title('Channel 1 – AA')
+legend show
+legend('Location', 'Best')
+ylim([0.5 2.75])
+grid on
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_AA.svg'))
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_AA.png'))
+
+fig = figure; hold on
+for i = 1:n_AA
+    plot(DiffData.time.min, DiffData.AA(i).ch2, ...
+        '-o', 'LineWidth', 2, 'Color', colors_AA(i,:), ...
+        'DisplayName', DiffData.AA(i).name);
+end
+xlabel('Time (min)')
+ylabel('Diffusion')
+title('Channel 2 – AA')
+legend show
+legend('Location', 'Best')
+grid on
+ylim([0.5 2.75])
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_AA.svg'))
+saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_AA.png'))
+

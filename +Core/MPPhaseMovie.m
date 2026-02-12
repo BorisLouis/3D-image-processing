@@ -4,6 +4,7 @@ classdef MPPhaseMovie < Core.MPMovie
     
     properties
         QPmap
+        QPmap_fullPhase
         Cropped
     end
     
@@ -51,8 +52,8 @@ classdef MPPhaseMovie < Core.MPMovie
                         Stack = obj.getFrame(n, q);
 
                         [Stack, StartX, StartY] = QP_package.cropXY(Stack);
-                        [QPmap(:,:,n) ,~] = QP_package.getQPFullPhase(Stack,s);
-                         % QPmap(:,:,:,n) = QP_package.getQP(Stack,s);
+                        [QPmap_fullPhase(:,:,n) ,~] = QP_package.getQPFullPhase(Stack,s);
+                        [QPmap(:,:,:,n), ~] = QP_package.getQP(Stack,s);
                         n = n+1;
                     end
                     % QPmap = QPmap(51:end-50, 51:end-50, :,:);
@@ -61,6 +62,9 @@ classdef MPPhaseMovie < Core.MPMovie
                 Filename = append(obj.raw.movInfo.Path, filesep, 'PhaseMovie', filesep, 'PhaseMovie.mat');
                 save(Filename, 'QPmap');
                 obj.QPmap = QPmap;
+                Filename = append(obj.raw.movInfo.Path, filesep, 'PhaseMovie', filesep, 'PhaseMovieFullPhase.mat');
+                save(Filename, 'QPmap_fullPhase');
+                obj.QPmap_fullPhase = QPmap_fullPhase;
                
                 obj.Cropped.StartX = StartX;
                 obj.Cropped.StartY = StartY;

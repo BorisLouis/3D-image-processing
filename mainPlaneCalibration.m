@@ -15,10 +15,14 @@ close all
 clc
 
 <<<<<<< HEAD
+file.path  = 'D:\Data Hannah\20260203\2DCal_multimodal_before';
+=======
+<<<<<<< HEAD
 file.path  = 'D:\Polymer Dynamics\20251004\2DCal';
 =======
 file.path  = 'C:\Users\steve\data_no_onedrive\Data Hannah\202512117\2D-cal';
 >>>>>>> 1927bfea7804a1814a3277c5899c3d031208d162
+>>>>>>> 06f3aa7c780662434d34d2c94a4eb0296e7ae53f
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)

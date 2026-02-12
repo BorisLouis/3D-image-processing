@@ -5,6 +5,8 @@ classdef TranslationalTracking < handle
         info
         Traces
         Results
+        Stepsizes
+        PopulationFractions
         ResultsStepsize
     end
     
@@ -20,7 +22,7 @@ classdef TranslationalTracking < handle
             name = fieldnames(tmpData);
             data = tmpData.(name{1});
 
-            if ~isnan(obj.info.CutTraces)
+            if ~or(isnan(obj.info.CutTraces), obj.info.CutTraces == 0)
                 if isfield(data, 'traces')
                     data = data.traces;
                 end
@@ -461,7 +463,7 @@ classdef TranslationalTracking < handle
             [N, d] = size(coords);
             stepVectors = diff(coords, 1, 1);   % (N-1 × d)
             StepSizes = NaN(N, N-1);
-            for tau = 1:N-1
+            for tau = 1
                 StepSizeList = [];
                 for start = 1:tau
                     IdxList = [1:N]+(start-1);
@@ -472,6 +474,392 @@ classdef TranslationalTracking < handle
                 end
                 StepSizes(1:size(StepSizeList, 1), tau) = StepSizeList;
             end
+        end
+
+        function CalculateStepsizes(obj,Loop)
+            run = 1;
+
+            if run == 0 
+                obj.Results = Results;
+            elseif run == 1
+                nRows = size(obj.Traces, 1);
+
+                
+                allRes = struct('StepSizes_x',0,'StepSizes_y',0,'StepSizes_z',0,'StepSizes_r',0);
+    
+                f = waitbar(0, 'initializing');
+                for k = 1:nRows
+                    currMov = obj.Traces{k, 1};
+                    AllStepSizes = [];
+                    if ~isempty(currMov)
+                        maxLength = max(cellfun(@height, currMov(:,1)));
+    
+                        for i = 1:length(currMov)
+                            if nRows == 1
+                                waitbar(i./length(currMov), f, append('Calculating stepsizes - trace ', num2str(i), '/', num2str(length(currMov))));
+                            else
+                                waitbar(i./length(currMov), f, append('Calculating stepsizes - part ', num2str(k), '/', num2str(size(obj.Traces, 1))));
+                            end
+                            currPart = currMov{i};
+                        
+                            coordinates = [currPart.col, currPart.row, currPart.z];
+                            CM = mean(coordinates,1);
+                            coordinates = coordinates-CM;
+                        
+                            %in X
+                            coord = coordinates(:,1)/10^3;
+                            Dimension = '1D';
+                            [allRes(i).StepSizes_x] = obj.GetStepSizes(coord);
+
+                            %in Y
+                            coord = coordinates(:,2)/10^3;
+                            Dimension = '1D';
+                            [allRes(i).StepSizes_y] = obj.GetStepSizes(coord);
+                            
+                            %inZ
+                            if strcmp(obj.info.Dimension, '3D')
+                                coord = coordinates(:,3)/10^3;
+                                Dimension = '1D';
+                                [allRes(i).StepSizes_z] = obj.GetStepSizes(coord);
+                            end
+    
+                            %inR
+                            if strcmp(obj.info.Dimension, '3D')
+                                coord = coordinates(:,1:3)/10^3;
+                                Dimension = '3D';
+                            elseif strcmp(obj.info.Dimension, '2D')
+                                coord = coordinates(:,1:2)/10^3;
+                                Dimension = '2D';
+                            end          
+                            [allRes(i).StepSizes_r] = obj.GetStepSizes(coord);
+                    
+                            if all(size(AllStepSizes) == [0 0])
+                                AllStepSizes = [AllStepSizes; allRes(i).StepSizes_r];
+                            elseif size(AllStepSizes, 2) > size(allRes(i).StepSizes_r, 2)
+                                ToAdd = [allRes(i).StepSizes_r, nan(size(allRes(i).StepSizes_r,1), size(AllStepSizes, 2) - size(allRes(i).StepSizes_r, 2))];
+                                AllStepSizes = [AllStepSizes; ToAdd];
+                            elseif size(AllStepSizes, 2) < size(allRes(i).StepSizes_r, 2)
+                                ToAdd = [AllStepSizes, nan(size(AllStepSizes,1), size(allRes(i).StepSizes_r, 2) - size(AllStepSizes, 2))];
+                                AllStepSizes = [ToAdd; allRes(i).StepSizes_r];
+                            else
+                                AllStepSizes = [AllStepSizes; allRes(i).StepSizes_r];
+                            end
+                        end
+ 
+                        TimeResults.AllStepSizes{k} = AllStepSizes;
+                    else
+                        TimeResults.Time(k) = k;
+                    end
+    
+                    Results{k,1} = allRes;
+                end
+                close(f)
+                obj.Results{Loop, 1} = Results;
+                filename = append(obj.raw.Path, filesep, 'msdRes_stepsizeAnalysis', num2str(Loop), '.mat');
+                save(filename, "Results");
+                Results{end,2} = TimeResults;
+                obj.Stepsizes{Loop, 1} = Results;
+                filename = append(obj.raw.Path, filesep, 'msd_TimeResults_stepsizeAnalysis', num2str(Loop), '.mat');
+                save(filename, "TimeResults");
+            end
+        end
+
+        function FitDiffPopulations(obj, Loop)
+            dt = obj.info.expTime;
+            nRows = size(obj.Traces, 1);
+            nI = numel(nRows);   
+            Kmax = 3;           
+
+            OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
+            mkdir(OutputFolder);
+            Results = obj.Stepsizes{1,1};  
+
+            try
+                MinIdx = strfind(obj.raw.Path, 'min');
+                MaxIdx = strfind(obj.raw.Path, '_sample');
+                TimeStamp = obj.raw.Path(MinIdx+3:MaxIdx-1);
+                TimeStamp = str2num(erase(TimeStamp, '_'));
+            catch
+                TimeStamp = 0;
+            end
+
+            f = waitbar(0, 'Initializing');
+            for K = 1:3
+                OutputFolder2 = append(OutputFolder, filesep, 'FitPopulations', num2str(K));
+                mkdir(OutputFolder2);
+
+                I = nan([size(Results{end, 2}.AllStepSizes, 2),1]);
+                BIC = nan([size(Results{end, 2}.AllStepSizes, 2),1]);
+                D = nan([size(Results{end, 2}.AllStepSizes, 2),K]);
+                w = nan([size(Results{end, 2}.AllStepSizes, 2),K]);
+                N = nan([size(Results{end, 2}.AllStepSizes, 2),1]);
+
+                nRows = size(Results{end, 2}.AllStepSizes, 2);
+
+                for i = 1:size(Results{end, 2}.AllStepSizes, 2)
+                    try
+                        waitbar(i./nI, f, append('fitting ecdf - part ', num2str(i), ' out of ', num2str(nI)));
+                        r = Results{end, 2}.AllStepSizes{1,i}(:,1)';
+                        if Loop == 1
+                            r(r > 0.750) = [];
+                        elseif Loop == 2
+                            r(r > 0.450) = [];
+                        end
+                        r(isnan(r)) = [];
+                        r = rmoutliers(r);
+                        N(i,:) = numel(r);
+                        [r_sorted, idx] = sort(r);
+                        F_emp = (1:N(i,:))'/N(i,:);
+                    
+                        s = r.^2;
+                        k_shape = 3/2;
+    
+                        gamma_pdf = @(s,theta) (1./(gamma(k_shape)*theta.^k_shape)) .* s.^(k_shape-1) .* exp(-s./theta);
+                        models = struct();
+
+                        [theta, w(i,:), logL] = obj.EM_gamma_fixedshape(s, K, 200);
+                    
+                        numParams = (K-1) + K; % weights + theta
+                        BIC(i,1) = -2*logL(end) + numParams*log(N(i,:));
+                        D(i,:) = theta ./ (4*dt);
+    
+                        F_mix = zeros(size(r_sorted));
+                        for j = 1:K
+                            F_mix = F_mix + w(i,:) * gammainc(r_sorted.^2 ./ theta, 3/2);
+                        end
+                        F_mix = F_mix./K;
+    
+                        if or(i == 1, mod(i, 100) == 0)
+                            Fig = figure;
+                            plot(r_sorted, F_emp, 'k.', 'DisplayName', 'Empirical');
+                            hold on;
+                            plot(r_sorted, F_mix, 'b-', 'LineWidth', 2, ...
+                                'DisplayName', sprintf('%d-pop mixture', K));
+                            xlabel('Step size r');
+                            ylabel('CDF');
+                            title(append('cdf fit - ', num2str(K), ' populations, timepoint ', num2str(i)))
+                            grid on;
+                            saveas(Fig, append(OutputFolder2, filesep, 'TimePoint', num2str(i), '.svg'));
+                            saveas(Fig, append(OutputFolder2, filesep, 'TimePoint', num2str(i), '.svg'));
+                        end
+                        if nRows ~= 1
+                            I(i, 1) = i*obj.info.expTime + TimeStamp*60;
+                        else
+                            TimeStamp = 0;
+                            I(i, 1) = i*obj.info.expTime;
+                        end
+                    catch
+                        I(i, 1) = i*obj.info.expTime + TimeStamp*60;
+                        BIC(i,1) = nan([1,1]);
+                        D(i,1:K) = nan([1,K]);
+                        w(i,1:K) = nan([1,K]);
+                        N(i,1) = nan([1,1]);
+                    end
+                end
+
+                FitResults.I = I;
+                FitResults.BIC(:,K) = BIC;
+                FitResults.N = N;
+                if K == 1
+                    FitResults.D(:,1) = D;
+                    FitResults.fractions(:,1) = w;
+                elseif K == 2
+                    FitResults.D(:,2:3) = D;
+                    FitResults.fractions(:,2:3) = w;
+                elseif K == 3
+                    FitResults.D(:,4:6) = D;
+                    FitResults.fractions(:,4:6) = w;
+                end
+                close all
+
+                if nRows ~= 1
+                    colors = lines(Kmax);
+                    Fig = figure; 
+                    hold on;
+                    Time = FitResults.I;
+                    for Pop = 1:K
+                        Dk = FitResults.D(:,Pop);
+                        ak = FitResults.fractions(:,Pop);
+                        scatter(Time,  Dk, 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', ak);
+                        plot(Time,  medfilt1(Dk, 50), 'Color', 'k', 'LineWidth', 2)
+                    end
+                    title(append('Diffusion ', num2str(K), ' populations'))
+                    xlabel('Polymerisation Time (s)')
+                    ylabel('Diffusion coefficient (µm^2/s)')
+                    saveas(Fig, append(OutputFolder2, filesep, 'DiffusionTrend.png'))
+                    saveas(Fig, append(OutputFolder2, filesep, 'DiffusionTrend.svg'))
+                end
+            end
+            close(f);
+
+            if nRows ~= 1
+                [~, SelectPopRaw] = min(FitResults.BIC, [], 2);
+                SelectPop = SelectPopRaw;
+                SelectPop(SelectPop == 3) = 2;
+                SelectPop = round(medfilt1(SelectPop,50));
+                Start2Pop = find(SelectPop == 2, 1, 'first');
+                Start2PopTime = Time(Start2Pop);
+    
+                Fig2 = figure();
+                subplot(2,1,1)
+                plot(Time, FitResults.BIC)
+                ylabel('BIC score per population')
+                xlabel('Polymerisation Time (s)')
+                legend({'1-num Pop', '2-num Pop', '3-num Pop'}, 'Location', 'Best')
+                subplot(2,1,2)
+                scatter(Time, SelectPopRaw, 1, 'color', 'b', 'MarkerFaceAlpha', 0.3);
+                hold on
+                plot(Time, SelectPop, 'Color', 'k');
+                ylim([0 4])
+                ylabel('Population of preference')
+                xlabel('Polymerisation Time (s)')
+                sgtitle('Evaluation of population fits')
+                saveas(Fig2, append(OutputFolder, filesep, 'FitEvaluations.png'))
+                saveas(Fig2, append(OutputFolder, filesep, 'FitEvaluations.png'))
+    
+                ToPlot(1:Start2Pop, 1) = FitResults.D(1:Start2Pop, 1);
+                ToPlot(1:Start2Pop, 2) = nan([Start2Pop, 1]);
+                ToPlot(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(FitResults.D(Start2Pop:end, 2:3));
+                Alpha(1:Start2Pop, 1) = ones([Start2Pop, 1]);
+                Alpha(1:Start2Pop, 2) = zeros([Start2Pop, 1]);
+                Alpha(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(FitResults.fractions(Start2Pop:end, 2:3));
+                Alpha(isnan(Alpha)) = 0;
+    
+                Fig3 = figure;
+                hold on
+                subplot(5,1, [1,3])
+                for Pop = 1:size(ToPlot, 2)
+                    scatter(FitResults.I, ToPlot(:,Pop), 5, 'filled', 'MarkerFaceAlpha', 'flat', 'AlphaData', Alpha(:,Pop));
+                    LegendNames{Pop} = append('Population ', num2str(Pop));
+                    hold on
+                end
+                ylabel('Diffusion coefficient (µm^2/s)');
+                xline(Start2PopTime);
+                legend(LegendNames);
+                title('Diffusion trend')
+                hold on
+                subplot(5,1,4)
+                for Pop = 1:size(ToPlot, 2)
+                    plot(FitResults.I', Alpha(:,Pop));
+                    LegendNames{Pop} = append('Population ', num2str(Pop));
+                    hold on
+                end
+                ylabel('Fractions');         
+                hold on
+                subplot(5,1,5)
+                plot(FitResults.I, FitResults.N)
+                ylabel('Number of steps')
+                xlabel('Polymerisation Time (s)')
+                saveas(Fig3, append(OutputFolder, filesep, 'DiffusionTrend.png'))
+                saveas(Fig3, append(OutputFolder, filesep, 'DiffusionTrend.svg'));
+            else 
+                nRow = 0;
+                disp(append('Diffusion is ', num2str(FitResults.D(1,1)), ' µm^2/s'));
+            end
+
+            obj.PopulationFractions = FitResults;
+                 FitResults.Start2Pop = Start2PopTime;
+            FitResults.BIC = array2table(FitResults.BIC, 'VariableNames', {'Pop1','Pop2','Pop3'});
+            FitResults.D = array2table(FitResults.D, 'VariableNames', {'Pop1', 'Pop2_1','Pop2_2','Pop3_1','Pop3_2','Pop3_3'});
+            FitResults.fractions = array2table(FitResults.fractions, 'VariableNames', {'Pop1','Pop2_1','Pop2_2', 'Pop3_1','Pop3_2','Pop3_3'});
+            obj.ResultsStepsize = FitResults;
+            save(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'), "FitResults");
+        end
+
+        function [p_fit] = FitPopulationFractions(obj, Loop)
+            OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
+            % FitResults = obj.PopulationFractions;
+            channel = append('ch', num2str(Loop));
+            if contains(obj.raw.Path, 'bAA')
+                condType = 'bAA';
+            elseif contains(obj.raw.Path, 'AA')
+                condType = 'AA';
+            end
+            if contains(obj.raw.Path, '1x_')
+                condIdx = 1;
+            elseif contains(obj.raw.Path, '2x_')
+                condIdx = 2;
+            elseif contains(obj.raw.Path, '3x_')
+                condIdx = 3;
+            elseif contains(obj.raw.Path, '4x_')
+                condIdx = 4;
+            end
+
+
+            load('D:\Polymer Dynamics\3_and_6min\Results.mat');
+            refDiff = DiffData.(condType)(condIdx).(channel);
+            refTime = DiffData.time.sec;
+
+            load(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'));
+
+            [~, SelectPopRaw] = min(FitResults.BIC, [], 2);
+            SelectPop = table2array(SelectPopRaw);
+            SelectPop(SelectPop == 3) = 2;
+            SelectPop = round(medfilt1(SelectPop,50));
+            Start2Pop = find(SelectPop == 2, 1, 'first');
+            Start2PopTime = FitResults.I(Start2Pop);
+
+
+            ToPlot(1:Start2Pop, 1) = table2array(FitResults.D(1:Start2Pop, 1));
+            ToPlot(1:Start2Pop, 2) = nan([Start2Pop, 1]);
+            ToPlot(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(table2array(FitResults.D(Start2Pop:end, 2:3)));
+            Alpha(1:Start2Pop, 1) = ones([Start2Pop, 1]);
+            Alpha(1:Start2Pop, 2) = zeros([Start2Pop, 1]);
+            Alpha(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(table2array(FitResults.fractions(Start2Pop:end, 2:3)));
+            Alpha(isnan(Alpha)) = 0;
+
+            model = @(p,x) p(1) + (p(2)-p(1))*exp(-p(3)*exp(p(4)*(x-p(5))));
+            y = ToPlot(:,1);
+            toRemove = isnan(y);
+            x = FitResults.I;
+            y(toRemove) = [];
+            x(toRemove) = [];
+            % 
+            % y_smooth = smoothdata(y, 'sgolay', 11);
+            y_smooth = medfilt1(y, 200);
+            %y_smooth = y;
+            x = [refTime(:); x(:)];
+            y_smooth = [refDiff(:); y_smooth(:)];
+            w_ref = 0; 
+            w_exp = 1;
+            weights = [w_ref * ones(numel(refTime),1); w_exp * ones(numel(x)-2,1)];
+
+            a0 = min(y_smooth);
+            b0 = mean(refDiff) - a0;
+            c0 = 1;
+            d0 = 1 / (max(x)-min(x));
+            e0 = mean(x);
+            p0 = [a0, b0, c0, d0, e0];
+            if Loop == 1
+                lb = [0.1, 0.5, 0, 0, min(x)];
+                ub = [0.2, 0.7, Inf, Inf, max(x)];
+            else
+                lb = [0.1, 0.05, 0, 0, min(x)];
+                ub = [0.2, 0.25, Inf, Inf, max(x)];
+            end
+            opts = optimoptions('lsqcurvefit', ...
+                'Display','iter', ...
+                'MaxFunctionEvaluations',5000, ...
+                'FunctionTolerance',1e-12);
+            weightedModel = @(p,x) sqrt(weights) .* model(p,x);
+            weightedY     = sqrt(weights) .* y_smooth;
+            p_fit = lsqcurvefit(model, p0, x, weightedY, lb, ub, opts);
+            y_fit = model(p_fit, x);
+            Fig4 = figure;
+            plot(x(3:end), y, '.', 'Color',[0.7 0.7 0.7]); hold on
+            plot(x(3:end), y_fit(3:end), 'b', 'LineWidth',2)
+            legend('Raw data','Fit')
+            xlabel('Polymerisation time (s)')
+            ylabel('Diffusion coefficient (µm^2/s)')
+            title('Gompertz fit - Fast diffusion fraction')
+            saveas(Fig4, append(OutputFolder, filesep, 'FitFastDiff.png'))
+            saveas(Fig4, append(OutputFolder, filesep, 'FitFastDiff.svg'))
+
+       
+            FitResults.Fit = array2table(p_fit, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+
+            obj.ResultsStepsize = FitResults;
+            save(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'), "FitResults");
         end
 
         function StepSizeAnalysis(obj,Loop)
@@ -565,6 +953,7 @@ classdef TranslationalTracking < handle
             end
 
             dt = obj.info.expTime;
+            nRows = size(obj.Traces, 1);
             nI = numel(nRows);   
             Kmax = 3;           
 
