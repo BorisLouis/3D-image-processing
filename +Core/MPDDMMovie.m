@@ -30,7 +30,9 @@ classdef MPDDMMovie < Core.MPMovie
                 n = 0;
                 for frame = FramesToLoad
                     n = n+1;
-                    Frame = double(Load.Movie.tif.getframes(obj.calibrated{1, 1}.filePath.(append('plane', num2str(c))), frame));
+                    FilePath = obj.calibrated{1, 1}.filePath.(append('plane', num2str(c)));
+                    FilePath(1) = obj.raw.fullPath(1);
+                    Frame = double(Load.Movie.tif.getframes(FilePath, frame));
                     if strcmp(obj.info.ddmParam.CorrectBleaching, 'on')
                         waitbar(frame./obj.raw.movInfo.maxFrame, h, append('Load frame + bleaching correction -- frame ',...
                             num2str(n), '/', num2str(MaxFrame), ' plane ', num2str(c)));
