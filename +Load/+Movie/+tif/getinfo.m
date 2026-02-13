@@ -20,6 +20,7 @@ warning('on','all')
 
 movieInfo.Frame_n = tfl; 
 tObj.close
+movieInfo.File = path2file;
 
 end
 

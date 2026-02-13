@@ -77,7 +77,7 @@ classdef Microrheology < handle
                          Radius = obj.info.Radius1;
                          FileName = append(obj.info.FilenameRaw, "1");
                          CurrentMovie.LoadTraces(FileName);
-                         CurrentMovie.Analysis(Radius, 1);
+                         CurrentMovie.TracesAnalysis(Radius, 1);
                          CurrentMovie.PlotTrends;
                          if ~isnan(obj.info.CutTraces)
                              CurrentMovie.PlotDistributions(1);

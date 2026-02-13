@@ -4,9 +4,9 @@ close all;
 
 [raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel, info.StepsizeAnalysis] = UserInput.CalcMSDinfoGUI;
 
-MainFolder = 'D:\Polymer Dynamics';
-SubFolders = {'20260121', '20260120'}; %
-SubSubFolders = {'1x_bAA', '2x_bAA', '3x_bAA', '4x_bAA', '2x_AA', '3x_AA'}; 
+MainFolder = 'C:\Users\steve';
+SubFolders = {'Downloads'}; %
+SubSubFolders = {'mov_diff_N1000_r0.0nm_eta4.0mPas_frames500_dt33ms'}; 
 ExpTimes = [0.05];
 CutTraces = [50];
 

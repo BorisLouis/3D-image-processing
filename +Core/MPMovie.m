@@ -526,7 +526,11 @@ classdef MPMovie < Core.Movie
                         end
                     catch
                     end
-                    [mov] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
+                    try
+                        [mov] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
+                    catch
+                        [mov] = Load.Movie.tif.getFrame(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
+                    end
                     % bg = double(imgaussfilt(mov, 15));
                     % mov = double(mov) - bg;
                     data(:,:,i) = double(mov);

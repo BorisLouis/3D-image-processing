@@ -119,7 +119,11 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 ImMax = max(DataToTrack.t);
                 % get the timing of each frame
                 if ~isfield(obj.raw.movInfo,'timing')
-                    timing = ((1:ImMax)-1)*obj.raw.movInfo.expT;
+                    try
+                        timing = ((1:ImMax)-1)*obj.raw.movInfo.expT;
+                    catch
+                        timing = ((1:ImMax)-1)*0.033;
+                    end
                 else
                     timing = obj.raw.movInfo.timing;
                 end
@@ -160,7 +164,11 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
     
                 %%%%% TRACK DATA RECURSIVELY
                 radius = trackParam.radius;
-                MaximumTimeMem = trackParam.memory*obj.raw.movInfo.expT*10^(-3);
+                try
+                    MaximumTimeMem = trackParam.memory*obj.raw.movInfo.expT*10^(-3);
+                catch
+                    MaximumTimeMem = trackParam.memory*0.033;
+                end
                 totlengthFinal = 0;
                 h = waitbar(0,'Tracking particles...');
                 while ~isempty(ToTrack) 

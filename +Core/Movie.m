@@ -78,7 +78,11 @@ classdef Movie < handle
             else
                 obj.raw.movInfo   = movInfo;
                 obj.raw.frameInfo = frameInfo;
-                obj.raw.fullPath  = [movInfo.Path filesep frameInfo(1).File];
+                if ~strcmp(ext, '.tif')
+                    obj.raw.fullPath  = [movInfo.Path filesep frameInfo(1).File];
+                else
+                    obj.raw.fullPath = frameInfo.File;
+                end
                 obj.raw.maxFrame  = movInfo.maxFrame;
             end
             obj.raw.ext       = ext;
@@ -519,8 +523,13 @@ classdef Movie < handle
                     end
                 otherwise
                     extName = strrep(ext,'.','');  
-                    [frameInfo,movInfo] = Load.Movie.(extName).getInfo(fullPath);
-                                  
+                    % [frameInfo,movInfo] = Load.Movie.(extName).getinfo(fullPath);
+                    [frameInfo] = Load.Movie.(extName).getinfo(fullPath);
+                    movInfo.ext = extName;
+                    movInfo.indivFrame = frameInfo.Frame_n;    
+                    ext = extName;
+                    movInfo.maxFrame = frameInfo.Frame_n;
+                    movInfo.Path = frameInfo.Path;
             end
             try
                 movInfo.ext = ext;
