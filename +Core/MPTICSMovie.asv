@@ -190,12 +190,8 @@ classdef MPTICSMovie < Core.MPMovie
                     end
                     
                     try
-                        etaRes = imresize(eta, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
-                        diffRes = imresize(diff, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
-                    catch
-                        etaRes = eta;
-                        diffRes = diff;
-                    end
+                    etaRes = imresize(eta, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
+                    diffRes = imresize(diff, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
 
                     Fig1 = figure(); 
                     imagesc(etaRes)

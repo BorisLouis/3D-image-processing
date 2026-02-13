@@ -241,16 +241,29 @@ classdef MPMovie < Core.Movie
             end
 
             if run == 0
-                calib1 = load(append([obj.raw.movInfo.Path filesep append('calibrated1\calibrated1.mat')]));
-                calib1 = calib1.calib;
-                obj.calibrated{1,1} = calib1;
-
-                if obj.info.multiModal == 1
-                    calib2 = load(append([obj.raw.movInfo.Path filesep append('calibrated2\calibrated2.mat')]));
-                    calib2 = calib2.calib;
-                    obj.calibrated{1,2} = calib2;
+                try 
+                    calib1 = load(append([obj.raw.movInfo.Path filesep append('calibrated1\calibrated1.mat')]));
+                    calib1 = calib1.calib;
+                    obj.calibrated{1,1} = calib1;
+    
+                    if obj.info.multiModal == 1
+                        calib2 = load(append([obj.raw.movInfo.Path filesep append('calibrated2\calibrated2.mat')]));
+                        calib2 = calib2.calib;
+                        obj.calibrated{1,2} = calib2;
+                    end
+                    disp('Found calibration file - loading this')
+                catch
+                    calib1 = load(append([obj.raw.movInfo.Path filesep append('calibrated1.mat')]));
+                    calib1 = calib1.calib;
+                    obj.calibrated{1,1} = calib1;
+    
+                    if obj.info.multiModal == 1
+                        calib2 = load(append([obj.raw.movInfo.Path filesep append('calibrated2.mat')]));
+                        calib2 = calib2.calib;
+                        obj.calibrated{1,2} = calib2;
+                    end
+                    disp('Found calibration file - loading this')
                 end
-                disp('Found calibration file - loading this')
             else 
 
                 f = waitbar(0, 'Initializing...');

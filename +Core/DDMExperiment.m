@@ -98,7 +98,8 @@ classdef DDMExperiment < handle
                     if strcmp(currentTrackMov.info.ddmParam.Scanning, 'off')
                         currentTrackMov.getFullFrames;
                         currentTrackMov.mainDDM('NumBins',30);
-                        currentTrackMov.fitDDM;
+                        currentTrackMov.fitDDMNoOptim;
+                        % currentTrackMov.fitDDM;
                         currentTrackMov.getParams;
                         disp(['DDM analysis completed for file ' num2str(i) ' / ' num2str(nfields) ' ...']);   
                     elseif strcmp(currentTrackMov.info.ddmParam.Scanning, 'on')

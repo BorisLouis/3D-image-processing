@@ -3,10 +3,9 @@ clear
 close all;
 %file info
 
-Paths = {'E:\DDM_TestData\PS_100nm_highconc', 'E:\DDM_TestData\PS_200nm_highconc', 'E:\DDM_TestData\PS_500nm_highconc', 'E:\DDM_TestData\PS_1000nm_highconc',...
-    'E:\DDM_TestData\PS_100nm_lowconc', 'E:\DDM_TestData\PS_200nm_lowconc', 'E:\DDM_TestData\PS_500nm_lowconc', 'E:\DDM_TestData\PS_1000nm_lowconc'};
+Paths = {'E:\Data Steven - GEMs\data paper'};
 Paths2DCal = {};
-TimePaths = {'sample1', 'sample2', 'sample3', 'sample4', 'sample5', 'sample6'};
+TimePaths = {'SW480'};
 file.path = Paths{1};
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

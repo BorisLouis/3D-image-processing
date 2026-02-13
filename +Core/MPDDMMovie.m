@@ -32,7 +32,7 @@ classdef MPDDMMovie < Core.MPMovie
                     n = n+1;
                     FilePath = obj.calibrated{1, 1}.filePath.(append('plane', num2str(c)));
                     FilePath(1) = obj.raw.fullPath(1);
-                    Frame = double(Load.Movie.tif.getframes(FilePath, frame));
+                    Frame = double(Load.Movie.tif.getFrame(FilePath, frame));
                     if strcmp(obj.info.ddmParam.CorrectBleaching, 'on')
                         waitbar(frame./obj.raw.movInfo.maxFrame, h, append('Load frame + bleaching correction -- frame ',...
                             num2str(n), '/', num2str(MaxFrame), ' plane ', num2str(c)));
@@ -113,6 +113,8 @@ classdef MPDDMMovie < Core.MPMovie
         function mainDDM(obj,varargin)
             for c = obj.calibrated{1,1}.nPlanes
                 DDMOutputfile = append(obj.calibrated{1, 1}.mainPath, filesep, 'DDMOutput' , num2str(c), '.mat');
+                DDMOutputfile(1) = obj.raw.fullPath(1);
+                DDMOutputfile = append(obj.raw.movInfo.Path,filesep, 'calibrated1', filesep, 'DDMOutput1.mat');
                 if ~exist(DDMOutputfile)
                     run = 1;
                 else
@@ -287,6 +289,68 @@ classdef MPDDMMovie < Core.MPMovie
             end
         end
 
+        function fitDDMNoOptim(obj)
+            for c = 1:size(obj.DDMOutput, 1)
+                for i = 1:size(obj.DDMOutput{c,1},1)-1
+                    D(i,:) = obj.DDMOutput{c,1}.DDMSignalValue{i,1};
+                    q(i) = obj.DDMOutput{c,1}.QVector(i);
+                    try
+                        A0(i,1) = D(i, find(diff(smooth(D(i,:))) < 0, 1, 'first'));
+                    catch
+                        A0(i,1) = D(i, end);
+                    end
+                    B0(i,1) = D(i,1);
+                end
+                t = obj.DDMOutput{c,1}.Time{1,1} ;
+                q1 = obj.info.ddmParam.Qmin;
+                if strcmp(obj.info.ddmParam.Scanning, 'on')
+                    q2 = 2*pi./(obj.info.PxSize*10^(-3));
+                else
+                    q2 = obj.info.ddmParam.Qmax;
+                end
+    
+                q_idx = (q >= q1) & (q <= q2);
+                q_sel = q(q_idx);
+                D_sel = D(q_idx, :);
+                A_sel = A0(q_idx);
+                B_sel = B0(q_idx);
+                q_sel = q(q_idx);
+
+               for i = 1:size(D_sel, 1)
+                   ISF = D_sel(i,:);
+                   %model = append(num2str(A_sel(i)-B_sel(i)), '*(1-exp(-x*a*(', num2str(q_sel(i)), '^2)))+', num2str(B_sel(i)));
+                   model = append('a*(1-exp(-x*b*(', num2str(q_sel(i)), '^2)))+c');
+                   f = fit(t', ISF', model);
+                   param = coeffvalues(f);
+                   A_opt(i,1) = param(1);
+                   B_opt(i,1) = param(3);
+                   Diffusion(i,1) = param(2);
+               end
+                
+                obj.FitResults{c,1}.ParamA = A_opt;
+                obj.FitResults{c,1}.ParamB = B_opt;
+
+                MSD_final = 8*nanmean(rmoutliers(Diffusion))*t;
+    
+                obj.FitResults{c,1}.MSD = MSD_final;
+                obj.FitResults{c,1}.tau = [1:size(MSD_final, 2)]*obj.info.ddmParam.ExpTime;
+                obj.FitResults{c,1}.MSDstddev = NaN;
+                obj.FitResults{c,1}.MSDExit = NaN;
+    
+                Filename = append(obj.calibrated{1, 1}.mainPath, filesep, 'MSD_', num2str(c), '.mat');
+                Filename(1) = obj.raw.fullPath(1);
+                Filename = append(obj.raw.movInfo.Path, filesep, 'calibrated1', filesep, 'MSD_', num2str(c), '.mat');
+                save(Filename, 'MSD_final');
+
+                ValidPart = find(isnan(obj.FitResults{c,1}.MSD), 1, 'first');
+                if ~isempty(ValidPart)
+                    obj.FitResults{c,1}.MSD = obj.FitResults{c,1}.MSD(1:ValidPart-1);
+                else
+                    % obj.FitResults{c,1}.MSD = obj.FitResults{c,1}.MSD(1:(size(obj.FitResults{c,1}.MSD,2)/2));
+                end
+            end
+        end
+
         function [AverageDDMValueAtR, anisotropy_values] = AverageRadialy3D(obj, AvgFFT,FrameSize,critangle,NumBins)
             % Averages the scattering function in 3d radially. Returns the
             % average values in function of time and q-vector.
@@ -436,12 +500,13 @@ classdef MPDDMMovie < Core.MPMovie
 
                  tofit = obj.FitResults{1, 1}.MSD(1:obj.info.ddmParam.FitRDiff);
                  tau   = obj.FitResults{1, 1}.tau(1:obj.info.ddmParam.FitRDiff);
-                 Lower = [obj.info.FitMinDiffLim, 0];
+                 Lower = [obj.info.FitMinDiffLim, min(tofit)];
                  Upper = [obj.info.FitMaxDiffLim, max(tofit)];
                  Start = [obj.info.FitDiffEstim, tofit(1) - (tofit(2) - tofit(1))];
-                 [f, gov]     = fit(tau(:),tofit(:),equation, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
-                
-                 if gov.rsquare > 0
+                 % [f, gov]     = fit(tau(:),tofit(:),equation, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
+                 [f, gov]     = fit(tau(:),tofit(:),'4*a*x');
+
+                 % if gov.rsquare > 0
                      g = coeffvalues(f);
                      D = g(1);
                      Results{1,c}.Diff = D;
@@ -451,15 +516,17 @@ classdef MPDDMMovie < Core.MPMovie
                          Results{1,c}.alpha = NaN;
                      end
                      Results{1,c}.n = MSD.getViscosity(Results{1,c}.Diff,obj.info.ddmParam.ParticleSize*10^(-3),obj.info.ddmParam.Temp);
-                 else
-                     Results{1,c}.Diff = NaN;
-                     Results{1,c}.alpha = NaN;
-                     Results{1,c}.n = NaN;
-                 end
+                 % else
+                 %     Results{1,c}.Diff = NaN;
+                 %     Results{1,c}.alpha = NaN;
+                 %     Results{1,c}.n = NaN;
+                 % end
              end
 
              obj.MSDResults = Results;
              Filename = append(obj.calibrated{1, 1}.mainPath, filesep, 'MSDResults.mat');
+             Filename(1) = obj.raw.fullPath(1);
+             Filename = append(obj.raw.movInfo.Path, filesep, 'calibrated1', filesep, 'MSDResults.mat');
              save(Filename, "Results");
          end
     end
