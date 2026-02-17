@@ -49,15 +49,15 @@ classdef Microrheology < handle
                         for loop = 1:2
                             Radius = obj.info.(append("Radius", num2str(loop)));
                             FileName = append(obj.info.FilenameRaw, num2str(loop));
-                            % CurrentMovie.LoadTraces(FileName);
+                            CurrentMovie.LoadTraces(FileName);
                             if strcmp(obj.info.StepsizeAnalysis, 'on')
-                                % CurrentMovie.CalculateStepsizes(loop);
-                                % CurrentMovie.FitDiffPopulations(loop);
-                                % if loop == 1
-                                %     Results1(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
-                                % elseif loop == 2
-                                %     Results2(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
-                                % end
+                                CurrentMovie.CalculateStepsizes(loop);
+                                CurrentMovie.FitDiffPopulations(loop);
+                                if loop == 1
+                                    Results1(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
+                                elseif loop == 2
+                                    Results2(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
+                                end
                                 if ~isnan(obj.info.CutTraces)
                                     [Results] = CurrentMovie.FitPopulationFractions(loop);
                                     if loop == 1
@@ -68,9 +68,6 @@ classdef Microrheology < handle
                                 end
                             else
                                 CurrentMovie.TracesAnalysis(Radius, loop);
-                                % if ~isnan(obj.info.CutTraces)
-                                %     CurrentMovie.PlotDistributions(loop);
-                                % end
                             end
                         end
                      else
@@ -89,7 +86,6 @@ classdef Microrheology < handle
                  close all
              end
 
-             % Results = [Results1, Results2];
 
              Results1 = array2table(Results1, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
              FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh1.mat');
@@ -98,80 +94,6 @@ classdef Microrheology < handle
              Results2 = array2table(Results2, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
              FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh2.mat');
              save(FileNameSave, "Results2")
-
-             % varList = fieldnames(Results{1,1}{2,1}{end, 2});
-             % Aligned = struct();
-             % 
-             % for v = 1:numel(varList)
-             %     try
-             %         varName = varList{v};
-             %         allTimes = {};
-             %         allVals  = {};
-             %         for s = 1:size(Results,2)
-             %             try
-             %                DataCh1 = Results{1,s}{1,1}{end,2};
-             %                DataCh2 = Results{1,s}{2,1}{end,2};
-             %                DataCh1(isnan([DataCh1.Time]),:) = [];
-             %                DataCh2(isnan([DataCh2.Time]),:) = [];
-             %                allTimesCh1{s} = DataCh1.Time(:);
-             %                allTimesCh2{s} = DataCh2.Time(:);
-             %                allValsCh1{s}  = DataCh1.(varName)(:);
-             %                allValsCh2{s}  = DataCh2.(varName)(:);
-             %             catch
-             %             end
-             %         end
-             %         TmasterCh1 = unique(round(cell2mat(allTimesCh1), 6));
-             %         MCh1 = nan(length(TmasterCh1), length(allValsCh1));
-             %         TmasterCh2 = unique(round(cell2mat(allTimesCh2), 6));
-             %         MCh2 = nan(length(TmasterCh2), length(allValsCh2));
-             % 
-             %         for s = 1:length(allValsCh1)
-             %             t = allTimesCh1{s};
-             %             x = allValsCh1{s};
-             %             [~, ia, ib] = intersect(TmasterCh1, t);    % match timepoints
-             %             MCh1(ia, s) = x(ib);
-             %         end
-             %         for s = 1:length(allValsCh2)
-             %             t = allTimesCh2{s};
-             %             x = allValsCh2{s};
-             %             [~, ia, ib] = intersect(TmasterCh2, t);    % match timepoints
-             %             MCh2(ia, s) = x(ib);
-             %         end
-             %         Aligned.(varName).TimeCh1 = TmasterCh1;
-             %         Aligned.(varName).DataCh1 = MCh1;
-             %         Aligned.(varName).TimeCh2 = TmasterCh2;
-             %         Aligned.(varName).DataCh2 = MCh2;
-             % 
-             %         fig = figure;
-             %         baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];
-             %         for i = 1:2
-             %             try  
-             %                if i == 1
-             %                    Data = Aligned.(varName).DataCh1;
-             %                    Time = Aligned.(varName).TimeCh1;
-             %                elseif i == 2
-             %                    Data = Aligned.(varName).DataCh2;
-             %                    Time = Aligned.(varName).TimeCh2;
-             %                end
-             % 
-             %                Mean = nanmean(Data, 2);
-             %                baseColor = baseColors(i, :);  % MATLAB default blue
-             %                plot(Time, Mean, 'Color', baseColor, 'LineWidth', 2);
-             %                hold on
-             %            catch
-             %            end
-             %        end
-             %        xlabel('Time (s)', 'FontSize', 12);
-             %        ylabel(varName, 'FontSize', 12);
-             %        grid on; box on; axis tight;
-             %        set(gca, 'FontSize', 10);
-             %        legend({append(num2str(obj.info.Radius1*100), ' nm'), append(num2str(obj.info.Radius2*100), ' nm')}, 'Location', 'best');
-             %        title(append(varName, ' over Time'));
-             %        saveas(fig, append(obj.raw.FilePath, filesep, varName,'Trend.png'));
-             %     catch
-             %     end
-             % end
-             % save(append(obj.raw.FilePath, filesep, 'msdResAveraged.mat'), "Aligned");
         end
     end
 end

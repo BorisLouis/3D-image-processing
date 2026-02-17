@@ -344,16 +344,16 @@ classdef MultiModalExperiment < handle
 
                 for i = 3:size(folder2Mov,1)
                     try
-                        % if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
-                        %     disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
-                        %     LoadMask = load(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'));
-                        %     FieldNamesMask = fieldnames(LoadMask);
-                        %     mask{i,1} = LoadMask.(FieldNamesMask{1});
-                        % else
+                        if exist(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'))
+                            disp('ROI already applied - if you want to redo, please remove calibration folders and run again')
+                            LoadMask = load(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'));
+                            FieldNamesMask = fieldnames(LoadMask);
+                            mask{i,1} = LoadMask.(FieldNamesMask{1});
+                        else
                             if strcmp(obj.info.drawROI, 'channel1')
                                 Folder1 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated1'));
                                 idx1 = find(contains({Folder1.name}, '.tif'));
-                                Frame = Load.Movie.tif.getFrame(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
+                                Frame = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),obj.info.TestFrame);
                                 if strcmp(obj.info.Channel1, 'Segmentation')
                                     Dilation = obj.info1.GlobalBgCorr;
                                 else
@@ -362,7 +362,7 @@ classdef MultiModalExperiment < handle
                             elseif strcmp(obj.info.drawROI, 'channel2')
                                 Folder2 = dir(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'calibrated2'));
                                 idx2 = find(contains({Folder2.name}, '.tif'));
-                                Frame = Load.Movie.tif.getFrame(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
+                                Frame = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),obj.info.TestFrame);
                                 if strcmp(obj.info.Channel2, 'Segmentation')
                                     Dilation = obj.info2.GlobalBgCorr;
                                 else
@@ -388,7 +388,7 @@ classdef MultiModalExperiment < handle
                             save(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'), "MaskToSave");
                             
     
-                        % end
+                        end
                     catch
                         disp(append("Failed to draw ROI on movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
                     end
@@ -447,13 +447,13 @@ classdef MultiModalExperiment < handle
         
                             for j = 1:nFrames
                                 waitbar(j./nFrames, f, append("Applying ROI - movie ", num2str(i-2), ' out of ', num2str(size(folder2Mov,1)-2)));
-                                Frame1 = Load.Movie.tif.getFrame(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),j);
+                                Frame1 = Load.Movie.tif.getframes(append(Folder1(idx1).folder, filesep, Folder1(idx1).name),j);
                                 Frame1(mask{i,1} == 0) = NaN;
                                 t1.setDirectory(j);
                                 t1.write(Frame1);
 
                                 if obj.info.multiModal == 1
-                                    Frame2 = Load.Movie.tif.getFrame(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),j);
+                                    Frame2 = Load.Movie.tif.getframes(append(Folder2(idx2).folder, filesep, Folder2(idx2).name),j);
                                     Frame2(mask{i,1} == 0) = NaN;
                                     t2.setDirectory(j);
                                     t2.write(Frame2);   
