@@ -1,105 +1,106 @@
-%% Diffusion reference values from "Res.xlsx"
+%% ============================================================
+%  Scatter plot of viscosity vs nanoparticle size
+%  3 sub-columns per size: SPT (left), TARDIS (middle), DDM (right)
+%  Equal spacing of 100, 200, 500, 1000 nm
+% =============================================================
 
-% Time points (seconds and minutes)
-DiffData.time.min = [3 6];
-DiffData.time.sec = [180 360];
+clear; clc; close all;
 
-%% bAA conditions
-DiffData.bAA(1).name = '1x bAA';
-DiffData.bAA(1).ch1 = [2.22 2.03];
-DiffData.bAA(1).ch2 = [1.35 1.21];
+%% Load data
+filePath = 'E:\Data Steven - GEMs\data paper\NPs\Viscosity_Grouped.csv';
+data = readmatrix(filePath);
 
-DiffData.bAA(2).name = '2x bAA';
-DiffData.bAA(2).ch1 = [2.62 2.45];
-DiffData.bAA(2).ch2 = [1.56 1.38];
+%% Nanoparticle sizes (categorical spacing)
+sizes = [100 200 500 1000];
+baseX = 1:length(sizes);   % 1 2 3 4 → equal spacing
 
-DiffData.bAA(3).name = '3x bAA';
-DiffData.bAA(3).ch1 = [2.36 1.34];
-DiffData.bAA(3).ch2 = [2.39 1.35];
+%% Extract LOW concentration (rows 4–9 in your sheet)
+low = data(4:9, :);
 
-DiffData.bAA(4).name = '4x bAA';
-DiffData.bAA(4).ch1 = [2.32 2.32];
-DiffData.bAA(4).ch2 = [1.23 1.24];
+low_DDM    = [low(:,1)  low(:,4)  low(:,7)  low(:,10)];
+low_SPT    = [low(:,2)  low(:,5)  low(:,8)  low(:,11)];
+low_TARDIS = [low(:,3)  low(:,6)  low(:,9)  low(:,12)];
 
-%% AA conditions
-DiffData.AA(1).name = '2x AA';
-DiffData.AA(1).ch1 = [2.04 2.04];
-DiffData.AA(1).ch2 = [1.24 1.23];
+%% Extract HIGH concentration (rows 16–21)
+high = data(16:21, :);
 
-DiffData.AA(2).name = '3x AA';
-DiffData.AA(2).ch1 = [1.94 1.91];
-DiffData.AA(2).ch2 = [1.19 1.20];
+high_DDM    = [high(:,1)  high(:,4)  high(:,7)  high(:,10)];
+high_SPT    = [high(:,2)  high(:,5)  high(:,8)  high(:,11)];
+high_TARDIS = [high(:,3)  high(:,6)  high(:,9)  high(:,12)];
 
+%% Plot settings
+offset = 0.25;        % spacing between SPT / TARDIS / DDM columns
+jitterWidth = 0.06;   % horizontal jitter width
 
-%% Color gradients
-n_bAA = numel(DiffData.bAA);
-n_AA  = numel(DiffData.AA);
-
-colors_bAA = [linspace(0.2,0.8,n_bAA)', zeros(n_bAA,1), linspace(0.8,0.2,n_bAA)']; % blue→purple
-colors_AA  = [linspace(0.2,0.8,n_AA)', linspace(0.8,0.2,n_AA)', zeros(n_AA,1)];   % green→yellow
+% Colors (consistent across plots)
+color_DDM    = [0 0.4470 0.7410];      % blue
+color_SPT    = [0.8500 0.3250 0.0980]; % orange
+color_TARDIS = [0.4660 0.6740 0.1880]; % green
 
 
-fig = figure; hold on
-for i = 1:n_bAA
-    plot(DiffData.time.min, DiffData.bAA(i).ch1, ...
-        '-o', 'LineWidth', 2, 'Color', colors_bAA(i,:), ...
-        'DisplayName', DiffData.bAA(i).name);
+%% ============================================================
+%% HIGH CONCENTRATION
+%% ============================================================
+figure; hold on;
+
+for i = 1:length(baseX)
+
+    % Define mini-column centers
+    x_spt    = baseX(i) - offset;
+    x_tardis = baseX(i);
+    x_ddm    = baseX(i) + offset;
+
+    % Scatter with jitter
+    scatter(x_spt + (rand(size(high_SPT(:,i))) - 0.5)*jitterWidth, ...
+            high_SPT(:,i), 60, color_SPT, 'filled');
+
+    scatter(x_tardis + (rand(size(high_TARDIS(:,i))) - 0.5)*jitterWidth, ...
+            high_TARDIS(:,i), 60, color_TARDIS, 'filled');
+
+    scatter(x_ddm + (rand(size(high_DDM(:,i))) - 0.5)*jitterWidth, ...
+            high_DDM(:,i), 60, color_DDM, 'filled');
 end
-xlabel('Time (min)')
-ylabel('Diffusion')
-title('Channel 1 – bAA')
-legend show
-legend('Location', 'Best')
-ylim([0.5 2.75])
-grid on
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_bAA.svg'))
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_bAA.png'))
 
-fig = figure; hold on
-for i = 1:n_bAA
-    plot(DiffData.time.min, DiffData.bAA(i).ch2, ...
-        '-o', 'LineWidth', 2, 'Color', colors_bAA(i,:), ...
-        'DisplayName', DiffData.bAA(i).name);
+xticks(baseX);
+xticklabels(string(sizes));
+xlabel('Nanoparticle size (nm)');
+ylabel('Viscosity');
+title('High Concentration');
+ylim([0 2])
+yline(0.953)
+legend({'SPT','TARDIS','DDM'}, 'Location','best');
+box on;
+hold off;
+
+
+%% ============================================================
+%% LOW CONCENTRATION
+%% ============================================================
+figure; hold on;
+
+for i = 1:length(baseX)
+
+    x_spt    = baseX(i) - offset;
+    x_tardis = baseX(i);
+    x_ddm    = baseX(i) + offset;
+
+    scatter(x_spt + (rand(size(low_SPT(:,i))) - 0.5)*jitterWidth, ...
+            low_SPT(:,i), 60, color_SPT, 'filled');
+
+    scatter(x_tardis + (rand(size(low_TARDIS(:,i))) - 0.5)*jitterWidth, ...
+            low_TARDIS(:,i), 60, color_TARDIS, 'filled');
+
+    scatter(x_ddm + (rand(size(low_DDM(:,i))) - 0.5)*jitterWidth, ...
+            low_DDM(:,i), 60, color_DDM, 'filled');
 end
-xlabel('Time (min)')
-ylabel('Diffusion')
-title('Channel 2 – bAA')
-legend show
-legend('Location', 'Best')
-ylim([0.5 2.75])
-grid on
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_bAA.svg'))
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_bAA.png'))
 
-fig = figure; hold on
-for i = 1:n_AA
-    plot(DiffData.time.min, DiffData.AA(i).ch1, ...
-        '-o', 'LineWidth', 2, 'Color', colors_AA(i,:), ...
-        'DisplayName', DiffData.AA(i).name);
-end
-xlabel('Time (min)')
-ylabel('Diffusion')
-title('Channel 1 – AA')
-legend show
-legend('Location', 'Best')
-ylim([0.5 2.75])
-grid on
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_AA.svg'))
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch1_AA.png'))
-
-fig = figure; hold on
-for i = 1:n_AA
-    plot(DiffData.time.min, DiffData.AA(i).ch2, ...
-        '-o', 'LineWidth', 2, 'Color', colors_AA(i,:), ...
-        'DisplayName', DiffData.AA(i).name);
-end
-xlabel('Time (min)')
-ylabel('Diffusion')
-title('Channel 2 – AA')
-legend show
-legend('Location', 'Best')
-grid on
-ylim([0.5 2.75])
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_AA.svg'))
-saveas(fig, append('D:\Polymer Dynamics', filesep, 'Ch2_AA.png'))
-
+xticks(baseX);
+xticklabels(string(sizes));
+xlabel('Nanoparticle size (nm)');
+ylabel('Viscosity');
+title('Low Concentration');
+ylim([0 2])
+yline(0.953)
+legend({'SPT','TARDIS','DDM'}, 'Location','best');
+box on;
+hold off;

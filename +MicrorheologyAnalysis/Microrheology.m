@@ -60,11 +60,11 @@ classdef Microrheology < handle
                                 end
                                 if ~isnan(obj.info.CutTraces)
                                     [Results] = CurrentMovie.FitPopulationFractions(loop);
-                                    if loop == 1
-                                        Results1 = [Results1; Results];
-                                    elseif loop == 2
-                                        Results2 = [Results2; Results];
-                                    end
+                                    % if loop == 1
+                                    %     Results1 = [Results1; Results];
+                                    % elseif loop == 2
+                                    %     Results2 = [Results2; Results];
+                                    % end
                                 end
                             else
                                 CurrentMovie.TracesAnalysis(Radius, loop);

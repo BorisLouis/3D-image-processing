@@ -696,7 +696,7 @@ classdef TranslationalTracking < handle
                 [~, SelectPopRaw] = min(FitResults.BIC, [], 2);
                 SelectPop = SelectPopRaw;
                 SelectPop(SelectPop == 3) = 2;
-                SelectPop = round(medfilt1(SelectPop,50));
+                % SelectPop = round(medfilt1(SelectPop,50));
                 Start2Pop = find(SelectPop == 2, 1, 'first');
                 Start2PopTime = Time(Start2Pop);
     
@@ -786,7 +786,7 @@ classdef TranslationalTracking < handle
             end
 
 
-            load('D:\Polymer Dynamics\3_and_6min\Results.mat');
+            load('E:\Polymer Dynamics\3_and_6min\Results.mat');
             refDiff = DiffData.(condType)(condIdx).(channel);
             refTime = DiffData.time.sec;
 
@@ -795,7 +795,7 @@ classdef TranslationalTracking < handle
             [~, SelectPopRaw] = min(FitResults.BIC, [], 2);
             SelectPop = table2array(SelectPopRaw);
             SelectPop(SelectPop == 3) = 2;
-            SelectPop = round(medfilt1(SelectPop,50));
+            %SelectPop = round(medfilt1(SelectPop,50));
             Start2Pop = find(SelectPop == 2, 1, 'first');
             Start2PopTime = FitResults.I(Start2Pop);
 
@@ -808,55 +808,81 @@ classdef TranslationalTracking < handle
             Alpha(Start2Pop:size(FitResults.D, 1), 1:2) = fliplr(table2array(FitResults.fractions(Start2Pop:end, 2:3)));
             Alpha(isnan(Alpha)) = 0;
 
-            model = @(p,x) p(1) + (p(2)-p(1))*exp(-p(3)*exp(p(4)*(x-p(5))));
+            % --- Boltzmann / Fermi model ---
+            % p(1) = y_low
+            % p(2) = y_high
+            % p(3) = x0  (midpoint)
+            % p(4) = k   (steepness)
+            
+            model = @(p,x) p(1) + (p(2)-p(1)) ./ (1 + exp((x - p(3))./p(4)));
+            
             y = ToPlot(:,1);
             toRemove = isnan(y);
             x = FitResults.I;
+            
             y(toRemove) = [];
             x(toRemove) = [];
-            % 
+            
             % y_smooth = smoothdata(y, 'sgolay', 11);
             y_smooth = medfilt1(y, 200);
-            %y_smooth = y;
+            
+            % Include reference points
             x = [refTime(:); x(:)];
             y_smooth = [refDiff(:); y_smooth(:)];
+            
             w_ref = 0; 
             w_exp = 1;
-            weights = [w_ref * ones(numel(refTime),1); w_exp * ones(numel(x)-2,1)];
-
-            a0 = min(y_smooth);
-            b0 = mean(refDiff) - a0;
-            c0 = 1;
-            d0 = 1 / (max(x)-min(x));
-            e0 = mean(x);
-            p0 = [a0, b0, c0, d0, e0];
+            weights = [w_ref * ones(numel(refTime),1); ...
+                       w_exp * ones(numel(x)-numel(refTime),1)];
+            
+            % ---- Initial guesses ----
+            y_low0  = min(y_smooth);
+            y_high0 = mean(y_smooth(1:20));
+            x0_0    = mean(x);
+            k0      = (max(x)-min(x))/20;   % reasonable transition width guess
+            
+            p0 = [y_low0, y_high0, x0_0, k0];
+            
+            % ---- Bounds ----
             if Loop == 1
-                lb = [0.1, 0.5, 0, 0, min(x)];
-                ub = [0.2, 0.7, Inf, Inf, max(x)];
+                lb = [0, 0, min(x), 0];
+                ub = [0.4, max(y_smooth(3:end)), max(x), max(x)-min(x)];
             else
-                lb = [0.1, 0.05, 0, 0, min(x)];
-                ub = [0.2, 0.25, Inf, Inf, max(x)];
+                lb = [0, 0, min(x), 0];
+                ub = [0.2, max(y_smooth(3:end)), max(x), max(x)-min(x)];
             end
+            
             opts = optimoptions('lsqcurvefit', ...
                 'Display','iter', ...
                 'MaxFunctionEvaluations',5000, ...
                 'FunctionTolerance',1e-12);
+            
+            % ---- Weighted fit (optional, currently unused in your original) ----
             weightedModel = @(p,x) sqrt(weights) .* model(p,x);
             weightedY     = sqrt(weights) .* y_smooth;
-            p_fit = lsqcurvefit(model, p0, x, weightedY, lb, ub, opts);
+            
+            % Fit
+            p_fit = lsqcurvefit(model, p0, x, y_smooth, lb, ub, opts);
+            
             y_fit = model(p_fit, x);
+            p_fit(5) = p_fit(3) - p_fit(4)*log(95);
+            % ---- Plot ----
             Fig4 = figure;
-            plot(x(3:end), y, '.', 'Color',[0.7 0.7 0.7]); hold on
-            plot(x(3:end), y_fit(3:end), 'b', 'LineWidth',2)
+            plot(x(numel(refTime)+1:end), y, '.', 'Color',[0.7 0.7 0.7]); hold on
+            plot(x(numel(refTime)+1:end), y_fit(numel(refTime)+1:end), 'b', 'LineWidth',2)
+            xline(p_fit(5))
             legend('Raw data','Fit')
             xlabel('Polymerisation time (s)')
             ylabel('Diffusion coefficient (µm^2/s)')
-            title('Gompertz fit - Fast diffusion fraction')
+            title('Boltzmann fit - Fast diffusion fraction')
+            
+
             saveas(Fig4, append(OutputFolder, filesep, 'FitFastDiff.png'))
             saveas(Fig4, append(OutputFolder, filesep, 'FitFastDiff.svg'))
 
+            
        
-            FitResults.Fit = array2table(p_fit, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
+            FitResults.Fit = array2table(p_fit, 'VariableNames', {'Base','Height','Inflection', 'Slope','Start drop'});
 
             obj.ResultsStepsize = FitResults;
             save(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'), "FitResults");

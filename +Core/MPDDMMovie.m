@@ -330,7 +330,7 @@ classdef MPDDMMovie < Core.MPMovie
                 obj.FitResults{c,1}.ParamA = A_opt;
                 obj.FitResults{c,1}.ParamB = B_opt;
 
-                MSD_final = 8*nanmean(rmoutliers(Diffusion))*t;
+                MSD_final = nanmean(rmoutliers(Diffusion))*t;
     
                 obj.FitResults{c,1}.MSD = MSD_final;
                 obj.FitResults{c,1}.tau = [1:size(MSD_final, 2)]*obj.info.ddmParam.ExpTime;

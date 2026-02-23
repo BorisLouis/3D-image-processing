@@ -96,7 +96,7 @@ classdef DDMExperiment < handle
                     currentTrackMov = obj.DDMMovies.(fieldsN{i});
     
                     if strcmp(currentTrackMov.info.ddmParam.Scanning, 'off')
-                        currentTrackMov.getFullFrames;
+                        % currentTrackMov.getFullFrames;
                         currentTrackMov.mainDDM('NumBins',30);
                         currentTrackMov.fitDDMNoOptim;
                         % currentTrackMov.fitDDM;
@@ -136,16 +136,18 @@ classdef DDMExperiment < handle
                     Diffusion = [Diffusion; currentTrackMov.MSDResults{1, 1}.Diff];
                     AnExp = [AnExp; currentTrackMov.MSDResults{1, 1}.alpha];
                     Viscosity = [Viscosity; currentTrackMov.MSDResults{1, 1}.n];
-                    IntMean = [IntMean; currentTrackMov.IntResults.MeanInt];
-                    IntVar = [IntVar; currentTrackMov.IntResults.VarInt];
-                    Size = [Size; currentTrackMov.SizeResults];
+                    % IntMean = [IntMean; currentTrackMov.IntResults.MeanInt];
+                    % IntVar = [IntVar; currentTrackMov.IntResults.VarInt];
+                    % Size = [Size; currentTrackMov.SizeResults];
                 catch
                     disp(append('Failed DDM movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
 
-            DDMResults = table(Cell, Diffusion, AnExp, Viscosity, IntMean, IntVar, Size, 'VariableNames', {'Sample', 'Diff (µm^2/s)', 'Anom. exp',...
-                'Viscosity (cP)', 'Intensity mean', 'Intensity var', 'Size (µm^2)'});
+            % DDMResults = table(Cell, Diffusion, AnExp, Viscosity, IntMean, IntVar, Size, 'VariableNames', {'Sample', 'Diff (µm^2/s)', 'Anom. exp',...
+            %     'Viscosity (cP)', 'Intensity mean', 'Intensity var', 'Size (µm^2)'});
+            DDMResults = table(Cell, Diffusion, AnExp, Viscosity, 'VariableNames', {'Sample', 'Diff (µm^2/s)', 'Anom. exp',...
+                'Viscosity (cP)'});
             Filename = append(obj.path, filesep, 'DDMResults.mat');
             save(Filename, 'DDMResults')
         end
