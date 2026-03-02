@@ -69,11 +69,13 @@ classdef MPPhaseMovie < Core.MPMovie
                 obj.Cropped.StartX = StartX;
                 obj.Cropped.StartY = StartY;
             else
+                disp('Found Phasemap - loading it')
                 load(append(obj.raw.movInfo.Path, filesep, 'PhaseMovie', filesep, 'PhaseMovie.mat'))
                 Stack = obj.getFrame(1, q);
                 obj.Cropped.StartX = floor((size(Stack,1) - size(QPmap, 1))./2);
                 obj.Cropped.StartY = floor((size(Stack,2) - size(QPmap, 2))./2);
                 obj.QPmap = QPmap;
+                disp('Found Phasemap - loaded')
             end
         end
 

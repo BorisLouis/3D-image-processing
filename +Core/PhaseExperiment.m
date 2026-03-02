@@ -93,6 +93,7 @@ classdef PhaseExperiment < handle
                     obj.info.optics.dlambda = 0.070;
                     obj.info.optics.n = 1.00;
                     currentTrackMov.getPhaseMovie(q);
+                    obj.PhaseMovies.(fieldsN{i}) = currentTrackMov;
                     % currentTrackMov.calibrateAlpha2(q);
                     % 
                     % [Results] = currentTrackMov.calibrateAlpha(q);

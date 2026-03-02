@@ -493,10 +493,6 @@ classdef MultiModalExperiment < handle
                     obj.MoviesCh1.retrieveDDMMovies(1);
               elseif strcmp(obj.info.Channel1, 'Translational Tracking')
                     frame = obj.info.TestFrame;
-                    % testMov = obj.MoviesCh1.trackMovies.mov1;
-                    % testMov.findCandidatePos(testMov.info.detectParam,1,frame);
-                    % testMov.getROIs;
-                    % testMov.showCandidateSingleChan(frame, 1);
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
                     obj.MoviesCh1.saveData(1);
@@ -535,11 +531,6 @@ classdef MultiModalExperiment < handle
                   elseif strcmp(obj.info.Channel2, 'DDM')
                         obj.MoviesCh2.retrieveDDMMovies(2);
                   elseif strcmp(obj.info.Channel2, 'Translational Tracking')
-                        % frame = obj.info.TestFrame;
-                        % testMov = obj.MoviesCh2.trackMovies.mov1;
-                        % testMov.findCandidatePos(testMov.info.detectParam,2,frame);
-                        % testMov.getROIs;
-                        % testMov.showCandidateSingleChan(frame, 1);
                         val2Use = 'bestFocus';
                         obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
                         obj.MoviesCh2.saveData(2);
@@ -549,6 +540,7 @@ classdef MultiModalExperiment < handle
               end
 
               if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
+                  obj.PhaseCalibration;
                   obj.PhaseTracking;
               elseif all(ismember({'Segmentation', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
                   obj.SegmentTracking;
@@ -1426,6 +1418,247 @@ classdef MultiModalExperiment < handle
 
               disp('All traces with mask saved')
           end
+
+          function tracks = PhaseCalibration(obj)
+            % PhaseCalibration - Extract phase values at localisation positions and perform tracking per plane.
+            %
+            % Input:
+            %   obj - main object containing obj.MoviesCh1 (PhaseExperiment) and
+            %         obj.MoviesCh2 (TrackingExperimentRotational)
+            %
+            % Output:
+            %   tracks - struct array with fields: plane, trajectories
+            %            Each trajectory is a table with columns:
+            %            row, col, plane, frame, phase, trackID
+            
+            % --- Get tracking parameters ---
+            radius_nm = obj.MoviesCh2.info.trackParam.radius;  % max linking radius [nm]
+            memory    = obj.MoviesCh2.info.trackParam.memory;  % max gap frames
+        
+            % --- Get movie names ---
+            movieNames = fieldnames(obj.MoviesCh2.trackMovies);
+            nMovies    = numel(movieNames);
+        
+            % --- Collect all localisations with phase values ---
+            allLoc = [];  % will be a growing table
+            
+            for iMov = 1:nMovies
+                movName = movieNames{iMov};
+        
+                % Tracking movie and phase movie
+                trkMov   = obj.MoviesCh2.trackMovies.(movName);
+                phsMov   = obj.MoviesCh1.PhaseMovies.(movName);
+        
+                % QPmap: (x, y, planes, frames)
+                QPmap    = phsMov.QPmap;
+        
+                % Cropping offset: QPmap pixel (qx, qy) corresponds to tracking pixel (qx + StartX, qy + StartY)
+                % So: tracking_pixel = QPmap_pixel + [StartX, StartY]
+                % => QPmap_pixel = tracking_pixel - [StartX, StartY]
+                StartX   = phsMov.Cropped.StartX;
+                StartY   = phsMov.Cropped.StartY;
+        
+                % candidatePos: {nFrames x 1} cell, each cell is n x 4 table
+                candPos  = trkMov.candidatePos;
+                nFrames  = numel(candPos);
+            
+                FigFolder = append(phsMov.raw.movInfo.Path, filesep, 'PhaseTrends');
+                mkdir(FigFolder);
+
+                for iFrame = 1:nFrames
+                    frameLocs = candPos{iFrame};   % n x 4 table: row, col, meanFAR, plane
+                    if isempty(frameLocs), continue; end
+        
+                    nLoc = height(frameLocs);
+                    phaseValsMin = nan(nLoc, 1);
+                    phaseValsMax = nan(nLoc, 1);
+            
+                    for iLoc = 1:nLoc
+                        r     = frameLocs.row(iLoc);
+                        c     = frameLocs.col(iLoc);
+                        pl    = frameLocs.plane(iLoc);
+        
+                        % Convert tracking coords to QPmap coords
+                        qr = r - StartX;
+                        qc = c - StartY;
+        
+                        % Check bounds
+                        [szR, szC, ~, ~] = size(QPmap);
+                        if qr >= 1+9 && qr <= szR-9 && qc >= 1+9 && qc <= szC-9 && ...
+                           pl >= 1 && pl <= size(QPmap, 3) && iFrame <= size(QPmap, 4)
+                            phaseValsMin(iLoc) = min(QPmap(round(qr)-9:round(qr)+9, round(qc)-9:round(qc)+9, pl, iFrame), [], 'all');
+                            phaseValsMax(iLoc) = max(QPmap(round(qr)-9:round(qr)+9, round(qc)-9:round(qc)+9, pl, iFrame), [], 'all');
+                        end
+                    end
+            
+                    % Build table for this frame
+                    T = table( ...
+                        frameLocs.row, ...
+                        frameLocs.col, ...
+                        frameLocs.plane, ...
+                        repmat(iFrame,    nLoc, 1), ...
+                        repmat(iMov,      nLoc, 1), ...
+                        frameLocs.meanFAR, ...
+                        phaseValsMin, ...
+                        phaseValsMax,...
+                        'VariableNames', {'row','col','plane','frame','movie','meanFAR','phaseMin', 'phaseMax'});
+            
+                    allLoc = [allLoc; T]; %#ok<AGROW>
+                end
+
+                if isempty(allLoc)
+                    tracks = [];
+                    warning('PhaseCalibration: No localisations found.');
+                    return;
+                end
+        
+                % --- Tracking per plane ---
+                planes      = unique(allLoc.plane);
+                nPlanes     = numel(planes);
+                tracks      = struct('plane', cell(nPlanes,1), 'trajectories', cell(nPlanes,1));
+                
+                for iPl = 1:nPlanes
+                    pl      = planes(iPl);
+                    locPl   = allLoc(allLoc.plane == pl, :);
+                    locPl   = sortrows(locPl, 'frame');
+            
+                    trackID = zeros(height(locPl), 1);
+                    nextID  = 1;
+            
+                    % Active tracks: struct array with fields lastRow, lastCol, lastFrame, id
+                    activeTracks = struct('lastRow', {}, 'lastCol', {}, 'lastFrame', {}, 'id', {});
+            
+                    frames = unique(locPl.frame);
+            
+                    for iF = 1:numel(frames)
+                        f       = frames(iF);
+                        idxF    = find(locPl.frame == f);
+                        nDetF   = numel(idxF);
+            
+                        % Remove tracks that have been gone too long
+                        if ~isempty(activeTracks)
+                            lastFrames  = [activeTracks.lastFrame];
+                            keepMask    = (f - lastFrames) <= (memory + 1);
+                            activeTracks = activeTracks(keepMask);
+                        end
+            
+                        % Build cost matrix: rows = active tracks, cols = current detections
+                        nActive = numel(activeTracks);
+            
+                        if nActive == 0
+                            % All detections start new tracks
+                            for k = 1:nDetF
+                                trackID(idxF(k)) = nextID;
+                                activeTracks(end+1) = struct( ...
+                                    'lastRow',   locPl.row(idxF(k)), ...
+                                    'lastCol',   locPl.col(idxF(k)), ...
+                                    'lastFrame', f, ...
+                                    'id',        nextID); %#ok<AGROW>
+                                nextID = nextID + 1;
+                            end
+                        else
+                            % Compute distances
+                            distMat = inf(nActive, nDetF);
+                            for iA = 1:nActive
+                                for iD = 1:nDetF
+                                    dr = activeTracks(iA).lastRow - locPl.row(idxF(iD));
+                                    dc = activeTracks(iA).lastCol - locPl.col(idxF(iD));
+                                    distMat(iA, iD) = sqrt(dr^2 + dc^2);
+                                end
+                            end
+            
+                            % Greedy nearest-neighbour assignment within radius
+                            assigned_det   = false(1, nDetF);
+                            assigned_track = false(1, nActive);
+            
+                            [sortedDist, sortIdx] = sort(distMat(:));
+                            for s = 1:numel(sortedDist)
+                                if sortedDist(s) > radius_nm, break; end
+                                [iA, iD] = ind2sub([nActive, nDetF], sortIdx(s));
+                                if ~assigned_track(iA) && ~assigned_det(iD)
+                                    % Link detection iD to track iA
+                                    trackID(idxF(iD))           = activeTracks(iA).id;
+                                    activeTracks(iA).lastRow     = locPl.row(idxF(iD));
+                                    activeTracks(iA).lastCol     = locPl.col(idxF(iD));
+                                    activeTracks(iA).lastFrame   = f;
+                                    assigned_track(iA) = true;
+                                    assigned_det(iD)   = true;
+                                end
+                            end
+            
+                            % Unassigned detections start new tracks
+                            for iD = 1:nDetF
+                                if ~assigned_det(iD)
+                                    trackID(idxF(iD)) = nextID;
+                                    activeTracks(end+1) = struct( ...
+                                        'lastRow',   locPl.row(idxF(iD)), ...
+                                        'lastCol',   locPl.col(idxF(iD)), ...
+                                        'lastFrame', f, ...
+                                        'id',        nextID); %#ok<AGROW>
+                                    nextID = nextID + 1;
+                                end
+                            end
+                        end
+                    end % frames
+            
+                    locPl.trackID = trackID;
+                    tracks(iPl).plane = pl;
+                    tracks(iPl).trajectories = locPl;
+
+                    locPl.trackID = trackID;
+                    tracks(iPl).plane = pl;
+                    tracks(iPl).trajectories = locPl;
+                    
+                    % --- Reformat: one cell per track, sorted by frame, min 20 detections ---
+                    uniqueIDs = unique(trackID);
+                    uniqueIDs = uniqueIDs(uniqueIDs > 0);  % remove unassigned (id=0) if any
+                    
+                    tracklist = {};
+                    for iT = 1:numel(uniqueIDs)
+                        id      = uniqueIDs(iT);
+                        idxT    = locPl.trackID == id;
+                        trkData = locPl(idxT, {'row','col','phaseMin', 'phaseMax','frame'});
+                        trkData = sortrows(trkData, 'frame');
+                    
+                        if height(trkData) >= 20
+                            tracklist{end+1} = trkData; %#ok<AGROW>
+                        end
+                    end
+                    
+                    tracks(iPl).tracklist = tracklist;
+                end % planes
+                
+                fprintf('PhaseCalibration complete: %d planes, %d total localisations.\n', nPlanes, height(allLoc));
+
+                for ii = 1:size(tracks,1)
+                    Fig = figure;
+                    subplot(1,2,1)
+                    for jj = 1:size(tracks(ii).tracklist, 2)
+                        if size(tracks(ii).tracklist{1,jj}, 1) > 100
+                            plot(tracks(ii).tracklist{1,jj}.phaseMin)
+                            hold on
+                        end
+                    end
+                    xlabel('Frames')
+                    ylabel('PhaseMin')
+
+                    subplot(1,2,2)
+                    for jj = 1:size(tracks(ii).tracklist, 2)
+                        if size(tracks(ii).tracklist{1,jj}, 1) > 100
+                            plot(tracks(ii).tracklist{1,jj}.phaseMax)
+                            hold on
+                        end
+                    end
+                    xlabel('Frames')
+                    ylabel('PhaseMax')
+                    sgtitle(append('Plane ', num2str(ii)))
+                    saveas(Fig, append(FigFolder, filesep, 'Trend', num2str(ii), '.png'))
+                end
+
+                FileNameSave = append(FigFolder, filesep, 'Results.mat');
+                save(FileNameSave, "tracks");
+            end
+        end
     end
 end
 

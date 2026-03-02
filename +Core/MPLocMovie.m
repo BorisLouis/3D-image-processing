@@ -413,6 +413,8 @@ classdef MPLocMovie < Core.MPParticleMovie
                     [run,SRList] = obj.existZResParticles(obj.info.runMethod,obj.raw.movInfo.Path,'.mat');
                 end
 
+                run = 1;
+                
                 if run
                     
                     data2Resolve = obj.particles.List;

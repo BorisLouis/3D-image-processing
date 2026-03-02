@@ -3,9 +3,10 @@ clear
 close all;
 %file info
 
-Paths = {'E:\Data Steven - GEMs\data paper'};
+Paths = {'D:\Data Hannah\20260203'};
 Paths2DCal = {};
-TimePaths = {'SW480'};
+TimePaths = {'200nm_in_PAA\brightfield', '300nm_in_PAA\brightfield', '500nm_in_PAA\brightfield',...
+    '200nm_in_PAA\darkfield', '300nm_in_PAA\darkfield', '500nm_in_PAA\darkfield'};
 file.path = Paths{1};
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

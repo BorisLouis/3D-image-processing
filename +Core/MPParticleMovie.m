@@ -59,7 +59,7 @@ classdef MPParticleMovie < Core.MPMovie
                  path = append(obj.raw.movInfo.Path, filesep, folder);
                  % [run, candidate] = obj.existCandidate(obj.raw.movInfo.Path, '.mat');
                  [run, candidate] = obj.existCandidate(obj.calibrated{1, 1}.mainPath, '.mat');
-                
+                run = 1;
                 %if we only ask 1 frame we always run
                 if length(frames) == 1
                     run = true;
@@ -161,7 +161,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
                     [run,locPos] = obj.existLocPos(obj.calibrated{1, 1}.mainPath,'.mat');
-                    % run = 1;
+                    run = 1;
                     
                     if run
                         switch nargin
@@ -236,12 +236,12 @@ classdef MPParticleMovie < Core.MPMovie
 
                     folder = append('calibrated',num2str(q));
 
-                    if run == 1
+                    % if run == 1
                         if nFrames > 1
                             fileName = sprintf('%s%s%s%sSRLocPos.mat',obj.raw.movInfo.Path,'\', folder, '\');
                             save(fileName,'locPos');
                         end
-                    end
+                    % end
                     
                     %store in the object
                     obj.unCorrLocPos = locPos;
@@ -283,6 +283,7 @@ classdef MPParticleMovie < Core.MPMovie
 
                     path = append(obj.raw.movInfo.Path, filesep, folder);
                     [run, particle] = obj.existParticles(path, '.mat');
+                    run = 1;
                     
                     if run
                         %Check the number of function input

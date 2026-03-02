@@ -329,114 +329,119 @@ classdef TrackingExperimentRotational < handle
                     disp(['Retrieving data from tracking file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.trackMovies.(fieldsN{i});
 
-                    filename = append(currentTrackMov.raw.movInfo.Path, filesep, 'Traces3D.mat');
-
                     if strcmp(obj.info.runMethod, 'load')
-                        if exist(filename)
-    
-                            traces = load(filename);
-                            traces = traces.TrackedData';
-                            run = 0;
-                        else 
+                        filename1 = append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,  'candidatePos.mat');
+                        if exist(filename1)
                             run = 1;
+                        else
+                            run = 0;
+                        end
+                        filename2 = append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,  'SRLocPos.mat');
+                        if exist(filename2)
+                            run  = 2;
+                        end
+                        filename3 = append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,  'particle.mat');
+                        if exist(filename3)
+                            run  = 3;
+                            load(filename3);
+                            if isfield(particle, "SRList")
+                                run = 4;
+                            end
+                        end
+                        filename5 = append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,  'Traces3D.mat');
+                        if exist(filename5)
+                            run  = 5;
                         end
                     else
-                        run = 1;
+                        run = 0;
                     end
 
-                    if run == 1
+                    if run < 1
 
-                        %Molecule detection
-                        % if currentTrackMov.info.rotationalCalib == 0
-                            currentTrackMov.findCandidatePos(detectParam, q);
-                        % else
-                        % end
-                        
-                        currentTrackMov.showCandidateSingleChan(obj.info.TestFrame, q);
-        
-                        %SR fitting
-                        currentTrackMov.SRLocalizeCandidate(detectParam, q);
-                        
-                    else 
-                    
                         if isempty(currentTrackMov.calibrated{1,1})
                             load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
                                 'calibrated', num2str(q), '.mat'));
                             currentTrackMov.calibrated{1,1} = calib;
                         end
-                        if isempty(currentTrackMov.candidatePos)
-                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
-                                'candidatePos.mat'));
-                            currentTrackMov.candidatePos = candidate;
-                        end
-                        if isempty(currentTrackMov.particles)
-                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
-                                'candidatePos.mat'));
-                            currentTrackMov.particles = candidate;
-                        end
-                        if isempty(currentTrackMov.corrLocPos)
-                            load(append(currentTrackMov.raw.movInfo.Path, filesep, 'calibrated', num2str(q), filesep,...
-                                'SRLocPos.mat'));
-                            currentTrackMov.corrLocPos = locPos;
-                            currentTrackMov.unCorrLocPos = locPos;
-                        end
+                        currentTrackMov.findCandidatePos(detectParam, q);
+                        currentTrackMov.showCandidateSingleChan(obj.info.TestFrame, q);
+                    else
+                        load(filename1)
+                        currentTrackMov.candidatePos = candidate;
+                        disp('Found candidate file - loaded it')
                     end
+
+                    if run < 2
+                        currentTrackMov.SRLocalizeCandidate(detectParam, q);
                         refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
                         rot = true;
-                        %apply SRCal
                         currentTrackMov.applySRCal(rot,refPlane);
-                        
-                        %apply ZCal
                         currentTrackMov.applyZCal;
-                        
-                        %Plane consolidation
+                    else
+                        load(filename2)
+                        currentTrackMov.corrLocPos = locPos;
+                        currentTrackMov.unCorrLocPos = locPos;
+                        disp('Found localisation positions file - loaded it')
+                    end
+
+                    if run < 3
                         if strcmp(obj.info.frame2Load, 'all')
                             frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
                         elseif isa(obj.info.frame2Load, 'double')
                             frames = obj.info.frame2Load;
                         end
                         currentTrackMov.consolidatePlanes(frames,detectParam,q)
-        
-                        
-                        %superResolve
-                        currentTrackMov.superResolve(q);
-                        
-                        currentTrackMov.correctDrift;
-                        %tracking occurs here
-                        currentTrackMov.trackParticle(trackParam,q);
-                        
-                        [traces] = currentTrackMov.getTraces;
+                    else 
+                        load(filename3)
+                        currentTrackMov.particles = particle;
+                        disp('Found particle file - loaded it')
+                    end
 
-                        allTraces = [];
-                        fileN = cell(length(traces),1);
-                        fileN(:,1) = {i};
-                   
-                        [xStep,xMotor] = currentTrackMov.getXPosMotor;
-                        [yStep,yMotor] = currentTrackMov.getYPosMotor;
-                        [zSt,zMotor]   = currentTrackMov.getZPosMotor;
-        
-                        colMot = cell(length(traces),1);
-                        colMot(:,1) = {xMotor};
-                        colStep = cell(length(traces),1);
-                        colStep(:,1) = {xStep};
-        
-                        rowMot = cell(length(traces),1);
-                        rowMot(:,1) = {yMotor};
-                        rowStep = cell(length(traces),1);
-                        rowStep(:,1) = {yStep};
-        
-                        zMot = cell(length(traces),1);
-                        zMot(:,1) = {zMotor};
-                        zStep = cell(length(traces),1);
-                        zStep(:,1) = {zSt};
-        
-                        allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
-                        currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
-                        obj.traces3D = allTraces;
-                        obj.trackMovies.(fieldsN{i}) = currentTrackMov;
+                    if run < 4
+                        currentTrackMov.superResolve(q);
+                        currentTrackMov.correctDrift;
+                    end
+
+                    if run < 5
+                        currentTrackMov.trackParticle(trackParam,q);
+                    else
+                        load(filename5);
+                        currentTrackMov.traces3D = TrackedData;
+                        disp('Found trace file - loaded it')
+                    end
+                        
+                    [traces] = currentTrackMov.getTraces;
+    
+                    allTraces = [];
+                    fileN = cell(length(traces),1);
+                    fileN(:,1) = {i};
                
-                        filename = [currentTrackMov.raw.movInfo.Path filesep 'traces3D_', num2str(q), '.mat'];
-                        save(filename,'traces');
+                    [xStep,xMotor] = currentTrackMov.getXPosMotor;
+                    [yStep,yMotor] = currentTrackMov.getYPosMotor;
+                    [zSt,zMotor]   = currentTrackMov.getZPosMotor;
+    
+                    colMot = cell(length(traces),1);
+                    colMot(:,1) = {xMotor};
+                    colStep = cell(length(traces),1);
+                    colStep(:,1) = {xStep};
+    
+                    rowMot = cell(length(traces),1);
+                    rowMot(:,1) = {yMotor};
+                    rowStep = cell(length(traces),1);
+                    rowStep(:,1) = {yStep};
+    
+                    zMot = cell(length(traces),1);
+                    zMot(:,1) = {zMotor};
+                    zStep = cell(length(traces),1);
+                    zStep(:,1) = {zSt};
+    
+                    allTraces = [allTraces; traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot ];
+                    currentTrackMov.traces3D = [traces(:), fileN,colStep,colMot,rowStep,rowMot,zStep,zMot];
+                    obj.traces3D = allTraces;
+                    obj.trackMovies.(fieldsN{i}) = currentTrackMov;
+           
+                    filename = [currentTrackMov.raw.movInfo.Path filesep 'traces3D_', num2str(q), '.mat'];
+                    save(filename,'traces');
                        
                 catch
                     disp(['Tracking in file ' num2str(i) ' / ' num2str(nfields) ' failed']);
