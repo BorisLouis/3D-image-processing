@@ -4,9 +4,9 @@ close all;
 
 [raw.FilePath, info.Experiment, info.FilenameRaw, info.Dimension, info.expTime, info.Temp, info.Radius1, info.Radius2, info.DiffFit, info.MinSize, info.Ext, info.ParticleType, info.path2RotCal, info.CutTraces, info.ExpModel, info.StepsizeAnalysis] = UserInput.CalcMSDinfoGUI;
 
-MainFolder = 'E:\Polymer Dynamics';
-SubFolders = {'20260121'}; %
-SubSubFolders = {'2x_initiator'}; 
+MainFolder = 'D:\Data Hannah\20260203';
+SubFolders = {'20260120', '20260121'}; %
+SubSubFolders = {'1x_AA', '2x_AA', '3x_AA', '4x_AA', '1x_bAA', '2x_bAA', '3x_bAA', '2x_initiator'}; 
 ExpTimes = [0.033];
 % CutTraces = [50];
 

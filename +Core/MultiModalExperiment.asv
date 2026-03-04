@@ -1641,8 +1641,8 @@ classdef MultiModalExperiment < handle
                         end
                     end
                     tracks(ii).MinRange = MinRange;
-                    tracks(ii).MinRangeMedian = nanmedian(MinRange);
-                    tracks(ii).MinRangeMean = nanmean(MinRange);
+                    tracks(ii).MinRangeMedian = median(MinRange);
+                    tracks(ii).MinRangeMean = medan(MinRange);
                     MinRange = [];
                     xlabel('Frames')
                     ylabel('PhaseMin')
@@ -1656,8 +1656,6 @@ classdef MultiModalExperiment < handle
                         end
                     end
                     tracks(ii).MaxRange = MaxRange;
-                    tracks(ii).MaxRangeMedian = nanmedian(MaxRange);
-                    tracks(ii).MaxRangeMean = nanmean(MaxRange);
                     MaxRange = [];
                     xlabel('Frames')
                     ylabel('PhaseMax')
@@ -1665,7 +1663,7 @@ classdef MultiModalExperiment < handle
                     saveas(Fig, append(FigFolder, filesep, 'Trend', num2str(ii), '.png'))
                 end
 
-                FileNameSave = append(FigFolder, filesep, 'ResultsPhaseCalibration.mat');
+                FileNameSave = append(FigFolder, filesep, 'Results.mat');
                 save(FileNameSave, "tracks");
             end
         end

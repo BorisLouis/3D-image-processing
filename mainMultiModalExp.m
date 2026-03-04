@@ -6,7 +6,7 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'D:\Data Hannah\20260203\test';
+file.path  = 'D:\Data Steven - GEMs\data paper\simulations\Viscosity dependence';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

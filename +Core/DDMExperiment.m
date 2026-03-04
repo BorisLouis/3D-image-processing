@@ -96,7 +96,7 @@ classdef DDMExperiment < handle
                     currentTrackMov = obj.DDMMovies.(fieldsN{i});
     
                     if strcmp(currentTrackMov.info.ddmParam.Scanning, 'off')
-                        % currentTrackMov.getFullFrames;
+                        currentTrackMov.getFullFrames;
                         currentTrackMov.mainDDM('NumBins',30);
                         currentTrackMov.fitDDMNoOptim;
                         % currentTrackMov.fitDDM;
