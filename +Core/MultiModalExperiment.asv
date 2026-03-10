@@ -1654,7 +1654,7 @@ classdef MultiModalExperiment < handle
                             plot(tracks(ii).tracklist{1,jj}.phaseMax)
                             hold on
                             MaxRange(jj,1) = max(tracks(ii).tracklist{1,jj}.phaseMax) - min(tracks(ii).tracklist{1,jj}.phaseMax);
-                            MaxRange(jj,1) = max(tracks(ii).tracklist{1,jj}.phaseMax);
+                            MinRange(jj,1) = min(tracks(ii).tracklist{1,jj}.phaseMin);
                         end
                     end
                     tracks(ii).MaxRange = MaxRange;
