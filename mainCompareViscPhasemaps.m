@@ -18,8 +18,6 @@
 %   - Figure with side-by-side maps + overlay
 %   - Saved PNG to resultsDir
 %   - Metrics printed to console and saved in results struct
-%
-% Author: auto-generated
 % -------------------------------------------------------------------------
 
 clear; clc; close all;
