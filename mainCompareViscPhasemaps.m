@@ -186,6 +186,7 @@ function ph2D = reducePhase(P)
     end
     % P is now (x, y, z)
     ph2D = mean(P, 3);    % z mean projection
+    ph2D = P(:,:,4);
 end
 
 
