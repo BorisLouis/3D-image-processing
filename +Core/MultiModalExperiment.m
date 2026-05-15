@@ -496,6 +496,7 @@ classdef MultiModalExperiment < handle
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
                     obj.MoviesCh1.saveData(1);
+                    obj.MoviesCh1.MakeMovie;
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
                     frame = obj.info.TestFrame;
                     testMov = obj.MoviesCh1.trackMovies.mov1;
@@ -534,18 +535,23 @@ classdef MultiModalExperiment < handle
                         val2Use = 'bestFocus';
                         obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
                         obj.MoviesCh2.saveData(2);
+                        %obj.MoviesCh2.MakeMovie;
                    elseif strcmp(obj.info.Channel2, 'TICS')
                         obj.MoviesCh1.retrieveTICSData(2);
                   end
               end
 
               if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
-                  obj.PhaseCalibration;
-                  obj.PhaseTracking;
+                  if strcmp(obj.info1.CalibrateAlpha, 'true')
+                    obj.PhaseCalibrationPerPlane;
+                    %obj.PhaseCalibration;
+                  else
+                    obj.PhaseTracking;
+                  end
               elseif all(ismember({'Segmentation', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
                   obj.SegmentTracking;
               elseif all(ismember({'Translational Tracking', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
-                  % obj.CalculateLocError;
+                  obj.CalculateLocError;
               end
           end
 
@@ -1419,6 +1425,287 @@ classdef MultiModalExperiment < handle
               disp('All traces with mask saved')
           end
 
+          function PhaseCalibrationPerPlane(obj)
+            radius_nm = obj.MoviesCh2.info.trackParam.radius;
+            memory    = obj.MoviesCh2.info.trackParam.memory;
+            movieNames = fieldnames(obj.MoviesCh2.trackMovies);
+            nMovies    = numel(movieNames);
+        
+            firstMov      = movieNames{1};
+            firstPhsMov   = obj.MoviesCh1.PhaseMovies.(firstMov);
+            nPlanes       = size(firstPhsMov.QPmapPerPlane, 4);
+
+            FigFolder = fullfile(obj.path, 'PhaseCalibrationPerPlane');
+            mkdir(FigFolder);
+
+            results = struct( ...
+                'plane',          cell(nPlanes, 1), ...
+                'phaseValues',    cell(nPlanes, 1), ...
+                'phaseMean',      cell(nPlanes, 1), ...
+                'phaseMedian',    cell(nPlanes, 1), ...
+                'tracePositions', cell(nPlanes, 1));
+        
+            for iPl = 1:nPlanes
+                results(iPl).plane       = iPl;
+                results(iPl).phaseValues = [];
+                results(iPl).tracePositions = [];
+            end
+        
+            for iMov = 1:nMovies
+                movName = movieNames{iMov};
+        
+                trkMov = obj.MoviesCh2.trackMovies.(movName);
+                phsMov = obj.MoviesCh1.PhaseMovies.(movName);
+        
+                % QPmapPerPlane: (x, y, frames, planes)
+                QPmapPerPlane = phsMov.QPmapPerPlane;
+        
+                % Cropping offsets: tracking_pixel = QPmap_pixel + [StartX, StartY]
+                % => QPmap_pixel = tracking_pixel - [StartX, StartY]
+                StartX = phsMov.Cropped.StartX;
+                StartY = phsMov.Cropped.StartY;
+        
+                % candidatePos: {nFrames x 1}, each cell is m x 4 table
+                % columns: row(y coord), col(x coord), meanFAR, plane
+                candPos = trkMov.candidatePos;
+                nFrames = numel(candPos);
+        
+                for iPl = 1:nPlanes
+        
+                    % --- Step 1: max-project QPmapPerPlane across frames for this plane ---
+                    % QPmapPerPlane(:,:,:,iPl) is (x, y, frames)
+                    phaseStack  = QPmapPerPlane(:, :, :, iPl);   % (szR, szC, nFrames)
+                    maxProjMap  = max(phaseStack, [], 3);          % (szR, szC) max over frames
+                    [szR, szC]  = size(maxProjMap);
+        
+                    % --- Step 2: collect all detections in this plane across all frames ---
+                    % We build a table with columns: row, col, frame
+                    planeLocs = [];
+        
+                    for iFrame = 1:nFrames
+                        frameLocs = candPos{iFrame};
+                        if isempty(frameLocs), continue; end
+        
+                        % column 4 is the plane index
+                        inPlane = frameLocs{:, 4} == iPl;
+                        if ~any(inPlane), continue; end
+        
+                        subLocs = frameLocs(inPlane, :);
+                        nSub    = sum(inPlane);
+        
+                        T = table( ...
+                            subLocs{:, 1}, ...          % row  (y coordinate)
+                            subLocs{:, 2}, ...          % col  (x coordinate)
+                            repmat(iFrame, nSub, 1), ...
+                            'VariableNames', {'row', 'col', 'frame'});
+        
+                        planeLocs = [planeLocs; T]; %#ok<AGROW>
+                    end
+        
+                    if isempty(planeLocs)
+                        continue;   % no detections in this plane for this movie
+                    end
+        
+                    planeLocs = sortrows(planeLocs, 'frame');
+        
+                    % --- Step 3: link detections into traces (nearest-neighbour tracker) ---
+                    trackID      = zeros(height(planeLocs), 1);
+                    nextID       = 1;
+                    activeTracks = struct('lastRow', {}, 'lastCol', {}, 'lastFrame', {}, 'id', {});
+        
+                    frames = unique(planeLocs.frame);
+        
+                    for iF = 1:numel(frames)
+                        f     = frames(iF);
+                        idxF  = find(planeLocs.frame == f);
+                        nDetF = numel(idxF);
+        
+                        % Prune stale tracks
+                        if ~isempty(activeTracks)
+                            lastFrames   = [activeTracks.lastFrame];
+                            keepMask     = (f - lastFrames) <= (memory + 1);
+                            activeTracks = activeTracks(keepMask);
+                        end
+        
+                        nActive = numel(activeTracks);
+        
+                        if nActive == 0
+                            % All detections start new tracks
+                            for k = 1:nDetF
+                                trackID(idxF(k)) = nextID;
+                                activeTracks(end+1) = struct( ...
+                                    'lastRow',   planeLocs.row(idxF(k)), ...
+                                    'lastCol',   planeLocs.col(idxF(k)), ...
+                                    'lastFrame', f, ...
+                                    'id',        nextID); %#ok<AGROW>
+                                nextID = nextID + 1;
+                            end
+                        else
+                            % Build distance matrix
+                            distMat = inf(nActive, nDetF);
+                            for iA = 1:nActive
+                                for iD = 1:nDetF
+                                    dr = activeTracks(iA).lastRow - planeLocs.row(idxF(iD));
+                                    dc = activeTracks(iA).lastCol - planeLocs.col(idxF(iD));
+                                    distMat(iA, iD) = sqrt(dr^2 + dc^2);
+                                end
+                            end
+        
+                            % Greedy nearest-neighbour assignment within radius
+                            assigned_det   = false(1, nDetF);
+                            assigned_track = false(1, nActive);
+        
+                            [sortedDist, sortIdx] = sort(distMat(:));
+                            for s = 1:numel(sortedDist)
+                                if sortedDist(s) > radius_nm, break; end
+                                [iA, iD] = ind2sub([nActive, nDetF], sortIdx(s));
+                                if ~assigned_track(iA) && ~assigned_det(iD)
+                                    trackID(idxF(iD))         = activeTracks(iA).id;
+                                    activeTracks(iA).lastRow   = planeLocs.row(idxF(iD));
+                                    activeTracks(iA).lastCol   = planeLocs.col(idxF(iD));
+                                    activeTracks(iA).lastFrame = f;
+                                    assigned_track(iA) = true;
+                                    assigned_det(iD)   = true;
+                                end
+                            end
+        
+                            % Unmatched detections start new tracks
+                            for iD = 1:nDetF
+                                if ~assigned_det(iD)
+                                    trackID(idxF(iD)) = nextID;
+                                    activeTracks(end+1) = struct( ...
+                                        'lastRow',   planeLocs.row(idxF(iD)), ...
+                                        'lastCol',   planeLocs.col(idxF(iD)), ...
+                                        'lastFrame', f, ...
+                                        'id',        nextID); %#ok<AGROW>
+                                    nextID = nextID + 1;
+                                end
+                            end
+                        end
+                    end % frames
+        
+                    planeLocs.trackID = trackID;
+        
+                    % --- Step 4: average position per trace ---
+                    % Each trace reduces to one (row, col) coordinate
+                    uniqueIDs = unique(trackID);
+                    uniqueIDs = uniqueIDs(uniqueIDs > 0);
+        
+                    phaseVals   = nan(numel(uniqueIDs), 1);
+                    tracePosRow = nan(numel(uniqueIDs), 1);
+                    tracePosCol = nan(numel(uniqueIDs), 1);
+        
+                    for iT = 1:numel(uniqueIDs)
+                        id    = uniqueIDs(iT);
+                        idxT  = planeLocs.trackID == id;
+        
+                        % Mean position in tracking coordinates
+                        meanRow = mean(planeLocs.row(idxT));
+                        meanCol = mean(planeLocs.col(idxT));
+        
+                        tracePosRow(iT) = meanRow;
+                        tracePosCol(iT) = meanCol;
+        
+                        % --- Step 5: convert to QPmap coordinates ---
+                        qr = meanRow - StartX;
+                        qc = meanCol - StartY;
+        
+                        % --- Step 6: extract max phase in 11x11 patch (±5 pixels) ---
+                        halfW  = 5;
+                        r1 = round(qr) - halfW;
+                        r2 = round(qr) + halfW;
+                        c1 = round(qc) - halfW;
+                        c2 = round(qc) + halfW;
+        
+                        % Bounds check
+                        if r1 >= 1 && r2 <= szR && c1 >= 1 && c2 <= szC
+                            patch          = maxProjMap(r1:r2, c1:c2);
+                            phaseVals(iT)  = max(patch, [], 'all');
+                        end
+                        % If out of bounds, phaseVals(iT) remains NaN
+                    end
+        
+                    % Remove out-of-bounds entries
+                    validMask   = ~isnan(phaseVals);
+                    phaseVals   = phaseVals(validMask);
+                    tracePosRow = tracePosRow(validMask);
+                    tracePosCol = tracePosCol(validMask);
+        
+                    % --- Step 7: accumulate into results struct ---
+                    results(iPl).phaseValues    = [results(iPl).phaseValues;    phaseVals];
+                    results(iPl).tracePositions = [results(iPl).tracePositions; ...
+                                                   tracePosRow, tracePosCol];
+                    results(iPl).phaseMean = mean(results(iPl).phaseValues, 'omitnan');
+                    results(iPl).phaseMedian = median(results(iPl).phaseValues, 'omitnan');
+        
+                end % iPl planes
+            end % iMov movies
+        
+            fprintf('\n--- PhaseCalibrationPerPlane results ---\n');
+        
+            for iPl = 1:nPlanes
+                vals = results(iPl).phaseValues;
+        
+                if isempty(vals)
+                    results(iPl).phaseMean   = NaN;
+                    results(iPl).phaseMedian = NaN;
+                    fprintf('  Plane %d:  no valid traces found\n', iPl);
+                else
+                    results(iPl).phaseMean   = mean(vals,   'omitnan');
+                    results(iPl).phaseMedian = median(vals, 'omitnan');
+                    fprintf('  Plane %d:  N = %d beads  |  median = %.4f rad  |  mean = %.4f rad\n', ...
+                            iPl, numel(vals), results(iPl).phaseMedian, results(iPl).phaseMean);
+                end
+            end
+        
+            % -------------------------------------------------------------------------
+            % --- Figure: per-plane phase value distributions (contour lines, no fill)
+            % -------------------------------------------------------------------------
+            % Pool all values to get shared bin edges
+            allVals = cell2mat({results.phaseValues}');
+            allVals = allVals(~isnan(allVals));
+        
+            if ~isempty(allVals)
+                nBins    = 20;
+                binEdges = linspace(min(allVals), max(allVals), nBins + 1);
+                binCentres = (binEdges(1:end-1) + binEdges(2:end)) / 2;
+                cmap     = lines(nPlanes);
+        
+                FigDist = figure();
+                hold on;
+        
+                for iPl = 1:nPlanes
+                    vals = results(iPl).phaseValues;
+                    if isempty(vals), continue; end
+        
+                    counts = histcounts(vals, binEdges);
+                    prob   = counts / sum(counts);   % normalise to probability
+        
+                    plot(binCentres, prob, ...
+                         'Color',       cmap(iPl, :), ...
+                         'LineWidth',   1.5, ...
+                         'DisplayName', ['Plane ' num2str(iPl)]);
+                end
+        
+                xlabel('Peak phase (rad)');
+                ylabel('Probability');
+                title('Phase value distribution per plane — max projection');
+                legend('Location', 'best');
+                box on;
+        
+                saveas(FigDist, fullfile(FigFolder, 'PhaseDistribution_PerPlane.png'));
+                close(FigDist);
+            else
+                warning('PhaseCalibrationPerPlane: No valid phase values found — figure skipped.');
+            end
+        
+            % -------------------------------------------------------------------------
+            % --- Save
+            % -------------------------------------------------------------------------
+            save(fullfile(FigFolder, 'ResultsPhaseCalibrationPerPlane.mat'), 'results');
+            fprintf('Results saved to %s\n', FigFolder);
+          end
+
           function tracks = PhaseCalibration(obj)
             % PhaseCalibration - Extract phase values at localisation positions and perform tracking per plane.
             %
@@ -1427,10 +1714,15 @@ classdef MultiModalExperiment < handle
             %         obj.MoviesCh2 (TrackingExperimentRotational)
             %
             % Output:
-            %   tracks - struct array with fields: plane, trajectories
-            %            Each trajectory is a table with columns:
-            %            row, col, plane, frame, phase, trackID
-            
+            %   tracks - struct array with fields per plane:
+            %            .plane, .trajectories, .tracklist,
+            %            .phaseDiffMin/Max, .phaseMin/Max, .phaseOnSpotMin/Max  (+ Median/Mean variants)
+            %            .peakPhaseOnSpot   - peak phaseOnSpot per track (best in-focus estimate)
+            %            .peakPhaseMax      - peak phaseMax per track (patch-robust alternative)
+            %            .peakPhaseMedian / .peakPhaseMean  - summary statistics across beads
+            %
+            %   A histogram figure of peak phase values across all planes is saved to FigFolder.
+        
             % --- Get tracking parameters ---
             radius_nm = obj.MoviesCh2.info.trackParam.radius;  % max linking radius [nm]
             memory    = obj.MoviesCh2.info.trackParam.memory;  % max gap frames
@@ -1439,237 +1731,346 @@ classdef MultiModalExperiment < handle
             movieNames = fieldnames(obj.MoviesCh2.trackMovies);
             nMovies    = numel(movieNames);
         
-            % --- Collect all localisations with phase values ---
-            allLoc = [];  % will be a growing table
-            
+            % --- Collect all localisations with phase values across ALL movies ---
+            allLoc    = [];
+            FigFolder = '';
+        
             for iMov = 1:nMovies
                 movName = movieNames{iMov};
         
-                % Tracking movie and phase movie
-                trkMov   = obj.MoviesCh2.trackMovies.(movName);
-                phsMov   = obj.MoviesCh1.PhaseMovies.(movName);
+                trkMov = obj.MoviesCh2.trackMovies.(movName);
+                phsMov = obj.MoviesCh1.PhaseMovies.(movName);
         
-                % QPmap: (x, y, planes, frames)
-                QPmap    = phsMov.QPmap;
+                QPmap  = phsMov.QPmap;   % (x, y, planes, frames)
+                StartX = phsMov.Cropped.StartX;
+                StartY = phsMov.Cropped.StartY;
         
-                % Cropping offset: QPmap pixel (qx, qy) corresponds to tracking pixel (qx + StartX, qy + StartY)
-                % So: tracking_pixel = QPmap_pixel + [StartX, StartY]
-                % => QPmap_pixel = tracking_pixel - [StartX, StartY]
-                StartX   = phsMov.Cropped.StartX;
-                StartY   = phsMov.Cropped.StartY;
+                if isempty(FigFolder)
+                    FigFolder = fullfile(phsMov.raw.movInfo.Path, 'PhaseTrends');
+                    mkdir(FigFolder);
+                end
         
-                % candidatePos: {nFrames x 1} cell, each cell is n x 4 table
-                candPos  = trkMov.candidatePos;
-                nFrames  = numel(candPos);
-            
-                FigFolder = append(phsMov.raw.movInfo.Path, filesep, 'PhaseTrends');
-                mkdir(FigFolder);
-
+                candPos = trkMov.candidatePos;
+                nFrames = numel(candPos);
+        
                 for iFrame = 1:nFrames
-                    frameLocs = candPos{iFrame};   % n x 4 table: row, col, meanFAR, plane
+                    frameLocs = candPos{iFrame};
                     if isempty(frameLocs), continue; end
         
-                    nLoc = height(frameLocs);
-                    phaseValsMin = nan(nLoc, 1);
-                    phaseValsMax = nan(nLoc, 1);
-            
-                    for iLoc = 1:nLoc
-                        r     = frameLocs.row(iLoc);
-                        c     = frameLocs.col(iLoc);
-                        pl    = frameLocs.plane(iLoc);
+                    nLoc            = height(frameLocs);
+                    phaseValsMin    = nan(nLoc, 1);
+                    phaseValsMax    = nan(nLoc, 1);
+                    phaseValsOnSpot = nan(nLoc, 1);
         
-                        % Convert tracking coords to QPmap coords
+                    for iLoc = 1:nLoc
+                        r  = frameLocs.row(iLoc);
+                        c  = frameLocs.col(iLoc);
+                        pl = frameLocs.plane(iLoc);
+        
                         qr = r - StartX;
                         qc = c - StartY;
         
-                        % Check bounds
                         [szR, szC, ~, ~] = size(QPmap);
-                        if qr >= 1+9 && qr <= szR-9 && qc >= 1+9 && qc <= szC-9 && ...
+                        if qr >= 10 && qr <= szR-9 && qc >= 10 && qc <= szC-9 && ...
                            pl >= 1 && pl <= size(QPmap, 3) && iFrame <= size(QPmap, 4)
-                            phaseValsMin(iLoc) = min(QPmap(round(qr)-9:round(qr)+9, round(qc)-9:round(qc)+9, pl, iFrame), [], 'all');
-                            phaseValsMax(iLoc) = max(QPmap(round(qr)-9:round(qr)+9, round(qc)-9:round(qc)+9, pl, iFrame), [], 'all');
+        
+                            patch = QPmap(round(qr)-9:round(qr)+9, ...
+                                          round(qc)-9:round(qc)+9, pl, iFrame);
+                            phaseValsMin(iLoc)    = min(patch, [], 'all');
+                            phaseValsMax(iLoc)    = max(patch, [], 'all');
+                            phaseValsOnSpot(iLoc) = QPmap(round(qr), round(qc), pl, iFrame);
                         end
                     end
-            
-                    % Build table for this frame
+        
                     T = table( ...
                         frameLocs.row, ...
                         frameLocs.col, ...
                         frameLocs.plane, ...
-                        repmat(iFrame,    nLoc, 1), ...
-                        repmat(iMov,      nLoc, 1), ...
+                        repmat(iFrame, nLoc, 1), ...
+                        repmat(iMov,   nLoc, 1), ...
                         frameLocs.meanFAR, ...
                         phaseValsMin, ...
-                        phaseValsMax,...
-                        'VariableNames', {'row','col','plane','frame','movie','meanFAR','phaseMin', 'phaseMax'});
-            
+                        phaseValsMax, ...
+                        phaseValsOnSpot, ...
+                        'VariableNames', {'row','col','plane','frame','movie', ...
+                                          'meanFAR','phaseMin','phaseMax','phaseOnSpot'});
+        
                     allLoc = [allLoc; T]; %#ok<AGROW>
                 end
-
-                if isempty(allLoc)
-                    tracks = [];
-                    warning('PhaseCalibration: No localisations found.');
-                    return;
-                end
+            end % iMov
         
-                % --- Tracking per plane ---
-                planes      = unique(allLoc.plane);
-                nPlanes     = numel(planes);
-                tracks      = struct('plane', cell(nPlanes,1), 'trajectories', cell(nPlanes,1));
-                
-                for iPl = 1:nPlanes
-                    pl      = planes(iPl);
-                    locPl   = allLoc(allLoc.plane == pl, :);
-                    locPl   = sortrows(locPl, 'frame');
-            
-                    trackID = zeros(height(locPl), 1);
-                    nextID  = 1;
-            
-                    % Active tracks: struct array with fields lastRow, lastCol, lastFrame, id
-                    activeTracks = struct('lastRow', {}, 'lastCol', {}, 'lastFrame', {}, 'id', {});
-            
-                    frames = unique(locPl.frame);
-            
-                    for iF = 1:numel(frames)
-                        f       = frames(iF);
-                        idxF    = find(locPl.frame == f);
-                        nDetF   = numel(idxF);
-            
-                        % Remove tracks that have been gone too long
-                        if ~isempty(activeTracks)
-                            lastFrames  = [activeTracks.lastFrame];
-                            keepMask    = (f - lastFrames) <= (memory + 1);
-                            activeTracks = activeTracks(keepMask);
+            % --- Guard: nothing found ---
+            if isempty(allLoc)
+                tracks = [];
+                warning('PhaseCalibration: No localisations found.');
+                return;
+            end
+        
+            % --- Tracking per plane ---
+            planes  = unique(allLoc.plane);
+            nPlanes = numel(planes);
+            tracks  = struct('plane', cell(nPlanes,1), 'trajectories', cell(nPlanes,1));
+        
+            for iPl = 1:nPlanes
+                pl    = planes(iPl);
+                locPl = allLoc(allLoc.plane == pl, :);
+                locPl = sortrows(locPl, 'frame');
+        
+                trackID      = zeros(height(locPl), 1);
+                nextID       = 1;
+                activeTracks = struct('lastRow', {}, 'lastCol', {}, 'lastFrame', {}, 'id', {});
+        
+                frames = unique(locPl.frame);
+        
+                for iF = 1:numel(frames)
+                    f     = frames(iF);
+                    idxF  = find(locPl.frame == f);
+                    nDetF = numel(idxF);
+        
+                    if ~isempty(activeTracks)
+                        lastFrames   = [activeTracks.lastFrame];
+                        keepMask     = (f - lastFrames) <= (memory + 1);
+                        activeTracks = activeTracks(keepMask);
+                    end
+        
+                    nActive = numel(activeTracks);
+        
+                    if nActive == 0
+                        for k = 1:nDetF
+                            trackID(idxF(k)) = nextID;
+                            activeTracks(end+1) = struct( ...
+                                'lastRow',   locPl.row(idxF(k)), ...
+                                'lastCol',   locPl.col(idxF(k)), ...
+                                'lastFrame', f, ...
+                                'id',        nextID); %#ok<AGROW>
+                            nextID = nextID + 1;
                         end
-            
-                        % Build cost matrix: rows = active tracks, cols = current detections
-                        nActive = numel(activeTracks);
-            
-                        if nActive == 0
-                            % All detections start new tracks
-                            for k = 1:nDetF
-                                trackID(idxF(k)) = nextID;
+                    else
+                        distMat = inf(nActive, nDetF);
+                        for iA = 1:nActive
+                            for iD = 1:nDetF
+                                dr = activeTracks(iA).lastRow - locPl.row(idxF(iD));
+                                dc = activeTracks(iA).lastCol - locPl.col(idxF(iD));
+                                distMat(iA, iD) = sqrt(dr^2 + dc^2);
+                            end
+                        end
+        
+                        assigned_det   = false(1, nDetF);
+                        assigned_track = false(1, nActive);
+        
+                        [sortedDist, sortIdx] = sort(distMat(:));
+                        for s = 1:numel(sortedDist)
+                            if sortedDist(s) > radius_nm, break; end
+                            [iA, iD] = ind2sub([nActive, nDetF], sortIdx(s));
+                            if ~assigned_track(iA) && ~assigned_det(iD)
+                                trackID(idxF(iD))         = activeTracks(iA).id;
+                                activeTracks(iA).lastRow   = locPl.row(idxF(iD));
+                                activeTracks(iA).lastCol   = locPl.col(idxF(iD));
+                                activeTracks(iA).lastFrame = f;
+                                assigned_track(iA) = true;
+                                assigned_det(iD)   = true;
+                            end
+                        end
+        
+                        for iD = 1:nDetF
+                            if ~assigned_det(iD)
+                                trackID(idxF(iD)) = nextID;
                                 activeTracks(end+1) = struct( ...
-                                    'lastRow',   locPl.row(idxF(k)), ...
-                                    'lastCol',   locPl.col(idxF(k)), ...
+                                    'lastRow',   locPl.row(idxF(iD)), ...
+                                    'lastCol',   locPl.col(idxF(iD)), ...
                                     'lastFrame', f, ...
                                     'id',        nextID); %#ok<AGROW>
                                 nextID = nextID + 1;
                             end
-                        else
-                            % Compute distances
-                            distMat = inf(nActive, nDetF);
-                            for iA = 1:nActive
-                                for iD = 1:nDetF
-                                    dr = activeTracks(iA).lastRow - locPl.row(idxF(iD));
-                                    dc = activeTracks(iA).lastCol - locPl.col(idxF(iD));
-                                    distMat(iA, iD) = sqrt(dr^2 + dc^2);
-                                end
-                            end
-            
-                            % Greedy nearest-neighbour assignment within radius
-                            assigned_det   = false(1, nDetF);
-                            assigned_track = false(1, nActive);
-            
-                            [sortedDist, sortIdx] = sort(distMat(:));
-                            for s = 1:numel(sortedDist)
-                                if sortedDist(s) > radius_nm, break; end
-                                [iA, iD] = ind2sub([nActive, nDetF], sortIdx(s));
-                                if ~assigned_track(iA) && ~assigned_det(iD)
-                                    % Link detection iD to track iA
-                                    trackID(idxF(iD))           = activeTracks(iA).id;
-                                    activeTracks(iA).lastRow     = locPl.row(idxF(iD));
-                                    activeTracks(iA).lastCol     = locPl.col(idxF(iD));
-                                    activeTracks(iA).lastFrame   = f;
-                                    assigned_track(iA) = true;
-                                    assigned_det(iD)   = true;
-                                end
-                            end
-            
-                            % Unassigned detections start new tracks
-                            for iD = 1:nDetF
-                                if ~assigned_det(iD)
-                                    trackID(idxF(iD)) = nextID;
-                                    activeTracks(end+1) = struct( ...
-                                        'lastRow',   locPl.row(idxF(iD)), ...
-                                        'lastCol',   locPl.col(idxF(iD)), ...
-                                        'lastFrame', f, ...
-                                        'id',        nextID); %#ok<AGROW>
-                                    nextID = nextID + 1;
-                                end
-                            end
-                        end
-                    end % frames
-            
-                    locPl.trackID = trackID;
-                    tracks(iPl).plane = pl;
-                    tracks(iPl).trajectories = locPl;
-
-                    locPl.trackID = trackID;
-                    tracks(iPl).plane = pl;
-                    tracks(iPl).trajectories = locPl;
-                    
-                    % --- Reformat: one cell per track, sorted by frame, min 20 detections ---
-                    uniqueIDs = unique(trackID);
-                    uniqueIDs = uniqueIDs(uniqueIDs > 0);  % remove unassigned (id=0) if any
-                    
-                    tracklist = {};
-                    for iT = 1:numel(uniqueIDs)
-                        id      = uniqueIDs(iT);
-                        idxT    = locPl.trackID == id;
-                        trkData = locPl(idxT, {'row','col','phaseMin', 'phaseMax','frame'});
-                        trkData = sortrows(trkData, 'frame');
-                    
-                        if height(trkData) >= 20
-                            tracklist{end+1} = trkData; %#ok<AGROW>
                         end
                     end
-                    
-                    tracks(iPl).tracklist = tracklist;
-                end % planes
-                
-                fprintf('PhaseCalibration complete: %d planes, %d total localisations.\n', nPlanes, height(allLoc));
-
-                for ii = 1:size(tracks,1)
-                    Fig = figure;
-                    subplot(1,2,1)
-                    for jj = 1:size(tracks(ii).tracklist, 2)
-                        if size(tracks(ii).tracklist{1,jj}, 1) > 100
-                            plot(tracks(ii).tracklist{1,jj}.phaseMin)
-                            hold on
-                            MinRange(jj,1) = max(tracks(ii).tracklist{1,jj}.phaseMin) - min(tracks(ii).tracklist{1,jj}.phaseMin);
-                            MinRange(jj,1) = min(tracks(ii).tracklist{1,jj}.phaseMin);
-                        end
+                end % frames
+        
+                locPl.trackID = trackID;
+                tracks(iPl).plane        = pl;
+                tracks(iPl).trajectories = locPl;
+        
+                % --- Build tracklist (>= 20 detections) ---
+                uniqueIDs = unique(trackID);
+                uniqueIDs = uniqueIDs(uniqueIDs > 0);
+        
+                tracklist = {};
+                for iT = 1:numel(uniqueIDs)
+                    id      = uniqueIDs(iT);
+                    idxT    = locPl.trackID == id;
+                    trkData = locPl(idxT, {'row','col','phaseMin','phaseMax','phaseOnSpot','frame'});
+                    trkData = sortrows(trkData, 'frame');
+                    if height(trkData) >= 20
+                        tracklist{end+1} = trkData; %#ok<AGROW>
                     end
-                    tracks(ii).MinRange = MinRange;
-                    tracks(ii).MinRangeMedian = nanmedian(MinRange);
-                    tracks(ii).MinRangeMean = nanmean(MinRange);
-                    MinRange = [];
-                    xlabel('Frames')
-                    ylabel('PhaseMin')
-
-                    subplot(1,2,2)
-                    for jj = 1:size(tracks(ii).tracklist, 2)
-                        if size(tracks(ii).tracklist{1,jj}, 1) > 100
-                            plot(tracks(ii).tracklist{1,jj}.phaseMax)
-                            hold on
-                            MaxRange(jj,1) = max(tracks(ii).tracklist{1,jj}.phaseMax) - min(tracks(ii).tracklist{1,jj}.phaseMax);
-                            MaxRange(jj,1) = max(tracks(ii).tracklist{1,jj}.phaseMax);
-                        end
-                    end
-                    tracks(ii).MaxRange = MaxRange;
-                    tracks(ii).MaxRangeMedian = nanmedian(MaxRange);
-                    tracks(ii).MaxRangeMean = nanmean(MaxRange);
-                    MaxRange = [];
-                    xlabel('Frames')
-                    ylabel('PhaseMax')
-                    sgtitle(append('Plane ', num2str(ii)))
-                    saveas(Fig, append(FigFolder, filesep, 'Trend', num2str(ii), '.png'))
                 end
-
-                FileNameSave = append(FigFolder, filesep, 'ResultsPhaseCalibration.mat');
-                save(FileNameSave, "tracks");
+        
+                tracks(iPl).tracklist = tracklist;
+            end % planes
+        
+            fprintf('PhaseCalibration complete: %d planes, %d total localisations.\n', nPlanes, height(allLoc));
+        
+            % =========================================================================
+            % --- Per-plane statistics, axial profiles, and peak phase extraction ---
+            % =========================================================================
+        
+            % Accumulators across all planes for the global histogram
+            allPeakPhaseOnSpot = [];
+            allPeakPhaseMax    = [];
+        
+            for ii = 1:nPlanes
+        
+                % Reset per-plane accumulators
+                MinRangeDiff    = [];
+                MinRangeMin     = [];
+                MaxRangeDiff    = [];
+                MaxRangeMax     = [];
+                OnSpotMin       = [];
+                OnSpotMax       = [];
+                peakPhaseOnSpot = [];   % peak of phaseOnSpot axial profile per track
+                peakPhaseMax    = [];   % peak of phaseMax axial profile per track
+        
+                % ---- Figure 1: axial phase profiles (phaseMin / phaseMax vs frame) ----
+                Fig1 = figure('Visible','off');
+                subplot(1,2,1); hold on;
+                subplot(1,2,2); hold on;
+        
+                for jj = 1:numel(tracks(ii).tracklist)
+                    trkData = tracks(ii).tracklist{jj};
+                    if height(trkData) <= 100, continue; end
+        
+                    % Range / absolute statistics
+                    MinRangeDiff(end+1,1) = max(trkData.phaseMin) - min(trkData.phaseMin); %#ok<AGROW>
+                    MinRangeMin(end+1,1)  = min(trkData.phaseMin);                          %#ok<AGROW>
+                    MaxRangeDiff(end+1,1) = max(trkData.phaseMax) - min(trkData.phaseMax); %#ok<AGROW>
+                    MaxRangeMax(end+1,1)  = max(trkData.phaseMax);                          %#ok<AGROW>
+                    OnSpotMin(end+1,1)    = min(trkData.phaseOnSpot);                       %#ok<AGROW>
+                    OnSpotMax(end+1,1)    = max(trkData.phaseOnSpot);                       %#ok<AGROW>
+        
+                    % --- Peak phase: maximum along the axial (frame) profile ---
+                    % This is the in-focus frame value where the QPmap most accurately
+                    % represents the bead's true optical path length delay.
+                    peakPhaseOnSpot(end+1,1) = max(trkData.phaseOnSpot); %#ok<AGROW>
+                    peakPhaseMax(end+1,1)    = max(trkData.phaseMax);     %#ok<AGROW>
+        
+                    subplot(1,2,1);
+                    plot(trkData.frame, trkData.phaseMin);
+        
+                    subplot(1,2,2);
+                    plot(trkData.frame, trkData.phaseMax);
+                end
+        
+                subplot(1,2,1); xlabel('Frame'); ylabel('Phase min (rad)');
+                subplot(1,2,2); xlabel('Frame'); ylabel('Phase max (rad)');
+                sgtitle(['Plane ' num2str(ii) ' — axial phase profiles']);
+                saveas(Fig1, fullfile(FigFolder, ['Trend' num2str(ii) '.png']));
+                close(Fig1);
+        
+                % ---- Figure 2: phaseOnSpot axial profile per track ----
+                % Each curve should show a bell-shaped axial response peaking at the
+                % in-focus frame. Asymmetry or flat curves indicate aberrations or
+                % QPmap issues.
+                Fig2 = figure('Visible','off');
+                hold on;
+                for jj = 1:numel(tracks(ii).tracklist)
+                    trkData = tracks(ii).tracklist{jj};
+                    if height(trkData) <= 100, continue; end
+                    plot(trkData.frame, trkData.phaseOnSpot);
+                end
+                xlabel('Frame');
+                ylabel('Phase on spot (rad)');
+                title(['Plane ' num2str(ii) ' — axial phase profile (on spot)']);
+                saveas(Fig2, fullfile(FigFolder, ['AxialProfile_OnSpot_Plane' num2str(ii) '.png']));
+                close(Fig2);
+        
+                % ---- Store per-plane statistics ----
+                tracks(ii).phaseDiffMin         = MinRangeDiff;
+                tracks(ii).phaseDiffMinMedian   = nanmedian(MinRangeDiff);
+                tracks(ii).phaseDiffMinMean     = nanmean(MinRangeDiff);
+        
+                tracks(ii).phaseMin             = MinRangeMin;
+                tracks(ii).phaseMinMedian       = nanmedian(MinRangeMin);
+                tracks(ii).phaseMinMean         = nanmean(MinRangeMin);
+        
+                tracks(ii).phaseDiffMax         = MaxRangeDiff;
+                tracks(ii).phaseDiffMaxMedian   = nanmedian(MaxRangeDiff);
+                tracks(ii).phaseDiffMaxMean     = nanmean(MaxRangeDiff);
+        
+                tracks(ii).phaseMax             = MaxRangeMax;
+                tracks(ii).phaseMaxMedian       = nanmedian(MaxRangeMax);
+                tracks(ii).phaseMaxMean         = nanmean(MaxRangeMax);
+        
+                tracks(ii).phaseOnSpotMin       = OnSpotMin;
+                tracks(ii).phaseOnSpotMinMedian = nanmedian(OnSpotMin);
+                tracks(ii).phaseOnSpotMinMean   = nanmean(OnSpotMin);
+        
+                tracks(ii).phaseOnSpotMax       = OnSpotMax;
+                tracks(ii).phaseOnSpotMaxMedian = nanmedian(OnSpotMax);
+                tracks(ii).phaseOnSpotMaxMean   = nanmean(OnSpotMax);
+        
+                % ---- Peak phase fields (new) ----
+                tracks(ii).peakPhaseOnSpot       = peakPhaseOnSpot;
+                tracks(ii).peakPhaseOnSpotMedian = nanmedian(peakPhaseOnSpot);
+                tracks(ii).peakPhaseOnSpotMean   = nanmean(peakPhaseOnSpot);
+        
+                tracks(ii).peakPhaseMax          = peakPhaseMax;
+                tracks(ii).peakPhaseMaxMedian    = nanmedian(peakPhaseMax);
+                tracks(ii).peakPhaseMaxMean      = nanmean(peakPhaseMax);
+        
+                % Accumulate into global vectors for cross-plane histogram
+                allPeakPhaseOnSpot = [allPeakPhaseOnSpot; peakPhaseOnSpot]; %#ok<AGROW>
+                allPeakPhaseMax    = [allPeakPhaseMax;    peakPhaseMax];     %#ok<AGROW>
+        
+            end % ii planes
+        
+            % =========================================================================
+            % --- Global histogram of peak phase values across all planes and beads ---
+            % =========================================================================
+            % Each entry is the maximum phaseOnSpot along a single bead's axial
+            % trajectory — i.e. the in-focus phase delay estimate per bead.
+            % The distribution should be narrow and centred on the theoretically
+            % expected value for your bead diameter and refractive index contrast.
+        
+            if ~isempty(allPeakPhaseOnSpot)
+                FigHist = figure('Visible','off');
+        
+                subplot(1,2,1);
+                histogram(allPeakPhaseOnSpot, 'Normalization', 'probability', ...
+                          'FaceColor', [0.2 0.5 0.8], 'EdgeColor', 'none');
+                xlabel('Peak phase on spot (rad)');
+                ylabel('Probability');
+                title('Peak phase — on spot');
+                xline(nanmedian(allPeakPhaseOnSpot), 'r--', ...
+                      ['Median = ' num2str(nanmedian(allPeakPhaseOnSpot), '%.3f') ' rad'], ...
+                      'LabelVerticalAlignment', 'bottom');
+        
+                subplot(1,2,2);
+                histogram(allPeakPhaseMax, 'Normalization', 'probability', ...
+                          'FaceColor', [0.9 0.5 0.2], 'EdgeColor', 'none');
+                xlabel('Peak phase max in patch (rad)');
+                ylabel('Probability');
+                title('Peak phase — patch max');
+                xline(nanmedian(allPeakPhaseMax), 'r--', ...
+                      ['Median = ' num2str(nanmedian(allPeakPhaseMax), '%.3f') ' rad'], ...
+                      'LabelVerticalAlignment', 'bottom');
+        
+                sgtitle(sprintf('Peak phase delay per bead — all planes  (N = %d beads)', ...
+                                numel(allPeakPhaseOnSpot)));
+                saveas(FigHist, fullfile(FigFolder, 'PeakPhaseHistogram.png'));
+                close(FigHist);
+        
+                fprintf('Peak phase (on spot):   median = %.4f rad,  mean = %.4f rad,  N = %d beads\n', ...
+                        nanmedian(allPeakPhaseOnSpot), nanmean(allPeakPhaseOnSpot), numel(allPeakPhaseOnSpot));
+                fprintf('Peak phase (patch max): median = %.4f rad,  mean = %.4f rad,  N = %d beads\n', ...
+                        nanmedian(allPeakPhaseMax), nanmean(allPeakPhaseMax), numel(allPeakPhaseMax));
+            else
+                warning('PhaseCalibration: No tracks with >100 detections found — histogram skipped.');
             end
+        
+            % --- Save results ---
+            FileNameSave = fullfile(FigFolder, 'ResultsPhaseCalibration.mat');
+            save(FileNameSave, 'tracks');
+        
         end
     end
 end

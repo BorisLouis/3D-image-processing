@@ -58,10 +58,14 @@ classdef MPTICSMovie < Core.MPMovie
                                 num2str(MaxFrame), ' - Plane ', num2str(c)));
                         Frame = Movie(:,:,frame);
                         sacf = obj.SACF(Frame);
-                        List(frame) = obj.fitSACF(sacf)*obj.info.PxSize;
+                        [List(frame), R2(frame)] = obj.fitSACF(sacf);
                     end
-                    Results.wList = List;
-                    Results.wAvg = mean(List);
+                    cleanedList = List;
+                    cleanedList(R2 < 0.90) = [];
+                    Results.wListRaw = List.*obj.info.PxSize;
+                    Results.wList = cleanedList.*obj.info.PxSize;
+                    Results.wAvg = median(cleanedList).*obj.info.PxSize;
+                    Results.R2 = R2;
                     obj.Omegas{c,1} = Results;
                 end
                 close(h)
@@ -147,9 +151,10 @@ classdef MPTICSMovie < Core.MPMovie
                 hh = waitbar(0, 'initializing');
                 Tau = [0, (1:size(obj.AutocorrMap{1,1},3)).*obj.info.ExpTime]';
                 Tau(end) = [];
-                FitRange = 10;
+
                 for c = 1:obj.calibrated{1, 1}.nPlanes
-                    C = obj.Omegas{1, 1}.wAvg*10^(-6);               % your fixed C
+                    obj.Omegas{1, 1}.wAvg = obj.info.Omega;
+                    omega_um = obj.Omegas{1, 1}.wAvg*10^(-3);               
                     data = obj.AutocorrMap{c,1};
                     blockSize = obj.info.TICSWindow;
     
@@ -173,22 +178,83 @@ classdef MPTICSMovie < Core.MPMovie
                     validPix = find(idx);       % vector of linear indices
                     nValid = numel(validPix);
     
+                    % --- Before loop ---
+                    Tau = double(Tau(:));
+                    model_fun = @(p, x) 1 ./ (1 + x ./ p(1));
+                    lb        = [0];
+                    ub        = [Inf];
+                    opts      = optimoptions('lsqcurvefit', 'Display', 'off');
+                    threshold = 0.15;
+                    min_pts   = obj.info.FitTACF;    % ACF decays in ~3 points, so min is low
+
                     for k = 1:nValid
                         lin = validPix(k);
                         [i, j] = ind2sub([rows, cols], lin);
-                        waitbar(k./nValid, hh, append('Fitting on TACF ', num2str(k), '/',...
+                        waitbar(k./nValid, hh, append('Fitting on TACF ', num2str(k), '/', ...
                             num2str(nValid), ' - plane ', num2str(c)));
-                        AutoCorr = squeeze(data(i,j,:)./max(data(i,j,:)));
-    
-                        f = fit(Tau, AutoCorr(:), '(1./(1+x/a))');
-                        coeff = coeffvalues(f);
-                        LifeTime = coeff(1);
-    
-                        D = sqrt(C)./(4*LifeTime);
-                        eta(i,j) = (1.380649*10^-23*obj.info.Temperature)./(6*pi*obj.info.Radius*10^(-9)*D*10^(-12))*10^3;
+                    
+                        % --- AutoCorr ---
+                        AutoCorr = double(squeeze(data(i,j,:)));
+                        ac_zero = AutoCorr(1);                         % lag-0 value
+                        if ac_zero <= 0 || ~isfinite(ac_zero)
+                            R2_map(i,j) = NaN;
+                            diff(i,j)   = NaN;
+                            eta(i,j)    = NaN;
+                            continue;
+                        end
+                        AutoCorr = AutoCorr ./ ac_zero;                % normalize by lag-0
+                        AutoCorr = AutoCorr(:);
+                    
+                        % --- Adaptive cutoff: FIRST crossing, not last ---
+                        % This is the key fix — the ACF decays in ~3 points, then
+                        % the tail is pure noise that was being included before
+                        cutoff_idx = find(AutoCorr < threshold, 1, 'first');
+                        if isempty(cutoff_idx)
+                            cutoff_idx = min_pts;
+                        end
+                        cutoff_idx = max(cutoff_idx, min_pts);  % enforce minimum
+                    
+                        Tau_fit      = Tau(1:cutoff_idx);
+                        AutoCorr_fit = AutoCorr(1:cutoff_idx);
+                    
+                        % --- Per-pixel p0 from 1/e crossing ---
+                        tau_guess_idx = find(AutoCorr < exp(-1), 1, 'first');
+                        if isempty(tau_guess_idx) || tau_guess_idx == 1
+                            p0 = Tau(min(2, end));
+                        else
+                            p0 = Tau(tau_guess_idx);
+                        end
+                        p0 = max(p0, 1e-10);
+                        if ~isfinite(p0)
+                            p0 = mean(Tau_fit);
+                        end
+                    
+                        % --- lsqcurvefit ---
+                        try
+                            [p_fit, ~] = lsqcurvefit(model_fun, p0, Tau_fit, AutoCorr_fit, lb, ub, opts);
+                        catch
+                            R2_map(i,j) = NaN;
+                            diff(i,j)   = NaN;
+                            eta(i,j)    = NaN;
+                            continue;
+                        end
+                        LifeTime = p_fit(1);
+                    
+                        % --- R² ---
+                        r_pred = model_fun(p_fit, Tau_fit);
+                        SS_res = sum((AutoCorr_fit - r_pred).^2);
+                        SS_tot = sum((AutoCorr_fit - mean(AutoCorr_fit)).^2);
+                        R2_map(i,j) = 1 - SS_res / SS_tot;
+                    
+                        % --- Derived quantities ---
+                        D = omega_um^2 ./ (4*LifeTime);
+                        eta(i,j) = (1.380649e-23 * obj.info.Temperature) / ...
+                                   (6*pi * obj.info.Radius*1e-9 * D*1e-12) * 1e3;
                         diff(i,j) = D;
                     end
-                    
+
+                    etaRes = eta;
+                    diffRes = diff;
                     try
                         etaRes = imresize(eta, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
                         diffRes = imresize(diff, [obj.raw.movInfo.Width, obj.raw.movInfo.Length]);
@@ -202,8 +268,8 @@ classdef MPTICSMovie < Core.MPMovie
                     colormap(BlackJet);          % <-- apply colormap here
                     cb = colorbar;               % <-- no arguments here
                     cb.Label.String = 'Viscosity (cP)';
-                    caxis([0 20])
-                    title('Viscosity map')
+                    caxis([0 10])
+                    title(append('Viscosity map - av visc ', num2str(median(etaRes, 'all', 'omitnan')), ' +/- ', num2str(std(etaRes(:), 'omitnan')), ' cP'));
                     Fig1Path = append(obj.raw.movInfo.Path, filesep, 'ViscosityMap_Plane', num2str(c), '.png');
                     saveas(Fig1, Fig1Path);
     
@@ -213,9 +279,19 @@ classdef MPTICSMovie < Core.MPMovie
                     colormap(BlackJet);          % <-- apply colormap here
                     cb = colorbar; 
                     cb.Label.String = 'Diffusion coefficient (µm^2/s)';
-                    title('Diffusion map')
+                    title(append('Diffusion map - av diffusion ', num2str(median(diffRes, 'all', 'omitnan')), ' +/- ', num2str(std(diffRes(:), 'omitnan')), ' µm^2/s'));
                     Fig2Path = append(obj.raw.movInfo.Path, filesep, 'DiffusionMap_Plane', num2str(c), '.png');
                     saveas(Fig2, Fig2Path);
+
+                    Fig3 = figure();
+                    imagesc(R2_map)
+                    clim([0 1])
+                    cb = colorbar;
+                    cb.Label.String = 'R^2 fit';
+                    cb.Limits = [0 1];
+                    title(append('Fit error map'));
+                    Fig3Path = append(obj.raw.movInfo.Path, filesep, 'FitErrorMap_Plane', num2str(c), '.png');
+                    saveas(Fig3, Fig3Path);
 
                     Results.ViscMean = nanmean(etaRes, 'all');
                     Results.ViscStd = nanstd(etaRes(:));
@@ -266,33 +342,31 @@ classdef MPTICSMovie < Core.MPMovie
         end
 
         function [tacf] = TACF(obj, IntTrace)
-            x = IntTrace;       % e.g. x = squeeze(I(y,x,:))';
+            x = IntTrace;
             T = length(x);
             
-            % --- Step 1: temporal mean ---
+            % --- Step 1: fluctuations (mean already subtracted upstream) ---
             mu = mean(x);
-            
-            % --- Step 2: fluctuations ---
             dx = x - mu;
             
-            % --- Prepare outputs ---
-            maxTau = T-1;
-            numerator = zeros(1, maxTau+1);
-            denominator = mu * mu;   % stationary assumption (standard TICS)
-            tacf = zeros(1, maxTau+1);
+            % --- Normalize by variance at lag=0 (guarantees G(0)=1) ---
+            denominator = sum(dx .* dx) / T;   % variance = G(0) numerator
             
-            % --- Steps 3–4: autocorrelation numerator and normalization ---
+            if denominator == 0 || ~isfinite(denominator)
+                tacf = zeros(1, T);
+                return;
+            end
+            
+            maxTau = T - 1;
+            tacf   = zeros(1, maxTau + 1);
+            
             for tau = 0:maxTau
-                Nt = T - tau;                                  % valid pairs
-                % numerator: <dx(t) dx(t+tau)>
-                numerator(tau+1) = sum(dx(1:Nt) .* dx(1+tau:Nt+tau)) / Nt;
-            
-                % final correlation r(tau)
-                tacf(tau+1) = numerator(tau+1) / denominator;
+                Nt = T - tau;
+                tacf(tau+1) = (sum(dx(1:Nt) .* dx(1+tau:Nt+tau)) / Nt) / denominator;
             end
         end
 
-        function [omega] = fitSACF(obj, sacf)
+        function [omega, R2] = fitSACF(obj, sacf)
             sacf(sacf < 0) = 0;
             r_map = sacf;
             [nx, ny] = size(sacf);
@@ -364,12 +438,17 @@ classdef MPTICSMovie < Core.MPMovie
             lb = [-Inf, 0, -Inf];   % omega0 must be positive
             ub = [ Inf, Inf, Inf];
             
-            p_fit = lsqcurvefit(@(p, rho) w .* model_fun(p,rho), ...
+            [p_fit, resnorm] = lsqcurvefit(@(p, rho) w .* model_fun(p,rho), ...
                                 p0, rho_fit, w .* r_fit, lb, ub, opts);
             
             G0     = p_fit(1);
             omega  = p_fit(2);
             Ginf   = p_fit(3);
+
+            r_pred  = model_fun(p_fit, rho_fit);          % model predictions
+            SS_res  = sum((r_fit - r_pred).^2);           % residual sum of squares
+            SS_tot  = sum((r_fit - mean(r_fit)).^2);      % total sum of squares
+            R2      = 1 - SS_res / SS_tot;
             
             if strcmp(obj.info.PlotSACFfit, 'on')
                 % -------------------------------------------------------------

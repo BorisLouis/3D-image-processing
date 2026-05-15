@@ -37,7 +37,7 @@
 % 	You should have received a copy of the GNU General Public License
 %  	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-function [stackM,kx,kz] = getMirroredStack(stack,s)
+function [stackM,kx,kz] = getMirroredStack(stack,s,zPos)
 
 [Nx,Ny,Nz] = size(stack);
 
@@ -46,7 +46,8 @@ if Nx ~= Ny % verify that the stack is square
 end
 % compute real space
 x = linspace(-Nx*s.optics.dx/2,Nx*s.optics.dx/2,Nx);
-z = linspace(-Nz*s.optics.dz/2,Nz*s.optics.dz/2,Nz);
+% z = linspace(-Nz*s.optics.dz/2,Nz*s.optics.dz/2,Nz);
+z = zPos;
 
 temp = stack;
 if strcmp(s.proc.mirrorZ, 'true')

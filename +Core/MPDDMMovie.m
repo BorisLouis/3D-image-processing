@@ -66,7 +66,7 @@ classdef MPDDMMovie < Core.MPMovie
             end
 
             frame = FramesToLoad(1);
-            Frame = double(Load.Movie.tif.getframes(obj.calibrated{1, 1}.filePath.(append('plane', num2str(1))), frame));
+            Frame = double(Load.Movie.tif.getFrame(obj.calibrated{1, 1}.filePath.(append('plane', num2str(1))), frame));
 
             Idx = find(Frame ~= 0);
         end
@@ -85,12 +85,46 @@ classdef MPDDMMovie < Core.MPMovie
                 n = 0;
                 for frame = FramesToLoad
                     n = n+1;
-                    Frame = double(Load.Movie.tif.getframes(obj.calibrated{1, 1}.filePath.(append('plane', num2str(c))), frame));
+                    img = double(Load.Movie.tif.getFrame(obj.calibrated{1, 1}.filePath.(append('plane', num2str(c))), frame));
+                    imageSize = size(img);
                     ROISize = obj.info.ddmParam.ROISize;
-                    [PxRow,PxCol] = ind2sub(size(Frame),Px);
+                    [PxRow,PxCol] = ind2sub(size(img),Px);
                     ROI = [PxRow - round(ROISize./2), PxRow + round(ROISize./2);...
                         PxCol - round(ROISize./2), PxCol + round(ROISize./2)];
-                    Frame = Frame(ROI(1,1):ROI(1,2), ROI(2,1):ROI(2,2));
+                    
+                    % Compute raw ROI bounds
+                    rowMin = PxRow - round(ROISize / 2);
+                    rowMax = PxRow + round(ROISize / 2);
+                    colMin = PxCol - round(ROISize / 2);
+                    colMax = PxCol + round(ROISize / 2);
+                
+                    % Full ROI size (in pixels)
+                    roiRows = rowMax - rowMin + 1;
+                    roiCols = colMax - colMin + 1;
+                
+                    % Initialize ROI with NaNs
+                    Frame = zeros(roiRows, roiCols);
+                
+                    % Clamp to image bounds
+                    clampedRowMin = max(rowMin, 1);
+                    clampedRowMax = min(rowMax, imageSize(1));
+                    clampedColMin = max(colMin, 1);
+                    clampedColMax = min(colMax, imageSize(2));
+                
+                    % Skip if ROI is entirely outside the image
+                    if clampedRowMin > clampedRowMax || clampedColMin > clampedColMax
+                        return;
+                    end
+                
+                    % Compute where in the ROI matrix the valid data goes
+                    roiRowStart = clampedRowMin - rowMin + 1;
+                    roiRowEnd   = clampedRowMax - rowMin + 1;
+                    roiColStart = clampedColMin - colMin + 1;
+                    roiColEnd   = clampedColMax - colMin + 1;
+                
+                    % Fill valid region from image
+                    Frame(roiRowStart:roiRowEnd, roiColStart:roiColEnd) = ...
+                        img(clampedRowMin:clampedRowMax, clampedColMin:clampedColMax);
 
                     if strcmp(obj.info.ddmParam.CorrectBleaching, 'on')
                         waitbar(frame./obj.raw.movInfo.maxFrame, h, append('Load frame + bleaching correction -- frame ',...
@@ -154,8 +188,13 @@ classdef MPDDMMovie < Core.MPMovie
                             AnisotropyOutput(:,1) = [NaN ; RadiallyAveragedDDMSignal(:,1)];
                             AnisotropyOutput(:,end+1) = [dt ; RadiallyAveragedDDMSignal(:,2)]; 
                         end
-                        waitbar(dt./nFrames,f,append('Calculating AvgFFT frame by frame - Timelag ', num2str(dt),...
-                            ' out of ', num2str(nFrames-1)));
+                        if numel(varargin) == 6
+                            waitbar(dt./nFrames,f,['Calculating AvgFFT frame by frame - Timelag ', num2str(dt),...
+                                '/', num2str(nFrames-1), newline 'Pixel ', num2str(varargin{4}), '/', num2str(varargin{6})]);
+                        else
+                            waitbar(dt./nFrames,f,append('Calculating AvgFFT frame by frame - Timelag ', num2str(dt),...
+                                ' out of ', num2str(nFrames-1)));
+                        end
                     end
                     close all
                     close(f)

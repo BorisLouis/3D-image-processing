@@ -86,8 +86,10 @@ classdef TICSExperiment < handle
                 try
                     disp(['Retrieving data from TICS file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.TICSMovies.(fieldsN{i});
+                    % currentTrackMov.info.PxSize = str2num(erase(erase(currentTrackMov.calibrated{1, 1}.mainPath(strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'px')+2:strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'px')+4), '\'), '_'));
+                    % currentTrackMov.info.Radius = str2num(erase(erase(currentTrackMov.calibrated{1, 1}.mainPath(strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'r')+1:strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'r')+3), '\'), '_'));
                     currentTrackMov.LoadAllFrames;
-                    currentTrackMov.calculateOmega;
+                    % currentTrackMov.calculateOmega;
                     currentTrackMov.getAutocorrmap;
                     currentTrackMov.getDiffusionmap;
                 catch

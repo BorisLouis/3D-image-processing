@@ -534,15 +534,17 @@ classdef MPMovie < Core.Movie
                 for i = 1:numel(fieldsN)
                     %Load plane
                     try
-                        if ~strcmp(obj.calibrated{1,1}.filePath.(fieldsN{i})(1), obj.cal2D.fullPath(1))
-                            obj.calibrated{1,1}.filePath.(fieldsN{i})(1) = obj.cal2D(1);
+                        if ~strcmp(obj.calibrated{1,1}.filePath.(fieldsN{i})(1), obj.raw.movInfo.Path(1))
+                            obj.calibrated{1,1}.filePath.(fieldsN{i})(1) = obj.raw.movInfo.Path(1);
                         end
                     catch
                     end
+                    startcal = strfind(obj.calibrated{1,1}.filePath.(fieldsN{i}), 'calibrated');
+                    FilePath = append(obj.raw.movInfo.Path, filesep, obj.calibrated{1,1}.filePath.(fieldsN{i})(startcal(1):end));
                     try
-                        [mov] = Load.Movie.tif.getframes(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
+                        [mov] = Load.Movie.tif.getFrame(FilePath,idx);
                     catch
-                        [mov] = Load.Movie.tif.getFrame(obj.calibrated{1,1}.filePath.(fieldsN{i}),idx);
+                        [mov] = Load.Movie.tif.getFrame(FilePath,idx);
                     end
                     % bg = double(imgaussfilt(mov, 15));
                     % mov = double(mov) - bg;

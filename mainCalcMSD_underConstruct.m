@@ -1,552 +1,1117 @@
-clc ;
-clear ;
-close all;
+%% ======================================================================
+%  NANOPARTICLE TRACKING ANALYSIS  –  v4
+%  Multi-layer diffusion classifier – BiLSTM with PER-WINDOW normalisation
+%
+%  Requires: MATLAB Deep Learning Toolbox R2021b+
+%  Author  : Steven Huysecom – 2026
+%% ======================================================================
 
-MainMainFolders = {'D:\Data Steven - GEMs\20250725_GEMScarlet_37kPa_48h_KM12\KM12SM'};
+clear; close all; clc;
+rng(42);
 
-%% USER INPUT
-[FilePath, Experiment, FilenameRaw, Dimension, expTime, Temp, Radius1, Radius2, DiffFit, MinSize, Ext, ParticleType, path2RotCal, CutTraces, ExpModel] = UserInput.CalcMSDinfoGUI;
-%% Loading
-for bigstart = 1:numel(MainMainFolders)
-    f = waitbar(0, 'Initializing...');
-    FilePath = MainMainFolders{bigstart};
-    MainFolder = dir(FilePath);
-    name = append(Experiment, Ext);
-    MainFolder([MainFolder.isdir] ~= 1) = [];
-    
-    AllMovieResults = [];
-    CorrectionsTheta = [];
-    CorrectionsPhi = [];
-    for j = 3 : size(MainFolder,1)
-        try
-            folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
-            idx = contains({folder.name},FilenameRaw);
-            folder(~idx) = [];
-    
-            if strcmp(Experiment, 'Dual color tracking')
-                Loop = 2;
-            else
-                Loop = 1;
-            end
-            for l = 1:Loop                if strcmp(Experiment, 'Dual color tracking')
-                    if l == 1
-                        Filename = append(FilenameRaw, '1');
-                        Radius = Radius1;
-                    elseif l == 2
-                        Filename = append(FilenameRaw, '2');
-                        Radius = Radius2;
-                    end
-                else
-                    Filename = FilenameRaw;
-                    Radius = Radius1;
-                end
-        
-                f2Load = [folder(1).folder filesep Filename '.mat'];
-                Path = folder(1).folder;
-                
-                tmpData = load(f2Load);
-                name = fieldnames(tmpData);
-                data = tmpData.(name{1});
 
-                %% Processing
-                if ~strcmp(Experiment, 'Rotational Tracking')
-                    %%% cut up traces
-                    if ~isnan(CutTraces)
-                        if isfield(data, 'traces')
-                            data = data.traces;
-                        end
-                        data = data(cellfun(@(x) height(x) > MinSize, data));
-                        Length = CutTraces;
-                        for step = 1:max([data{1, end}.t])-Length
-                            waitbar(step./(max([data{1, end}.t])-Length), f, 'cutting traces')
-                            CurrTraceCell = {};
-                            for i = 1:size(data,2)
-                                CurrTrace = data{1,i};
-                                CurrTraceCutted = CurrTrace(ismember(CurrTrace.t, (step:(step+Length))), :);    
-                                if ~isempty(CurrTraceCutted)
-                                    CurrTraceCell{end+1,1} = CurrTraceCutted;
-                                end
-                            end
-                            dataMatrix{step, 1} = CurrTraceCell;
-                        end
-                    else
-                        try
-                            dataMatrix{1,1} = data.traces;
-                        catch
-                            dataMatrix{1,1} = data;
-                        end
-                    end
-    
-                    nRows = size(dataMatrix, 1);
-                    % nRows = 100;
-                    Time     = nan(nRows, 1);
-                    DiffMean = nan(nRows, 1);
-                    DiffStd  = nan(nRows, 1);
-                    ViscMean = nan(nRows, 1);
-                    ViscStd  = nan(nRows, 1);
-                    AnExpMean = nan(nRows, 1);
-                    AnExpStd  = nan(nRows, 1);
-                    DiffAll = cell(nRows, 1);
-                    ViscAll = cell(nRows, 1);
-                    AnExpAll = cell(nRows, 1);
-                    TimeResults = table(Time, DiffMean,DiffStd,DiffAll,ViscMean, ViscStd, ViscAll,AnExpMean,AnExpStd,AnExpAll);
-    
-                    for k = 1:size(dataMatrix, 1)
-                        DataCurrent = dataMatrix{k, 1};
-                        if isempty(DataCurrent)
-                            currMov = [];
-                        else
-                            allHeight = cellfun(@height,DataCurrent(:,1));
-                            if numel(allHeight) == 1
-                                allHeight = cellfun(@height,DataCurrent(1,:));
-                            end
-                            idx = allHeight>MinSize;
-                            try
-                                currMov = dataMatrix{k,1}(idx, 1);
-                            catch
-                                currMov = dataMatrix{k,1}(1, idx);
-                            end
-                        end
-    
-                        if ~isempty(currMov)
-                        
-                            allRes = struct('msdX',0,'msdY',0,'msdZ',0,'msdR',0,'tau',0,'DX',0,'DY',0,'DZ',0,'DR',0,...
-                                'nX',0,'nY',0,'nZ',0,'nR',0,'aX',0,'aY',0,'aZ',0,'aR',0,'vX',0,'vY',0,...
-                                'vZ',0,'vR',0);
-                            if strcmp(Experiment, 'Tracking-Segmentation')
-                                allRes.Mask = 0;
-                            elseif strcmp(Experiment, 'Tracking-Phase')
-                                allRes.Phase = 0;
-                            end
-                            allRes(length(currMov)).msdX = [];
-                            maxLength = max(allHeight);
-                            allMSDX = zeros(length(currMov),maxLength-1);
-                            allMSDY = allMSDX;
-                            allMSDZ = allMSDY;
-                            allMSDR = allMSDY;
-                            for i = 1:length(currMov)
-                                waitbar(i./length(currMov), f, append('Diffusion - Movie ', num2str(j-2),...
-                                    '/', num2str(size(MainFolder,1) - 2), ' step ', num2str(l),...
-                                    ' - part ', num2str(k), '/', num2str(size(dataMatrix, 1))));
-                                currPart = currMov{i};
-                            
-                                coord = [currPart.col, currPart.row, currPart.z];
-                                CM = mean(coord,1);
-                                coord = coord-CM;
-                            
-                                %in X
-                                AvStep = MSD.getAvStepSize(coord(:,1)/10^3); 
-                                msdx = MSD.calc(coord(:,1)/10^3);%convert to um;
-                                tau = (1:length(msdx))'*expTime;
-                                allMSDX(i,1:length(msdx)) = msdx;
-                                DX   = MSD.getDiffCoeff(msdx,tau,DiffFit,'1D');
-                                nX   = MSD.getViscosity(DX,Radius,Temp);
-                                %aX   = MSD.getDiffTypeAlpha(msdx,expTime);
-                                aX   = MSD.getDiffTypeAlpha2(msdx,expTime, AvStep);
-                                vX   = abs(coord(1,1) - coord(end,1)/10^3/(length(coord)*expTime)); %um/s
-                            
-                                %inY
-                                AvStep = MSD.getAvStepSize(coord(:,2)/10^3); 
-                                msdy = MSD.calc(coord(:,2)/10^3);%convert to um;
-                                allMSDY(i,1:length(msdy)) = msdy;
-                                DY   = MSD.getDiffCoeff(msdy,tau,DiffFit,'1D');
-                                nY   = MSD.getViscosity(DY,Radius,Temp);
-                                %aY   = MSD.getDiffTypeAlpha(msdy,expTime);
-                                aY   = MSD.getDiffTypeAlpha2(msdy,expTime, AvStep);
-                                vY   = abs(coord(1,2) - coord(end,2)/10^3/(length(coord)*expTime)); %um/s
-                            
-                                %inZ
-                                if strcmp(Dimension, '3D')
-                                    AvStep = MSD.getAvStepSize(coord(:,3)/10^3); 
-                                    msdz = MSD.calc(coord(:,3)/10^3);%convert to um;
-                                    allMSDZ(i,1:length(msdz)) = msdz;
-                                    DZ   = MSD.getDiffCoeff(msdz,tau,DiffFit,'1D');
-                                    nZ   = MSD.getViscosity(DZ,Radius,Temp);
-                                    %aZ   = MSD.getDiffTypeAlpha(msdz,expTime);
-                                    aZ   = MSD.getDiffTypeAlpha2(msdz,expTime, AvStep);
-                                    vZ   = abs(coord(1,3) - coord(end,3)/10^3/(length(coord)*expTime)); %um/s
-                                else
-                                    msdz = [];
-                                    allMSDZ(i, 1:1) = NaN;
-                                    DZ = NaN;
-                                    nZ = NaN;
-                                    aZ = NaN;
-                                    vZ = NaN;
-                                end
-                                    
-                            
-                            
-                                %inR
-                                if strcmp(Dimension, '3D')
-                                    AvStep = MSD.getAvStepSize(coord(:, 1:3)/10^3); 
-                                    msdr = MSD.calc(coord(:, 1:3)/10^3);%convert to um;
-                                    allMSDR(i,1:length(msdr)) = msdr;
-                                    DR   = MSD.getDiffCoeff(msdr,tau,DiffFit,'3D');
-                                elseif strcmp(Dimension, '2D')
-                                    AvStep = MSD.getAvStepSize(coord(:, 1:2)/10^3); 
-                                    msdr = MSD.calc(coord(:, 1:2)/10^3);%convert to um;
-                                    allMSDR(i,1:length(msdr)) = msdr;
-                                    DR   = MSD.getDiffCoeff(msdr,tau,DiffFit,'2D');
-                                end          
-                                nR   = MSD.getViscosity(DR,Radius,Temp);
-                                %aR   = MSD.getDiffTypeAlpha(msdr,expTime);
-                                aR   = MSD.getDiffTypeAlpha2(msdr,expTime, AvStep);
-                                dR   = sqrt((coord(1,1)-coord(end,1))^2 + (coord(1,2)-coord(end,2))^2 +...
-                                    (coord(1,3)-coord(end,3))^2);
-                                vR = dR/10^3/(length(coord)*expTime); %um/s
-                            
-                                allRes(i).msdX = msdx;% in um^2
-                                allRes(i).msdY = msdy;
-                                allRes(i).msdZ = msdz;
-                                allRes(i).msdR = msdr;
-                                allRes(i).tau = tau; % in sec
-                        
-                                allRes(i).DX   = DX;% in um^2 /sec
-                                allRes(i).DY   = DY;% in um^2 /sec
-                                allRes(i).DZ   = DZ;% in um^2 /sec
-                                allRes(i).DR   = DR;% in um^2 /sec
-                            
-                                allRes(i).nX   = nX;
-                                allRes(i).nY   = nY;
-                                allRes(i).nZ   = nZ;
-                                allRes(i).nR   = nR;
-                                
-                                allRes(i).aX   = aX;
-                                allRes(i).aY   = aY;
-                                allRes(i).aZ   = aZ;
-                                allRes(i).aR   = aR;
-                                
-                                allRes(i).vX   = vX;
-                                allRes(i).vY   = vY;
-                                allRes(i).vZ   = vZ;
-                                allRes(i).vR   = vR;
-                                
-                                
-                                allRes(i).num  = length(msdx);
-                        
-                                if strcmp(Experiment, 'Tracking-Segmentation')
-                                    allRes(i).Mask = round(mean(currPart.InSegment));
-                                elseif strcmp(Experiment, 'Tracking-Phase')
-                                    try
-                                        allRes(i).Phase = nanmean(currPart.Phase);
-                                        allRes(i).IntPhaseCh = nanmean(currPart.IntPhaseCh);
-                                        allRes(i).GradientMagnitude = nanmean(currPart.GradientMagnitude);
-                                        allRes(i).LocalVariance = nanmean(currPart.LocalVariance);
-                                        allRes(i).SharpnessLaplacian = nanmean(currPart.SharpnessLaplacian);
-                                    catch
-                                        allRes(i).Phase = NaN;
-                                        allRes(i).IntPhaseCh = NaN;
-                                        allRes(i).GradientMagnitude = NaN;
-                                        allRes(i).LocalVariance = NaN;
-                                        allRes(i).SharpnessLaplacian = NaN;
-                                    end
-                                end
-                            end
-                        
-                            %%
-                            allMSDR(allMSDR == 0) = NaN;
-                            meanMSDR = nanmean(allMSDR,1);
-                            tau = (1:length(meanMSDR))'*expTime;
-                            DR   = MSD.getDiffCoeff(meanMSDR,tau,DiffFit,Dimension);
-                            nR   = MSD.getViscosity(DR,Radius,Temp);
-                            
-                            disp(['The diffusion coefficient is ', num2str(DR), ' \mum^2/s and the viscosity is ' num2str(nR) ' cp']);
-                            %%
-                        
-                            if strcmp(Experiment, 'Tracking-Segmentation')
-                                if ~isnan(CutTraces)
-                                    name = append('msdResSegmentation_Step', num2str(k), Ext);
-                                else
-                                    name = append('msdResSegmentation', Ext);
-                                end
-                            elseif strcmp(Experiment, 'Tracking-Phase')
-                                if ~isnan(CutTraces)
-                                    name = append('msdResPhase_Step', num2str(k), Ext);
-                                else
-                                    name = append('msdResPhase', Ext);
-                                end
-                            elseif strcmp(Experiment, 'Tracking')
-                                if ~isnan(CutTraces)
-                                    name = append('msdRes_Step', num2str(k), '_', Filename(end), Ext);
-                                else
-                                    name = append('msdRes', Filename(end), Ext);
-                                end
-                            elseif strcmp(Experiment, 'Dual color tracking')
-                                if ~isnan(CutTraces)
-                                    name = append('msdRes_Step', num2str(k), '_', Filename(end), Ext);
-                                else
-                                    name = append('msdRes', Filename(end), Ext);
-                                end
-                            else
-                                error('Please specify type of experiment: Tracking, Tracking-Segmentation, Tracking-Phase');
-                            end
-                        
-                            AllMovieResults = [AllMovieResults, allRes];
-                            TimeResults.Time(k) = k;
-                            TimeResults.DiffMean(k) = mean([allRes.DR]); 
-                            TimeResults.DiffStd(k)  = std([allRes.DR]);
-                            TimeResults.ViscMean(k) = mean([allRes.nR]);
-                            TimeResults.ViscStd(k)  = std([allRes.nR]);
-                            TimeResults.AnExpMean(k) = mean([allRes.aR]);
-                            TimeResults.AnExpStd(k)  = std([allRes.aR]);
-                            TimeResults.DiffAll{k} = [allRes.DR];
-                            TimeResults.ViscAll{k} = [allRes.nR];
-                            TimeResults.AnExpAll{k} = [allRes.aR];
-                            
-                        else
-                            %disp(append('No traces found that are longer than MinSize (', num2str(MinSize), ' datapoints)'))
-                            TimeResults.Time(k) = k;
-                        end
-                    end
-    
-                    TimeLoopResults{l} = TimeResults;
-    
-                    FileNameToSave = append(Path, filesep, name);
-                    save(FileNameToSave,'allRes');
-                    disp(append('== Data succesfully saved - movie ', num2str(j-2), ' out of ', num2str(size(MainFolder, 1)-2), ' =='));
-                else
-                    %% This is for rotational tracking
-                    allHeight = cellfun(@height,data.Coord1);
-                    idx = allHeight>MinSize;
-                    currMov = data(idx,:);
-                    allRes = struct('GTheta',0,'GPhi',0,'tau',0,'DTheta',0,'DPhi',0,'Dr',0,...
-                        'nTheta',0,'nPhi',0,'nr',0,'vTheta',0,'vPhi',0,'vr',0, 'TauCTheta', 0, 'TauCPhi', 0, 'num', 0);
-                    allRes(size(currMov, 1)).masdTheta = [];
-                    maxLength = max(allHeight);
-                    allGTheta = zeros(size(currMov, 1),maxLength-1);
-                    allGPhi = allGTheta;
-                    
-                    if strcmp(MainFolder(j).name(1:4), '3min')
-                        CorrFactor = 31;
-                    elseif strcmp(MainFolder(j).name(1:4), '5min')
-                        CorrFactor = 37;
-                    elseif strcmp(MainFolder(j).name(1:4), '7min')
-                        CorrFactor = 29;
-                    elseif strcmp(MainFolder(j).name(1:4), '9min')
-                        CorrFactor = 1;
-                    elseif strcmp(MainFolder(j).name(1:4), '11mi')
-                        CorrFactor = 1.7;
-                    elseif strcmp(MainFolder(j).name(1:4), '13mi')
-                        CorrFactor = 2.5;
-                    elseif strcmp(MainFolder(j).name(1:4), '15mi')
-                        CorrFactor = 12;
-                    elseif strcmp(MainFolder(j).name(1:4), '17mi')
-                        CorrFactor = 19;
-                    elseif strcmp(MainFolder(j).name(1:4), '19mi')
-                        CorrFactor = 22.5;
-                    end
-                    
-                    for i = 1:size(currMov,1)
-                        waitbar(i./size(currMov,1), f, append('Diffusion & microrheology - Movie ', num2str(j-2), ' out of ', num2str(size(MainFolder,1) - 2)));
-                        Diff = [];
-                        TotInt = [];
-                        GTheta = [];
-                        GPhi = [];
-                        tau = [];
-                        currPart = currMov(i,:);
-                    
-                        %%% calculate angels
-                        TotInt = currPart.Int1{1,1} + currPart.Int2{1,1};
-                        I1 = currPart.Int1{1,1} ./ TotInt;
-                        I2 = currPart.Int2{1,1} ./ TotInt;
-                        Diff = I1 - I2; 
-    
-                        eta_truth = 484;
-                        %%% for Theta
-                        [GTheta,tau] = MSD.Rotational.GetAutoCorrelation(Diff,100,expTime);                   
-                        allGTheta(i,1:size(GTheta, 2)) = GTheta';
-                        tau(isnan(GTheta)) = [];
-                        GTheta(isnan(GTheta)) = [];
-                        if size(GTheta, 2) > MinSize
-                            try
-                                if strcmp(ExpModel, 'Test')
-                                    [Model] = MSD.Rotational.TestModels(GTheta, tau);
-                                    %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model,0);
-                                    [DTheta, corrParamsTheta,TauCTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
-                                else
-                                    %[DTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel,0);
-                                    [DTheta, corrParamsTheta, TauCTheta] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
-                                end
-                                nTheta  = MSD.Rotational.getViscosity(DTheta.*25195./CorrFactor,Radius1,ParticleType, Temp, 'Theta');
-                                Dcalctheta = (3*1.380649*10^(-23)*Temp*log(Radius1(1)/Radius1(2)))./(pi*nTheta*Radius1(1)^3)*1000;
-                                TauCTheta = (((((1./(2*pi*Dcalctheta))*2*pi))./8));
-                                vTheta = MSD.Rotational.GetRotationalSpeed(GTheta, tau);
-                            catch
-                                DTheta = NaN;
-                                nTheta = NaN;
-                                vTheta = NaN;
-                                TauCTheta = NaN;
-                                corrParamsTheta = [];
-                            end
-                        else
-                            DTheta = NaN;
-                            nTheta = NaN;
-                            vTheta = NaN;
-                            TauCTheta = NaN;
-                            corrParamsTheta = [];
-                        end
-    
-                        %%% for Phi
-                        [GPhi,tau] = MSD.Rotational.GetAutoCorrelation(TotInt,100,expTime);
-                        allGPhi(i,1:size(GPhi, 2)) = GPhi';
-                        tau(isnan(GPhi)) = [];
-                        GPhi(isnan(GPhi)) = [];
-                        if size(GPhi,2) > MinSize
-                            try
-                                if strcmp(ExpModel, 'Test')
-                                    [Model] = MSD.Rotational.TestModels(GPhi, tau);
-                                    %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, Model,0);
-                                    [DPhi, corrParamsPhi, TauCPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, Model, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
-                                else
-                                    %[DPhi] = MSD.Rotational.GetDiffusion(GPhi, tau, Radius1, Temp, Dimension, ExpModel,0);
-                                    [DPhi, corrParamsPhi, TauCPhi] = MSD.Rotational.GetDiffusion(GTheta, tau, Radius1, Temp, Dimension, ExpModel, 0, eta_truth, 'Bipyramid', 'Theta', MinSize);
-                                end
-                                nPhi  = MSD.Rotational.getViscosity(DPhi.*25195./CorrFactor,Radius1,ParticleType, Temp, 'Phi');
-                                DcalcPhi = (3*1.380649*10^(-23)*Temp*log(Radius1(1)/Radius1(2)))./(pi*nPhi*Radius1(1)^3)*1000;
-                                TauCPhi = (((((1./(2*pi*DcalcPhi))*2*pi))./8));
-                                vPhi = MSD.Rotational.GetRotationalSpeed(GPhi, tau);
-                            catch
-                                DPhi = NaN;
-                                nPhi = NaN;
-                                vPhi = NaN;
-                                TauCPhi = NaN;
-                                corrParamsPhi = [];
-                            end
-                        else
-                            DPhi = NaN;
-                            nPhi = NaN;
-                            vPhi = NaN;
-                            TauCPhi = NaN;
-                            corrParamsPhi = [];
-                        end
-                    
-                    
-                        %For both
-                        Dr = mean([DTheta, DPhi]);
-                        nr = mean([nTheta, nPhi]);
-                        vr = sqrt(vTheta^2 + vPhi^2);
-                    
-                        allRes(i).GTheta = GTheta;% in rad^2 
-                        allRes(i).GPhi = GPhi;
-                        allRes(i).tau = tau; % in sec
-                    
-                        allRes(i).DTheta   = DTheta;% in rad^2 /sec
-                        allRes(i).DPhi   = DPhi;% in rad^2 /sec
-                        allRes(i).Dr  = Dr;% in rad^2 /sec
-                    
-                        allRes(i).nTheta   = nTheta;
-                        allRes(i).nPhi   = nPhi;
-                        allRes(i).nr   = nr;
-                        
-                        allRes(i).vTheta   = vTheta;
-                        allRes(i).vPhi   = vPhi;
-                        allRes(i).vr   = vr;
-    
-                        allRes(i).TauCTheta = TauCTheta;
-                        allRes(i).TauCPhi = TauCPhi;
-                        
-                        allRes(i).num  = length(GTheta);
-    
-                        CorrectionsTheta = [CorrectionsTheta; corrParamsTheta];
-                        CorrectionsPhi = [CorrectionsPhi; corrParamsPhi];
-                    end
-                    
-                    %%
-                    
-                    DR   = nanmean([allRes.Dr]);
-                    nR   = nanmean([allRes.nr]);
-                    disp(['The diffusion coefficient is ' num2str(DR) 'µm^2s^-^1' '\n'...
-                        'the viscosity is ' num2str(nR) ' cp' '\n' ...
-                        'for movie '  MainFolder(j).name]);
-                    %%
-                    filenameAllRes = [folder(1).folder filesep 'msadRes.mat'];
-                    save(filenameAllRes,'allRes');
-        
-                    AllMovieResults = [AllMovieResults, allRes];
-                end
-            end
-        catch
-            disp(append('Failed to calculate movie ', MainFolder(j).name));
+%% ======================================================================
+%  SECTION 1 – USER PARAMETERS
+%% ======================================================================
+
+% ---- Image calibration ------------------------------------------------
+PIXEL_SIZE  = 81;
+IMAGE_SIZE  = 512;
+MAX_COORD   = IMAGE_SIZE * PIXEL_SIZE;   % 41472 nm  ← FIXED (was 500)
+ExpTime = 0.2;
+
+% ---- Data folders -----------------------------------------------------
+BASE_DIR = 'E:\MultiColor - lysosome tracking\Dna_NB';
+Folder   = dir(BASE_DIR);
+Folder([Folder.isdir] ~= 1) = [];
+FOLDERS  = {Folder(3:end).name};
+
+% ---- Column indices ---------------------------------------------------
+COL_X             = 1;
+COL_Y             = 2;
+COL_FRAME         = 9;
+COL_EXPOSURE      = 12;
+COL_INTENSITYMEAN = 6;
+COL_INTENSITYMAX  = 7;
+
+% ---- Quality filter ---------------------------------------------------
+MIN_TRACE_LENGTH = 200;
+
+% ---- Window parameters ------------------------------------------------
+WIN_SIZE   = 50;    % frames per window
+WIN_STEP   = 10;    % stride between windows
+LOCAL_HALF = 7;     % half-width for local alpha / Rg estimate within a window
+
+% ---- Manual labelling -------------------------------------------------
+LABEL            = 0;
+MIN_LABEL_TOTAL  = 1200;
+MIN_LABEL_ACTIVE = 400;
+
+% ---- Training ---------------------------------------------------------
+% LABELS_FILE   : simulated labels (generated by generateSyntheticTraces.m)
+% REAL_LABELS_FILE : real manually labelled windows – merged with simulated
+%                    before training so the network sees both distributions
+LABELS_FILE      = fullfile(BASE_DIR, 'simulated_labels.mat');
+REAL_LABELS_FILE = 'E:\MultiColor - lysosome tracking\20260311-new analysis\GoodTrainingData\manual_labels_v3.mat';
+TRAIN        = 0;
+CNN_EPOCHS   = 50;
+CNN_BATCH    = 32;
+CNN_LR       = 2e-4;
+CNN_VAL_FRAC = 0.20;
+
+% ---- Output flags -----------------------------------------------------
+RenderVideos = 1;   % 1 = render MP4 videos in Section 6
+
+% ---- Classification threshold -----------------------------------------
+ACTIVE_WIN_FRAC  = 0.10;
+FRAME_ACTIVE_THR = 0.80;
+
+
+%% ======================================================================
+%  SECTION 2 – LOAD DATA
+%% ======================================================================
+
+fprintf('=== Loading data ===\n');
+
+nFolders = numel(FOLDERS);
+DATA     = struct([]);
+
+for fi = 1:nFolders
+
+    fName   = FOLDERS{fi};
+    matPath = fullfile(BASE_DIR, fName, 'Traces3D.mat');
+    if ~isfile(matPath)
+        warning('File not found – skipping: %s', matPath);
+        continue
+    end
+
+    S           = load(matPath, 'TrackedData');
+    TrackedData = S.TrackedData;
+    m           = cellfun(@(t) size(t,1), TrackedData) > MIN_TRACE_LENGTH;
+    TrackedData(~m) = [];
+    nTraces     = numel(TrackedData);
+    fprintf('  %-32s  %d traces\n', fName, nTraces);
+
+    rawTraces = cell(1, nTraces);
+    msdData   = cell(1, nTraces);
+    valid     = false(1, nTraces);
+
+    for ti = 1:nTraces
+        tbl   = TrackedData{ti};
+        n     = height(tbl);
+        x     = tbl{:, COL_X};
+        y     = tbl{:, COL_Y};
+        t     = tbl{:, COL_FRAME};
+        rT    = tbl{:, COL_EXPOSURE};
+        intenMean = nan(n,1);
+        intenMax  = nan(n,1);
+        if ~isempty(COL_INTENSITYMEAN) && COL_INTENSITYMEAN <= width(tbl)
+            intenMean = tbl{:, COL_INTENSITYMEAN};
         end
-    
-        save(append(MainFolder(j).folder, filesep, MainFolder(j).name, filesep, 'msadResCuttedTraces.mat'), "TimeLoopResults");
-    
-        fig = figure;
-        baseColors = [0.8500 0.3250 0.0980; 0.4660 0.6740 0.1880];
-        for i = 1:size(TimeLoopResults, 2)
-            try           
-                TimeValid = (TimeLoopResults{i}.Time)./100 + TimeStamp;
-                DiffMean = TimeLoopResults{i}.ViscMean;      % 1×N vector
-                DiffStd = TimeLoopResults{i}.ViscStd;        % 1×N vector
-                DiffMeanValid = DiffMean;
-                DiffStdValid = DiffStd;
-                
-                % Choose a nice color (blueish in this example)
-                baseColor = baseColors(i, :);  % MATLAB default blue
-                lighterColor = baseColor + 0.5 * (1 - baseColor); % lighter for shading
-        
-                hold on;
-                
-                % --- Shaded error region ---
-                upper = DiffMeanValid + DiffStdValid;
-                lower = DiffMeanValid - DiffStdValid;
-                
-                fill([TimeValid; flipud(TimeValid)], ...
-                     [upper; flipud(lower)], ...
-                     [0.3010 0.7450 0.9330], ...  % light blue
-                     'EdgeColor', 'none', ...
-                     'FaceAlpha', 0.5);
-                hold on;
-                plot(TimeValid, DiffMeanValid, 'Color', [0 0.4470 0.7410], 'LineWidth', 2);
-                
-                % --- Mean diffusion line ---
-                plot(TimeValid, DiffMean, 'Color', baseColor, 'LineWidth', 2);
-                
-                % --- Axes labels and formatting ---
-                xlabel('Time (s)', 'FontSize', 12);
-                ylabel('Viscosity (cP)', 'FontSize', 12);
-                grid on;
-                box on;
-                axis tight;
-                set(gca, 'FontSize', 10);
-                
-                legend({'Standard deviation', 'Mean diffusion'}, 'Location', 'best');
-                title('Diffusion over Time');
-            catch
+        if ~isempty(COL_INTENSITYMAX) && COL_INTENSITYMAX <= width(tbl)
+            intenMax = tbl{:, COL_INTENSITYMAX};
+        end
+
+        xS = x - x(1);
+        yS = y - y(1);
+
+        rawTraces{ti} = struct('x',xS,'y',yS,'t',t,'rT',rT, ...
+            'intensityMean',intenMean,'intensityMax',intenMax);
+        msdData{ti}   = computeMSD(xS, yS);
+        valid(ti)     = true;
+    end
+
+    DATA(fi).name      = fName;
+    DATA(fi).nTraces   = nTraces;
+    DATA(fi).valid     = valid;
+    DATA(fi).rawTraces = rawTraces;
+    DATA(fi).msdData   = msdData;
+end
+
+fprintf('Data loading complete.\n\n');
+
+
+%% ======================================================================
+%  SECTION 3 – WINDOW-LEVEL MANUAL LABELLING GUI
+%  Left panel: full trace in grey, current window in yellow.
+%  Shortcuts: A = active,  N = non-active,  S = skip
+%% ======================================================================
+
+if LABEL == 1
+
+    allWinRefs = [];
+    for fi = 1:nFolders
+        if isempty(DATA(fi).name), continue; end
+        for ti = 1:DATA(fi).nTraces
+            if ~DATA(fi).valid(ti), continue; end
+            nPos   = numel(DATA(fi).rawTraces{ti}.x);
+            nSteps = nPos - 1;
+            if nSteps < WIN_SIZE, continue; end
+            maxDist = max(pdist([DATA(fi).rawTraces{ti}.x, DATA(fi).rawTraces{ti}.y]));
+            if maxDist < 1000, continue; end
+            starts = 1 : WIN_STEP : (nSteps - WIN_SIZE + 1);
+            for wi = 1:numel(starts)
+                allWinRefs(end+1).fi = fi;  %#ok<SAGROW>
+                allWinRefs(end).ti   = ti;
+                allWinRefs(end).w1   = starts(wi);
+                allWinRefs(end).w2   = starts(wi) + WIN_SIZE - 1;
             end
         end
-        saveas(fig, append(MainFolder(j).folder, filesep, MainFolder(j).name, filesep, 'CuttedTracesVisc.png'));
-        saveas(fig, append(MainFolder(j).folder, filesep, MainFolder(j).name, filesep, 'CuttedTracesVisc.svg'));
+    end
+
+    allWinRefs = allWinRefs(randperm(numel(allWinRefs)));
+
+    if isfile(LABELS_FILE)
+        L = load(LABELS_FILE,'labelSeqs','labelTargets','labelCount','activeCount');
+        labelSeqs    = L.labelSeqs;
+        labelTargets = L.labelTargets;
+        labelCount   = L.labelCount;
+        activeCount  = L.activeCount;
+        fprintf('Resuming – %d labels loaded (%d active).\n', labelCount, activeCount);
+    else
+        labelSeqs    = {};
+        labelTargets = [];
+        labelCount   = 0;
+        activeCount  = 0;
+    end
+
+    hFig = figure('Name','Window Labelling','NumberTitle','off', ...
+                  'Position',[60 60 1200 720],'KeyPressFcn',@keyHandler);
+    hFig.UserData.choice = '';
+
+    uicontrol('Parent',hFig,'Style','pushbutton', ...
+        'String','NON-ACTIVE  (N)','FontSize',14,'BackgroundColor',[0.25 0.55 1], ...
+        'Units','normalized','Position',[0.04 0.02 0.28 0.08], ...
+        'Callback',@(~,~) setChoice(hFig,'nonactive'));
+    uicontrol('Parent',hFig,'Style','pushbutton', ...
+        'String','ACTIVE  (A)','FontSize',14,'BackgroundColor',[1 0.35 0.25], ...
+        'Units','normalized','Position',[0.68 0.02 0.28 0.08], ...
+        'Callback',@(~,~) setChoice(hFig,'active'));
+    uicontrol('Parent',hFig,'Style','pushbutton', ...
+        'String','Skip (S)','FontSize',10,'BackgroundColor',[0.8 0.8 0.8], ...
+        'Units','normalized','Position',[0.44 0.02 0.12 0.08], ...
+        'Callback',@(~,~) setChoice(hFig,'skip'));
+
+    hStatus = uicontrol('Parent',hFig,'Style','text','FontSize',11, ...
+        'HorizontalAlignment','center','Units','normalized', ...
+        'Position',[0 0.93 1 0.06],'BackgroundColor','k','ForegroundColor','w');
+
+    axXY   = axes('Parent',hFig,'Position',[0.03 0.13 0.30 0.75]);
+    axStep = axes('Parent',hFig,'Position',[0.38 0.68 0.58 0.22]);
+    axDAC  = axes('Parent',hFig,'Position',[0.38 0.42 0.58 0.22]);
+    axMSD  = axes('Parent',hFig,'Position',[0.38 0.13 0.58 0.22]);
+
+    winPtr = 1;
+
+    while labelCount < MIN_LABEL_TOTAL || activeCount < MIN_LABEL_ACTIVE
+        if ~ishandle(hFig), warning('Labelling window closed early.'); break; end
+        if winPtr > numel(allWinRefs), fprintf('Ran out of windows.\n'); break; end
+
+        ref = allWinRefs(winPtr);
+        fi  = ref.fi;  ti = ref.ti;
+        w1  = ref.w1;  w2 = ref.w2;
+        winPtr = winPtr + 1;
+
+        raw  = DATA(fi).rawTraces{ti};
+        msd  = DATA(fi).msdData{ti};
+        feat = extractWindowFeatures(raw.x, raw.y, w1, w2, MAX_COORD, LOCAL_HALF, raw.x, raw.y);
+
+        ss_w  = feat(1,:);
+        dac_w = feat(2,:);
+        alp_w = feat(6,:);
+
+        xFullN = raw.x ./ MAX_COORD;
+        yFullN = raw.y ./ MAX_COORD;
+        xWinN  = xFullN(w1:w2+1);
+        yWinN  = yFullN(w1:w2+1);
+        xFullN = xFullN - xWinN(1);
+        yFullN = yFullN - yWinN(1);
+        xWinN  = xWinN  - xWinN(1);
+        yWinN  = yWinN  - yWinN(1);
+
+        cla(axXY);
+        plot(axXY, xFullN, yFullN, '-', 'Color',[0.45 0.45 0.45], 'LineWidth',0.8);
+        hold(axXY,'on');
+        Limit = (WIN_SIZE*25) ./ MAX_COORD;
+        plot(axXY, xWinN, yWinN, '-', 'Color',[1.0 0.85 0.0], 'LineWidth',1);
+        plot(axXY, xWinN(1),   yWinN(1),   'go','MarkerSize',8,'MarkerFaceColor','g');
+        plot(axXY, xWinN(end), yWinN(end), 'rs','MarkerSize',8,'MarkerFaceColor','r');
+        set(axXY,'Color','k','XColor','w','YColor','w');
+        axis(axXY,[-Limit Limit -Limit Limit]); grid(axXY,'on');
+        xlabel(axXY,'x (norm)'); ylabel(axXY,'y (norm)');
+        title(axXY,sprintf('F%d | T%d | W %d–%d\ngrey=full  yellow=window',fi,ti,w1,w2), ...
+              'Color','w','FontSize',8);
+
+        cla(axStep);
+        plot(axStep,1:WIN_SIZE,ss_w,'c-','LineWidth',1.2);
+        ylim(axStep,[0, max(max(ss_w)*1.2, 1e-6)]);
+        ylabel(axStep,'Step size','Color','c');
+        title(axStep,sprintf('Rg=%.3g  RgNorm=%.3g  Span=%.3g  Ctx=%.3g', ...
+            mean(feat(7,:)),mean(feat(8,:)),mean(feat(9,:)),mean(feat(10,:))),'Color','w');
+        set(axStep,'Color','k','XColor','w','YColor','c'); grid(axStep,'on');
+
+        cla(axDAC);
+        yyaxis(axDAC,'left');
+        plot(axDAC,1:WIN_SIZE,dac_w,'y-','LineWidth',1);
+        yline(axDAC,0,'y--','LineWidth',0.8); ylim(axDAC,[-1.1 1.1]);
+        ylabel(axDAC,'DAC','Color','y');
+        yyaxis(axDAC,'right');
+        plot(axDAC,1:WIN_SIZE,alp_w,'g-','LineWidth',1);
+        yline(axDAC,1,'g--','LineWidth',0.8);
+        ylabel(axDAC,'\alpha','Color','g');
+        title(axDAC,'DAC  +  \alpha','Color','w');
+        set(axDAC,'Color','k','XColor','w','YColor','w'); grid(axDAC,'on');
+
+        cla(axMSD);
+        plot(axMSD,msd(:,1),msd(:,2),'b.-');
+        xlabel(axMSD,'Lag'); ylabel(axMSD,'MSD');
+        title(axMSD,'Full-trace MSD (context)','Color','w');
+        set(axMSD,'Color','k','XColor','w','YColor','w'); grid(axMSD,'on');
+        set(hFig,'Color','k');
+
+        remaining = max(MIN_LABEL_TOTAL - labelCount, MIN_LABEL_ACTIVE - activeCount);
+        hStatus.String = sprintf('Labelled: %d  |  Active: %d / %d  |  Need: %d  |  Remaining: %d', ...
+            labelCount, activeCount, MIN_LABEL_ACTIVE, max(0,remaining), numel(allWinRefs)-winPtr+1);
+        drawnow;
+
+        hFig.UserData.choice = '';
+        while ishandle(hFig) && isempty(hFig.UserData.choice), pause(0.05); end
+        if ~ishandle(hFig), break; end
+        choice = hFig.UserData.choice;
+        if strcmp(choice,'skip'), continue; end
+
+        labelSeqs{end+1}      = single(feat);
+        labelTargets(end+1,1) = strcmp(choice,'active');
+        labelCount  = labelCount + 1;
+        if strcmp(choice,'active'), activeCount = activeCount + 1; end
+        save(LABELS_FILE,'labelSeqs','labelTargets','labelCount','activeCount');
+    end
+
+    if ishandle(hFig), close(hFig); end
+    fprintf('\nLabelling complete: %d windows (%d active, %d non-active).\n', ...
+        labelCount, activeCount, labelCount - activeCount);
+
+else
+    if isfile(LABELS_FILE)
+        L = load(LABELS_FILE,'labelSeqs','labelTargets');
+        labelSeqs    = L.labelSeqs;
+        labelTargets = L.labelTargets;
+    else
+        error('No label file found at %s', LABELS_FILE);
     end
 end
-% mean(CorrectionsTheta,1)
-% mean(CorrectionsPhi,1)
-close(f)
-disp(append('TauTheta = ', num2str(mean([AllMovieResults.TauCTheta], 'omitnan'))));
-disp(append('TauPhi = ', num2str(mean([AllMovieResults.TauCPhi], 'omitnan'))));
-save(FilePath, "AllMovieResults");
 
-if strcmp(Experiment, 'Tracking-Segmentation')
-    name = 'msdResSegmentation';
-    AllMovieResultsMask = AllMovieResults([AllMovieResults.Mask] == 1);
-    AllMask = rmfield(AllMovieResultsMask, {'msdX', 'msdY', 'msdZ', 'msdR', 'tau'});
-    AllMask = struct2table(AllMask);
-    writetable(AllMask,append(FilePath, filesep, name, '.xlsx'),'Sheet','data - mask');
-    AllMovieResultsNoMask = AllMovieResults([AllMovieResults.Mask] == 0);
-    AllNoMask = rmfield(AllMovieResultsNoMask, {'msdX', 'msdY', 'msdZ', 'msdR', 'tau'});
-    AllNoMask = struct2table(AllNoMask);
-    writetable(AllNoMask,append(FilePath, filesep, name, '.xlsx'),'Sheet','data - no mask');
-    writecell({AllMovieResultsMask.msdR}',append(FilePath, filesep, name, '.xlsx'),'Sheet','msdR - mask');
-    writecell({AllMovieResultsNoMask.msdR}',append(FilePath, filesep, name, '.xlsx'),'Sheet','msdR - no mask');
-elseif strcmp(Experiment, 'Tracking-Phase')
-    name = 'msdResPhase';
-elseif strcmp(Experiment, 'Tracking')
-    name = 'msdRes';
-elseif strcmp(Experiment, 'Rotational Tracking')
-    name = 'msadResRot';
+
+%% ======================================================================
+%  SECTION 4 – TRAIN BILSTM
+%% ======================================================================
+
+if TRAIN == 1
+
+    fprintf('=== Training BiLSTM ===\n');
+
+    % ---- Merge simulated + real labels --------------------------------
+    % Training on simulated data alone means the network never sees the
+    % exact feature scale of real windows. Merging ensures it learns both.
+    if isfile(REAL_LABELS_FILE)
+        R = load(REAL_LABELS_FILE, 'labelSeqs', 'labelTargets');
+        nSim  = numel(labelSeqs);
+        nReal = numel(R.labelSeqs);
+        labelSeqs    = [R.labelSeqs(:)',    labelSeqs(:)'];
+        labelTargets = [R.labelTargets(:); labelTargets(:)];
+        fprintf('  Merged real (%d) + simulated (%d) = %d windows total\n', ...
+            nReal, nSim, numel(labelSeqs));
+    else
+        fprintf('  Real labels file not found – training on simulated only.\n');
+        fprintf('  Path checked: %s\n', REAL_LABELS_FILE);
+    end
+    % -------------------------------------------------------------------
+
+    labelCat = categorical(labelTargets, [0 1], {'nonactive','active'});
+    Nw       = numel(labelSeqs);
+    valMask  = rand(Nw,1) < CNN_VAL_FRAC;
+
+    XtrCNN = labelSeqs(~valMask);  YtrCNN = labelCat(~valMask);
+    XvaCNN = labelSeqs( valMask);  YvaCNN = labelCat( valMask);
+
+    trainClasses = categories(YtrCNN);
+    nClasses     = numel(trainClasses);
+
+    nAct    = sum(labelTargets == 1);
+    nNonAct = sum(labelTargets == 0);
+    wAct    = (Nw/2) / max(nAct,    1);
+    wNonAct = (Nw/2) / max(nNonAct, 1);
+
+    classWeights = zeros(1, nClasses);
+    for ci = 1:nClasses
+        if strcmp(trainClasses{ci},'active')
+            classWeights(ci) = wAct;
+        else
+            classWeights(ci) = wNonAct;
+        end
+    end
+    fprintf('  Class order  : %s\n', strjoin(trainClasses,', '));
+    fprintf('  Class weights: %s\n', num2str(classWeights,'%.2f  '));
+
+    l2reg = 0.02;
+
+    layersLSTM = [
+        sequenceInputLayer(10, 'Name','in', 'Normalization','none')
+
+        % First BiLSTM outputs the FULL SEQUENCE so the second layer
+        % receives a proper time series to integrate.  ← FIXED (was 'last')
+        bilstmLayer(48, 'OutputMode','sequence', 'Name','bilstm1')
+        dropoutLayer(0.5, 'Name','dp1')
+
+        % Second BiLSTM summarises the sequence into a single vector
+        bilstmLayer(24, 'OutputMode','last', 'Name','bilstm2')
+        dropoutLayer(0.4, 'Name','dp2')
+
+        % Classification head
+        fullyConnectedLayer(16, 'Name','fc1', 'WeightL2Factor', l2reg)
+        reluLayer('Name','r1')
+        fullyConnectedLayer(nClasses, 'Name','fc2')
+        softmaxLayer('Name','sm')
+        classificationLayer('Name','out','Classes',trainClasses,'ClassWeights',classWeights)
+    ];
+
+    optsLSTM = trainingOptions('adam', ...
+        'MaxEpochs',            CNN_EPOCHS, ...
+        'MiniBatchSize',        CNN_BATCH, ...
+        'InitialLearnRate',     CNN_LR, ...
+        'LearnRateSchedule',    'piecewise', ...
+        'LearnRateDropPeriod',  20, ...
+        'LearnRateDropFactor',  0.5, ...
+        'GradientThreshold',    1, ...
+        'ValidationData',       {XvaCNN, YvaCNN}, ...
+        'ValidationFrequency',  20, ...
+        'ValidationPatience',   Inf, ...
+        'SequenceLength',       'longest', ...
+        'Shuffle',              'every-epoch', ...
+        'Verbose',              true, ...
+        'Plots',                'training-progress', ...
+        'ExecutionEnvironment', 'auto');
+
+    netCNN = trainNetwork(XtrCNN, YtrCNN, layersCNN, optsCNN);
+    save(fullfile(BASE_DIR,'network_v3.mat'), 'netCNN');
+    fprintf('BiLSTM training complete.\n\n');
+
+    % --- Confusion matrices ---
+    fprintf('=== Evaluating classifier ===\n');
+    predTr = classify(netCNN, XtrCNN);
+    predVa = classify(netCNN, XvaCNN);
+
+    figure('Name','Confusion Matrix – Training','Position',[100 100 500 450]);
+    confusionchart(YtrCNN, predTr,'Title','Training set', ...
+        'RowSummary','row-normalized','ColumnSummary','column-normalized');
+
+    figure('Name','Confusion Matrix – Validation','Position',[620 100 500 450]);
+    confusionchart(YvaCNN, predVa,'Title','Validation set', ...
+        'RowSummary','row-normalized','ColumnSummary','column-normalized');
+
+    fprintf('\n  --- Training set ---\n');   printClassStats(YtrCNN, predTr);
+    fprintf('\n  --- Validation set ---\n'); printClassStats(YvaCNN, predVa);
+    fprintf('\n');
+
+else
+    load(fullfile(BASE_DIR,'network_v3.mat'), 'netCNN');
+    disp('Loaded BiLSTM network.');
 end
-AllMovieResultsTable = struct2table(AllMovieResults);
-writetable(AllMovieResultsTable,append(FilePath, filesep, name, '.xlsx'),'Sheet',1,'Range','D1');
 
 
+%% ======================================================================
+%  SECTION 5 – CLASSIFY ALL TRACES  (window voting)
+%% ======================================================================
 
+fprintf('=== Classifying traces ===\n');
+
+activeCol = find(string(netCNN.Layers(end).Classes) == 'active', 1);
+WaitBar   = waitbar(0,'Classifying…');
+
+colActive   = [0.93, 0.55, 0.10];   % orange
+colInactive = [0.20, 0.45, 0.90];   % blue
+
+for fi = 1:nFolders
+    if isempty(DATA(fi).name), continue; end
+
+    nT      = DATA(fi).nTraces;
+    isAct   = false(1, nT);
+    winFrac = nan(1, nT);
+
+    for ti = 1:nT
+        waitbar(ti/nT, WaitBar, sprintf('Folder %d/%d – trace %d/%d', fi, nFolders, ti, nT));
+        if ~DATA(fi).valid(ti), continue; end
+
+        raw    = DATA(fi).rawTraces{ti};
+        nSteps = numel(raw.x) - 1;
+        if nSteps < WIN_SIZE, continue; end
+
+        starts  = 1 : 1 : (nSteps - WIN_SIZE + 1);
+        nWins   = numel(starts);
+        winSeqs = cell(1, nWins);
+        for wi = 1:nWins
+            w1 = starts(wi);
+            w2 = w1 + WIN_SIZE - 1;
+            winSeqs{wi} = single(extractWindowFeatures( ...
+                raw.x, raw.y, w1, w2, MAX_COORD, LOCAL_HALF, raw.x, raw.y));
+        end
+
+        probs   = predict(netCNN, winSeqs);
+        pActive = probs(:, activeCol)';
+
+        scoreSum = zeros(1, nSteps);
+        hitCount = zeros(1, nSteps);
+        for wi = 1:nWins
+            w1s = starts(wi);
+            w2s = w1s + WIN_SIZE - 1;
+            scoreSum(w1s:w2s) = scoreSum(w1s:w2s) + pActive(wi);
+            hitCount(w1s:w2s) = hitCount(w1s:w2s) + 1;
+        end
+        hitCount(hitCount == 0) = 1;
+        frameScore_s5 = scoreSum ./ hitCount;
+
+        isActStep = frameScore_s5 > FRAME_ACTIVE_THR;
+        isActStep = removeShortRuns(isActStep, round(MIN_TRACE_LENGTH./4));
+
+        DATA(fi).frameScoreS5{ti} = frameScore_s5;
+        DATA(fi).isActStep{ti}    = isActStep;
+
+        isAct(ti)   = sum(isActStep) > 10;
+        winFrac(ti) = mean(frameScore_s5);
+    end
+
+    DATA(fi).traceScores = winFrac;
+    DATA(fi).isActive    = isAct;
+
+    nActF  = sum(isAct & DATA(fi).valid);
+    nValid = sum(DATA(fi).valid);
+    fprintf('  %-32s  active: %3d / %3d  (%.1f %%)\n', ...
+        DATA(fi).name, nActF, nValid, 100*nActF/max(nValid,1));
+end
+
+close(WaitBar);
+fprintf('\n');
+
+
+%% ======================================================================
+%  SECTION 7 – PER-FRAME ACTIVE LABELS  (window score averaging)
+%  Populates DATA(fi).traceStats{ti} with frameLabels and run statistics.
+%  Must run BEFORE Section 6 (video) for per-step colouring to work.
+%% ======================================================================
+
+fprintf('=== Per-frame segmentation via window score averaging ===\n');
+
+for fi = 1:nFolders
+    if isempty(DATA(fi).name), continue; end
+
+    nT     = DATA(fi).nTraces;
+    tStats = cell(1, nT);
+
+    for ti = 1:nT
+        if ~DATA(fi).valid(ti) || ~DATA(fi).isActive(ti), continue; end
+
+        raw    = DATA(fi).rawTraces{ti};
+        nSteps = numel(raw.x) - 1;
+        if nSteps < WIN_SIZE, continue; end
+
+        if isfield(DATA(fi),'frameScoreS5') && numel(DATA(fi).frameScoreS5) >= ti && ...
+           ~isempty(DATA(fi).frameScoreS5{ti})
+            frameScore = DATA(fi).frameScoreS5{ti};
+        else
+            scoreSum  = zeros(1, nSteps);
+            hitCount  = zeros(1, nSteps);
+            starts_fb = 1 : WIN_STEP : (nSteps - WIN_SIZE + 1);
+            winSeqs_fb = cell(1, numel(starts_fb));
+            for wi = 1:numel(starts_fb)
+                w1 = starts_fb(wi);  w2 = w1 + WIN_SIZE - 1;
+                winSeqs_fb{wi} = single(extractWindowFeatures( ...
+                    raw.x, raw.y, w1, w2, MAX_COORD, LOCAL_HALF, raw.x, raw.y));
+            end
+            probs_fb = predict(netCNN, winSeqs_fb);
+            pAct_fb  = probs_fb(:, activeCol)';
+            for wi = 1:numel(starts_fb)
+                w1 = starts_fb(wi);  w2 = w1 + WIN_SIZE - 1;
+                scoreSum(w1:w2) = scoreSum(w1:w2) + pAct_fb(wi);
+                hitCount(w1:w2) = hitCount(w1:w2) + 1;
+            end
+            hitCount(hitCount == 0) = 1;
+            frameScore = scoreSum ./ hitCount;
+        end
+
+        isActFr = frameScore > FRAME_ACTIVE_THR;
+        isActFr = removeShortRuns(isActFr, round(MIN_TRACE_LENGTH./4));
+
+        dx = diff(raw.x(:));
+        dy = diff(raw.y(:));
+        intMean      = raw.intensityMean(:);
+        intMax       = raw.intensityMax(:);
+        stepSizes_nm = sqrt(dx.^2 + dy.^2);
+
+        actRuns  = findRuns(isActFr(1:nSteps));
+        nActRuns = size(actRuns, 1);
+
+        runLengths_steps = zeros(nActRuns, 1);
+        runLengths_um    = zeros(nActRuns, 1);
+        runSpeeds_nm     = zeros(nActRuns, 1);
+        runDAC           = zeros(nActRuns, 1);
+        runIntensityMean = zeros(nActRuns, 1);
+        runIntensityMax  = zeros(nActRuns, 1);
+
+        for r = 1:nActRuns
+            rs = actRuns(r,1);
+            re = actRuns(r,2);
+            runLengths_steps(r) = re - rs + 1;
+            runLengths_um(r)    = sum(stepSizes_nm(rs:re)) / 1000;
+            runSpeeds_nm(r)     = mean(stepSizes_nm(rs:re));
+            runIntensityMean(r) = median(intMean(rs:re), 'omitnan');
+            runIntensityMax(r)  = median(intMax(rs:re),  'omitnan');
+
+            dxR = dx(rs:re);  dyR = dy(rs:re);
+            ssR = sqrt(dxR.^2 + dyR.^2) + 1e-15;
+            if numel(dxR) > 1
+                dots  = dxR(1:end-1).*dxR(2:end) + dyR(1:end-1).*dyR(2:end);
+                norms = ssR(1:end-1).*ssR(2:end) + 1e-15;
+                runDAC(r) = mean(max(-1, min(1, dots./norms)));
+            else
+                runDAC(r) = NaN;
+            end
+        end
+
+        stopsBetween_steps = [];
+        if nActRuns >= 2
+            for r = 1:nActRuns-1
+                gapStart = actRuns(r,2)   + 1;
+                gapEnd   = actRuns(r+1,1) - 1;
+                if gapEnd >= gapStart
+                    stopsBetween_steps(end+1) = gapEnd - gapStart + 1; %#ok<AGROW>
+                end
+            end
+        end
+        nPauses         = numel(stopsBetween_steps);
+        meanPause_steps = 0;
+        if nPauses > 0, meanPause_steps = mean(stopsBetween_steps); end
+
+        s.folder             = DATA(fi).name;
+        s.traceIdx           = ti;
+        s.frameScore         = frameScore;
+        s.frameLabels        = isActFr;
+        s.pctTimeActive      = 100 * sum(isActFr) / nSteps;
+        s.nActiveRuns        = nActRuns;
+        s.runLengths_steps   = runLengths_steps;
+        s.runLengths_um      = runLengths_um;
+        s.runSpeeds_nm       = runSpeeds_nm;
+        s.runDAC             = runDAC;
+        s.nPauses            = nPauses;
+        s.pauseLengths_steps = stopsBetween_steps(:);
+        s.meanPause_steps    = meanPause_steps;
+        s.valid              = true;
+        s.intensityMean      = runIntensityMean;
+        s.intensityMax       = runIntensityMax;
+
+        tStats{ti} = s;
+    end
+
+    DATA(fi).traceStats = tStats;
+end
+
+fprintf('Per-frame segmentation complete.\n\n');
+
+
+%% ======================================================================
+%  SECTION 6 – RENDER TRACE VIDEOS
+%  Active segments orange, non-active blue.  No legend.
+%  Requires Section 7 to have run first.
+%% ======================================================================
+
+if RenderVideos == 1
+    fprintf('=== Rendering trace videos ===\n');
+
+    for fi = 1:nFolders
+        if isempty(DATA(fi).name), continue; end
+
+        fName   = DATA(fi).name;
+        matPath = fullfile(BASE_DIR, fName, 'Traces3D.mat');
+        tifPath = fullfile(BASE_DIR, fName, 'calibrated1', 'calibratedPlane1.tif');
+
+        if ~isfile(tifPath)
+            warning('TIF not found – skipping video: %s', fName); continue
+        end
+
+        S2   = load(matPath,'TrackedData');
+        TD2  = S2.TrackedData;
+        keep = cellfun(@(t) size(t,1), TD2) > MIN_TRACE_LENGTH;
+        TD2  = TD2(keep);
+        nT   = DATA(fi).nTraces;
+
+        if numel(TD2) ~= nT
+            warning('Trace count mismatch in %s – skipping.', fName); continue
+        end
+
+        track_px  = cell(nT,1);
+        track_col = cell(nT,1);
+
+        for ti = 1:nT
+            T             = TD2{ti};
+            frames        = T.t;
+            xp            = T.colM;
+            yp            = T.rowM;
+            [frames, ord] = sort(frames);
+            track_px{ti}  = [frames, xp(ord), yp(ord)];
+
+            nSt     = size(track_px{ti},1) - 1;
+            stepCol = repmat(colInactive, nSt, 1);
+
+            lbl = [];
+            if isfield(DATA(fi),'isActStep') && numel(DATA(fi).isActStep) >= ti && ...
+               ~isempty(DATA(fi).isActStep{ti})
+                lbl = logical(DATA(fi).isActStep{ti}(:));
+            elseif ~isempty(DATA(fi).traceStats) && ...
+                   numel(DATA(fi).traceStats) >= ti && ...
+                   ~isempty(DATA(fi).traceStats{ti}) && ...
+                   isfield(DATA(fi).traceStats{ti},'frameLabels')
+                lbl = logical(DATA(fi).traceStats{ti}.frameLabels(:));
+            end
+
+            if ~isempty(lbl)
+                if numel(lbl) > nSt,     lbl = lbl(1:nSt);
+                elseif numel(lbl) < nSt, lbl = [lbl; false(nSt-numel(lbl),1)]; end
+                stepCol(lbl,:) = repmat(colActive, sum(lbl), 1);
+            end
+
+            track_col{ti} = stepCol;
+        end
+
+        tif_info     = imfinfo(tifPath);
+        n_tif_frames = numel(tif_info);
+        img_w        = tif_info(1).Width;
+        img_h        = tif_info(1).Height;
+
+        all_frames   = cell2mat(cellfun(@(t) t(:,1), track_px,'UniformOutput',false));
+        f_start      = min(all_frames);
+        f_end        = min(max(all_frames), f_start + n_tif_frames - 1);
+        n_vid_frames = f_end - f_start + 1;
+
+        fig = figure('Name',fName,'Color','k','Units','pixels', ...
+                     'Position',[80 80 img_w img_h], ...
+                     'MenuBar','none','ToolBar','none','Visible','off');
+        ax_img = axes('Parent',fig,'Units','pixels','Position',[0 0 img_w img_h], ...
+                      'Color','k','XColor','none','YColor','none');
+        axis(ax_img,'image','off'); hold(ax_img,'on');
+
+        img0  = imread(tifPath, 1);
+        h_img = imagesc(ax_img, img0);
+        colormap(ax_img, gray);
+        clim(ax_img, [min(img0(:)), max(img0(:))]);
+        axis(ax_img,'image','off'); hold(ax_img,'on');
+
+        h_line_in = gobjects(nT,1);
+        h_line_ac = gobjects(nT,1);
+        h_dot     = gobjects(nT,1);
+        for ti = 1:nT
+            h_line_in(ti) = plot(ax_img,NaN,NaN,'-','Color',[colInactive,0.85],'LineWidth',0.8);
+            h_line_ac(ti) = plot(ax_img,NaN,NaN,'-','Color',[colActive,  0.90],'LineWidth',1.2);
+            h_dot(ti)     = plot(ax_img,NaN,NaN,'o','MarkerSize',3,'LineWidth',0.5);
+        end
+
+        h_txt = text(ax_img, img_w*0.02, img_h*0.04, '', ...
+                     'Color','w','FontSize',9,'FontWeight','bold', ...
+                     'VerticalAlignment','top','Interpreter','none');
+
+        vidPath           = fullfile(BASE_DIR, fName, 'tracevideo.mp4');
+        vid_out           = VideoWriter(vidPath,'MPEG-4');
+        vid_out.FrameRate = (1./ExpTime)*10;
+        vid_out.Quality   = 92;
+        open(vid_out);
+
+        fprintf('  [%d/%d]  %-32s  rendering %d frames ...\n', ...
+            fi, nFolders, fName, n_vid_frames);
+
+        for f = f_start:f_end
+            tif_idx = f - f_start + 1;
+            set(h_img,'CData', imread(tifPath, tif_idx));
+
+            for ti = 1:nT
+                td   = track_px{ti};
+                mask = td(:,1) <= f;
+                nVis = sum(mask);
+
+                if nVis < 1
+                    set(h_line_in(ti),'XData',NaN,'YData',NaN);
+                    set(h_line_ac(ti),'XData',NaN,'YData',NaN);
+                    set(h_dot(ti),    'XData',NaN,'YData',NaN);
+                else
+                    xVis = td(mask,2);
+                    yVis = td(mask,3);
+                    sc   = track_col{ti};
+                    nSt  = min(nVis-1, size(sc,1));
+
+                    isActStep = false(nSt,1);
+                    if nSt > 0, isActStep = sc(1:nSt,1) > 0.5; end
+
+                    xi = []; yi = [];
+                    xa = []; ya = [];
+                    for s = 1:nSt
+                        if isActStep(s)
+                            xa = [xa; xVis(s); xVis(s+1); NaN]; %#ok<AGROW>
+                            ya = [ya; yVis(s); yVis(s+1); NaN]; %#ok<AGROW>
+                        else
+                            xi = [xi; xVis(s); xVis(s+1); NaN]; %#ok<AGROW>
+                            yi = [yi; yVis(s); yVis(s+1); NaN]; %#ok<AGROW>
+                        end
+                    end
+                    set(h_line_in(ti),'XData',xi,'YData',yi);
+                    set(h_line_ac(ti),'XData',xa,'YData',ya);
+
+                    if nSt >= 1 && isActStep(nSt)
+                        dotCol = colActive;
+                    else
+                        dotCol = colInactive;
+                    end
+                    set(h_dot(ti),'XData',xVis(end),'YData',yVis(end), ...
+                        'Color',dotCol,'MarkerFaceColor',dotCol);
+                end
+            end
+
+            set(h_txt,'String',sprintf('frame %d', f));
+            drawnow limitrate;
+            writeVideo(vid_out, getframe(fig));
+            if mod(tif_idx,50) == 0
+                fprintf('    ... %d / %d frames done\n', tif_idx, n_vid_frames);
+            end
+        end
+
+        close(vid_out); close(fig);
+        fprintf('  Video saved  ->  %s\n', vidPath);
+    end
+    fprintf('\n');
+end
+
+
+%% ======================================================================
+%  SECTION 8 – SPOT-CHECK PLOTS
+%% ======================================================================
+
+activePairs = [];
+for fi = 1:nFolders
+    if isempty(DATA(fi).name), continue; end
+    for ti = 1:DATA(fi).nTraces
+        if DATA(fi).valid(ti) && DATA(fi).isActive(ti)
+            activePairs(end+1,:) = [fi, ti]; %#ok<AGROW>
+        end
+    end
+end
+
+if ~isempty(activePairs)
+    idx = randperm(size(activePairs,1), size(activePairs,1));
+    cmap_rb = [linspace(0.2,1,64)', linspace(0.5,0.2,64)', linspace(1,0.2,64)'];
+
+    FigFolder = fullfile(BASE_DIR, DATA(activePairs(idx(1),1)).name, 'Traces');
+    mkdir(FigFolder);
+
+    for k = 1:numel(idx)
+        fi  = activePairs(idx(k),1);
+        ti  = activePairs(idx(k),2);
+        s   = DATA(fi).traceStats{ti};
+        raw = DATA(fi).rawTraces{ti};
+        nSteps = numel(s.frameScore);
+
+        Fig = figure('Name', sprintf('Per-frame seg – F%d T%d', fi, ti));
+        subplot(1,2,1); hold on;
+        for step = 1:nSteps
+            ci  = max(1, min(64, round(s.frameScore(step)*63)+1));
+            plot(raw.x(step:step+1), raw.y(step:step+1), '-', ...
+                 'Color',cmap_rb(ci,:),'LineWidth',1.8);
+        end
+        plot(raw.x(1),  raw.y(1),  'go','MarkerSize',8,'MarkerFaceColor','g');
+        plot(raw.x(end),raw.y(end),'rs','MarkerSize',8,'MarkerFaceColor','r');
+        axis equal; grid on;
+        xlabel('x [nm]'); ylabel('y [nm]');
+        title(sprintf('blue->red = P(active)  |  F%d T%d', fi, ti));
+        colormap(gca, cmap_rb); cb = colorbar; cb.Label.String = 'P(active)'; clim([0 1]);
+
+        subplot(1,2,2);
+        plot(s.frameScore,'k-','LineWidth',1); hold on;
+        yline(FRAME_ACTIVE_THR,'r--','LineWidth',1.5,'Label','threshold');
+        fill([1:nSteps, nSteps:-1:1], ...
+             [double(s.frameLabels)', zeros(1,nSteps)], ...
+             'r','FaceAlpha',0.15,'EdgeColor','none');
+        xlabel('Frame'); ylabel('P(active)');
+        title('Per-frame active probability');
+        ylim([0 1]); grid on;
+        saveas(Fig, fullfile(FigFolder, sprintf('Trace %d.png', ti)));
+    end
+end
+
+
+%% ======================================================================
+%  SECTION 9 – ANALYSIS TABLES
+%% ======================================================================
+
+fprintf('\n==================== ANALYSIS TABLES ====================\n');
+
+browRows = {};
+actRows  = {};
+
+for fi = 1:nFolders
+    if isempty(DATA(fi).name), continue; end
+
+    for ti = 1:DATA(fi).nTraces
+        if ~DATA(fi).valid(ti), continue; end
+
+        raw    = DATA(fi).rawTraces{ti};
+        nSteps = numel(raw.x) - 1;
+        xN = raw.x ./ MAX_COORD;
+        yN = raw.y ./ MAX_COORD;
+
+        if ~DATA(fi).isActive(ti)
+
+            msd  = computeMSD(xN, yN);
+            nLag = min(4, size(msd,1));
+            D_nm2    = NaN;
+            alpha_br = NaN;
+            intensityMean = median(raw.intensityMean, 'omitnan');
+            intensityMax  = median(raw.intensityMax,  'omitnan');
+
+            if nLag >= 2
+                msd_nm2 = msd(1:nLag, 2) .* MAX_COORD^2;
+                lags    = msd(1:nLag, 1);
+                p = polyfit(lags, msd_nm2, 1);
+                D_nm2 = p(1) / 4;
+                ok = msd_nm2 > 0;
+                if sum(ok) >= 2
+                    pa = polyfit(log(lags(ok)), log(msd_nm2(ok)), 1);
+                    alpha_br = pa(1);
+                end
+            end
+
+            xcm   = mean(raw.x);  ycm = mean(raw.y);
+            Rg_nm = sqrt(mean((raw.x - xcm).^2 + (raw.y - ycm).^2));
+
+            dx = diff(raw.x(:));  dy = diff(raw.y(:));
+            meanStep_nm = mean(sqrt(dx.^2 + dy.^2));
+
+            browRows{end+1} = {DATA(fi).name, ti, nSteps, ...
+                D_nm2, alpha_br, Rg_nm, meanStep_nm, intensityMean, intensityMax}; %#ok<AGROW>
+
+        else
+            if isempty(DATA(fi).traceStats) || ...
+               numel(DATA(fi).traceStats) < ti || ...
+               isempty(DATA(fi).traceStats{ti})
+                continue
+            end
+            s = DATA(fi).traceStats{ti};
+
+            for r = 1:s.nActiveRuns
+                if r <= s.nPauses
+                    pauseAfter = s.pauseLengths_steps(r);
+                else
+                    pauseAfter = NaN;
+                end
+
+                actRows{end+1} = {DATA(fi).name, ti, r, ...
+                    s.runLengths_steps(r), s.runLengths_um(r), ...
+                    s.runSpeeds_nm(r), s.runDAC(r), ...
+                    pauseAfter, s.nActiveRuns, s.pctTimeActive, ...
+                    s.intensityMean(r), s.intensityMax(r)}; %#ok<AGROW>
+            end
+        end
+    end
+end
+
+if ~isempty(browRows)
+    BrownTable = cell2table(vertcat(browRows{:}), 'VariableNames', ...
+        {'Folder','TraceID','N_frames','DiffCoeff_nm2_per_frame', ...
+         'Alpha','Rg_nm','MeanStepSize_nm','Intensity_mean','Intensity_max'});
+    fprintf('\n--- TABLE A: Brownian / Non-Active Traces (%d traces) ---\n', height(BrownTable));
+    disp(BrownTable);
+    writetable(BrownTable, fullfile(BASE_DIR, 'Table_Brownian.xlsx'));
+    fprintf('Saved -> Table_Brownian.xlsx\n');
+else
+    fprintf('No Brownian traces found.\n');
+    BrownTable = table();
+end
+
+if ~isempty(actRows)
+    ActiveTable = cell2table(vertcat(actRows{:}), 'VariableNames', ...
+        {'Folder','TraceID','RunIndex','RunLength_steps','RunLength_um', ...
+         'Speed_nm_per_frame','Directionality_DAC','PauseAfter_steps', ...
+         'N_ActiveRuns_in_trace','PctTimeActive','Intensity_mean','Intensity_max'});
+    fprintf('\n--- TABLE B: Active Runs (%d runs in %d traces) ---\n', ...
+        height(ActiveTable), numel(unique(ActiveTable.TraceID)));
+    disp(ActiveTable);
+    writetable(ActiveTable, fullfile(BASE_DIR, 'Table_ActiveRuns.xlsx'));
+    fprintf('Saved -> Table_ActiveRuns.xlsx\n');
+else
+    fprintf('No active runs found.\n');
+    ActiveTable = table();
+end
+
+fprintf('\n==================== DONE ====================\n');
+
+save('NanoparticleAnalysisResults_v4.mat','DATA','netCNN', ...
+     'FRAME_ACTIVE_THR','WIN_SIZE','PIXEL_SIZE','IMAGE_SIZE', ...
+     'BrownTable','ActiveTable','-v7.3');
+fprintf('Saved -> NanoparticleAnalysisResults_v4.mat\n');
+
+
+%% ======================================================================
+%  HELPER FUNCTIONS
+%% ======================================================================
+
+function feat = extractWindowFeatures(x, y, w1, w2, maxCoord, localHalf, xFull, yFull)
+    x = x ./ maxCoord;
+    y = y ./ maxCoord;
+
+    xW = x(w1:w2+1) - x(w1);
+    yW = y(w1:w2+1) - y(w1);
+    xW = medfilt1(xW, 10);
+    yW = medfilt1(yW, 10);
+
+    dx = diff(xW);  dy = diff(yW);
+    n  = numel(dx);
+
+    ss = sqrt(dx.^2 + dy.^2);
+
+    dots    = dx(1:end-1).*dx(2:end) + dy(1:end-1).*dy(2:end);
+    norms   = ss(1:end-1).*ss(2:end) + 1e-15;
+    cosVals = max(-1, min(1, dots./norms));
+    dac     = [0; cosVals];
+
+    ss_diff  = [0; diff(ss)];
+    dac_diff = [0; diff(dac)];
+
+    ss_var = zeros(n,1);
+    for k = 1:n
+        k1 = max(1,k-localHalf);  k2 = min(n,k+localHalf);
+        ss_var(k) = var(ss(k1:k2));
+    end
+
+    alpha = ones(n,1);
+    for k = 1:n
+        p1 = max(1, k-localHalf);  p2 = min(n+1, k+localHalf+1);
+        xSub = xW(p1:p2);  ySub = yW(p1:p2);
+        maxLag = floor(numel(xSub)/4);
+        if maxLag < 2, continue; end
+        msdV = zeros(maxLag,1);
+        for lag = 1:maxLag
+            dr2 = (xSub(lag+1:end)-xSub(1:end-lag)).^2 + ...
+                  (ySub(lag+1:end)-ySub(1:end-lag)).^2;
+            msdV(lag) = mean(dr2);
+        end
+        ok = msdV > 0;
+        if sum(ok) < 2, continue; end
+        lags = (1:maxLag)';
+        p = polyfit(log(lags(ok)), log(msdV(ok)), 1);
+        alpha(k) = p(1) ./ 10;
+    end
+
+    rg_raw  = zeros(n,1);
+    rg_norm = zeros(n,1);
+    for k = 1:n
+        p1 = max(1,k-localHalf);  p2 = min(n+1,k+localHalf+1);
+        xSub = xW(p1:p2);  ySub = yW(p1:p2);
+        N    = numel(xSub);
+        xcm  = mean(xSub);  ycm = mean(ySub);
+        rg_m = sqrt(mean((xSub-xcm).^2 + (ySub-ycm).^2));
+        lss  = sqrt(diff(xSub).^2 + diff(ySub).^2);
+        mss  = mean(lss) + 1e-15;
+        rg_raw(k)  = rg_m;
+        rg_norm(k) = (rg_m / (mss * sqrt(N/4))) ./ maxCoord;
+    end
+
+    span_norm = zeros(n,1);
+    for k = 1:n
+        p1 = max(1,k-localHalf);  p2 = min(n+1,k+localHalf+1);
+        xSub = xW(p1:p2);  ySub = yW(p1:p2);
+        nSub = numel(xSub);
+        dists = pdist([xSub(:), ySub(:)]);
+        span_norm(k) = max(dists) / max(nSub-1, 1);
+    end
+
+    xF = xFull(:) ./ maxCoord;
+    yF = yFull(:) ./ maxCoord;
+    xcm_w  = mean(xW);  ycm_w = mean(yW);
+    rg_win = sqrt(mean((xW-xcm_w).^2 + (yW-ycm_w).^2)) + 1e-15;
+
+    outsideIdx = setdiff(1:numel(xF), w1:w2+1);
+    if numel(outsideIdx) >= 4
+        xOut = xF(outsideIdx);  yOut = yF(outsideIdx);
+        xcm_o = mean(xOut);  ycm_o = mean(yOut);
+        rg_out = sqrt(mean((xOut-xcm_o).^2 + (yOut-ycm_o).^2));
+    else
+        rg_out = rg_win;
+    end
+
+    ctx_score  = rg_out / rg_win;
+    context_ch = repmat(ctx_score, 1, n);
+
+    feat = [ss(:)'; dac(:)'; ss_diff(:)'; dac_diff(:)'; ...
+            ss_var(:)'; alpha(:)'; rg_raw(:)'; rg_norm(:)'; ...
+            span_norm(:)'; context_ch];
+end
+
+% -----------------------------------------------------------------------
+function msd = computeMSD(x, y)
+    N      = numel(x);
+    maxLag = max(1, floor(N/4));
+    msd    = zeros(maxLag,2);
+    for lag = 1:maxLag
+        dr2        = (x(lag+1:end)-x(1:end-lag)).^2 + ...
+                     (y(lag+1:end)-y(1:end-lag)).^2;
+        msd(lag,:) = [lag, mean(dr2)];
+    end
+end
+
+% -----------------------------------------------------------------------
+function runs = findRuns(mask)
+    mask   = logical(mask(:));
+    d      = diff([false; mask; false]);
+    starts = find(d ==  1);
+    ends   = find(d == -1) - 1;
+    runs   = [starts, ends];
+end
+
+% -----------------------------------------------------------------------
+function mask = removeShortRuns(mask, minLen)
+    mask = logical(mask(:));
+    d      = diff([0; mask; 0]);
+    starts = find(d ==  1);
+    ends   = find(d == -1) - 1;
+    for k = 1:numel(starts)
+        if (ends(k) - starts(k) + 1) < minLen
+            mask(starts(k):ends(k)) = 0;
+        end
+    end
+end
+
+% -----------------------------------------------------------------------
+function setChoice(hFig, choice)
+    hFig.UserData.choice = choice;
+end
+
+function keyHandler(hFig, event)
+    switch lower(event.Key)
+        case 'a',  setChoice(hFig,'active');
+        case 'n',  setChoice(hFig,'nonactive');
+        case 's',  setChoice(hFig,'skip');
+    end
+end
+
+% -----------------------------------------------------------------------
+function printClassStats(trueLabels, predLabels)
+    classes = categories(trueLabels);
+    fprintf('  %-12s  %8s  %8s  %8s  %8s\n','Class','N_true','Precision','Recall','F1');
+    fprintf('  %s\n', repmat('-',1,55));
+    for ci = 1:numel(classes)
+        cls = classes{ci};
+        tp = sum(trueLabels == cls & predLabels == cls);
+        fp = sum(trueLabels ~= cls & predLabels == cls);
+        fn = sum(trueLabels == cls & predLabels ~= cls);
+        n_true    = tp + fn;
+        precision = tp / max(tp+fp, 1);
+        recall    = tp / max(tp+fn, 1);
+        f1        = 2*precision*recall / max(precision+recall, 1e-15);
+        fprintf('  %-12s  %8d  %8.1f%%  %8.1f%%  %8.3f\n', ...
+            cls, n_true, precision*100, recall*100, f1);
+    end
+end

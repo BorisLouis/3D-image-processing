@@ -105,14 +105,14 @@ classdef DDMExperiment < handle
                     elseif strcmp(currentTrackMov.info.ddmParam.Scanning, 'on')
                         [PxIdx] = currentTrackMov.getROI;
                         for z = 1:8
-                            ViscosityMap{z,1} = nan(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
-                            DiffusionMap{z,1} = nan(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
-                            AnExpMap{z,1} = nan(currentTrackMov.raw.movInfo.Length, currentTrackMov.raw.movInfo.Width);
+                            ViscosityMap{z,1} = nan(currentTrackMov.calibrated{1, 1}.Height, currentTrackMov.calibrated{1, 1}.Width);
+                            DiffusionMap{z,1} = nan(currentTrackMov.calibrated{1, 1}.Height, currentTrackMov.calibrated{1, 1}.Width);
+                            AnExpMap{z,1} = nan(currentTrackMov.calibrated{1, 1}.Height, currentTrackMov.calibrated{1, 1}.Width);
                         end
                         for CurrentPx = PxIdx'
                             currentTrackMov.getFrameParts(CurrentPx);
-                            currentTrackMov.mainDDM('NumBins',30);
-                            currentTrackMov.fitDDM;
+                            currentTrackMov.mainDDM('NumBins',30, 'Px', CurrentPx, 'MaxPx', max(PxIdx));
+                            currentTrackMov.fitDDMNoOptim;
                             currentTrackMov.getParams;
                             for j = 1:size(currentTrackMov.MSDResults, 1)
                                 ViscosityMap{j,1}(CurrentPx) = currentTrackMov.MSDResults{j,1}.n;

@@ -42,12 +42,12 @@ state.RadTime = addLabelField(col1, 'Rad Time (°/s):', '25');
 
 %% Channel Panels
 channel1Panel = uipanel(gl, 'Title', 'Channel 1 Setup');
-channel1Layout = uigridlayout(channel1Panel, [16, 2]);
-channel1Layout.RowHeight = repmat({30}, 1, 14);
+channel1Layout = uigridlayout(channel1Panel, [20, 2]);
+channel1Layout.RowHeight = repmat({25}, 1, 16);
 
 channel2Panel = uipanel(gl, 'Title', 'Channel 2 Setup');
-channel2Layout = uigridlayout(channel2Panel, [16, 2]);
-channel2Layout.RowHeight = repmat({30}, 1, 14);
+channel2Layout = uigridlayout(channel2Panel, [20, 2]);
+channel2Layout.RowHeight = repmat({25}, 1, 16);
 
 state.channel1Controls = [];
 state.channel2Controls = [];
@@ -213,6 +213,7 @@ function out = restructureChannelInfo(inStruct, channelType)
             out.detectParam.delta = inStruct.delta;
             out.detectParam.chi2 = inStruct.chi2;
             out.detectParam.consThresh = inStruct.consThresh;
+            out.detectParam.fitting = inStruct.Fitting;
             out.trackParam.radius = inStruct.track_radius;
             out.trackParam.memory = inStruct.track_memory;
             out = rmfield(out, {'delta', 'chi2', 'consThresh', 'track_radius', 'track_memory'});
@@ -287,6 +288,7 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
             controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
             controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'on');
+            controls.Fitting = addDropdown(layout, 'Fitting', {'on', 'off'}, 'on');
             controls.euDist = addLabelField(layout, 'euDist (nm)', '1500');
             controls.delta = addLabelField(layout, 'delta', '10');
             controls.chi2 = addLabelField(layout, 'chi2', '35');
@@ -294,6 +296,7 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.track_radius = addLabelField(layout, 'track.radius (nm)', '1500');
             controls.track_memory = addLabelField(layout, 'track.memory (frames)', '15');
             controls.CorrectDrift = addDropdown(layout, 'Correct Drift', {'on', 'off'}, 'off');
+
 
         case 'Segmentation'
             controls.GlobalBgCorr = addLabelField(layout, 'GlobalBgThr', '10');
@@ -313,6 +316,7 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.mirrorX = addDropdown(layout, 'Mirror along x', {'true', 'false'}, 'true');
             controls.mirrorZ = addDropdown(layout, 'Mirror along z', {'true', 'false'}, 'true');
             controls.applyFourierMask = addDropdown(layout, 'denoising Fourier', {'true', 'false'}, 'false');
+            controls.CalibrateAlpha = addDropdown(layout, 'Calibrate alpha', {'true', 'false'}, 'true');
 
         case 'DDM'
             controls.ParticleSize = addLabelField(layout, 'Particle radius (nm):', '20');
@@ -339,10 +343,13 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.ExpTime = addLabelField(layout, 'Exp time (s):', '0.0305');
             controls.Radius = addLabelField(layout, 'Particle Radius (nm):', '20');
             controls.Temperature = addLabelField(layout, 'Temperature (K):', '296.15');
-            controls.TICSWindow = addLabelField(layout, 'TICS window:', '3');
+            controls.TICSWindow = addLabelField(layout, 'TICS window:', '2');
             controls.PlotSACFfit = addDropdown(layout, ...
                 'Plot fit on SACF', {'on','off'}, 'off'); 
-            controls.SACFframes = addLabelField(layout, 'Frames to calc SACF:', '50');
+            controls.SACFframes = addLabelField(layout, 'Frames to calc SACF:', '150');
+            controls.FitTACF = addLabelField(layout, 'FitRange to fit diff:', '100');
+            controls.Omega = addLabelField(layout, 'Omega:', '170');
+
     end
 
     %% --- Nested scanning callback ---
@@ -359,8 +366,8 @@ function controls = addChannelControls(layout, type, controlsName)
         roiField = findobj(layout.Children, 'Tag', 'ROISizeField');
         if isOn
             if isempty(roiField)
-                uilabel(layout, 'Text', 'Kernel Size (px):', 'HorizontalAlignment', 'right', 'FontSize', 11);
-                roiEdit = uieditfield(layout, 'text', 'Value', '10', 'FontSize', 11, 'Tag', 'ROISizeField');
+                uilabel(layout, 'Text', 'Kernel Size (px):', 'HorizontalAlignment', 'right', 'FontSize', 10);
+                roiEdit = uieditfield(layout, 'text', 'Value', '10', 'FontSize', 10, 'Tag', 'ROISizeField');
                 state.(controlsName).ROISize = roiEdit; % store dynamically
             else
                 roiField.Visible = 'on';

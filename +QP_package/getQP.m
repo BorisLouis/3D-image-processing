@@ -36,12 +36,12 @@
 % 	You should have received a copy of the GNU General Public License
 %  	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-function [QP,mask] = getQP(stack,s,mask)
+function [QP,mask] = getQP(stack,s,zPos)
 
 % mirror the data and compute adequate Fourier space grid
-[stackM,kx,kz] = QP_package.getMirroredStack(stack,s);
+[stackM,kx,kz] = QP_package.getMirroredStack(stack,s,zPos);
 
-if nargin < 3 % if no mask are provided
+if nargin < 4 % if no mask are provided
 % compute usefull stuff
 th = asin(s.optics.NA/s.optics.n);
 th_ill = asin(s.optics.NA_ill/s.optics.n);
@@ -87,12 +87,18 @@ Ik = fftshift(fftn(fftshift(stackM)));
 Gamma = Ik.*mask; % cross-spectral density
 
 csd = ifftshift(ifftn(ifftshift(Gamma)));
-csd = csd(1:size(stack,1),1:size(stack,2),1:size(stack,3));
-%csd = csd(1:size(mask,1),1:size(mask,2),1:size(stack,3)); % remove the mirrored input
+% csd = csd(1:size(stack,1),1:size(stack,2),1:size(stack,3));
+csd = csd(1:size(mask,1),1:size(mask,2),1:size(stack,3)); % remove the mirrored input
 
 
-Amplitude = abs(csd);
-QP = angle(csd + mean(stack(:))/s.optics.alpha);
+% Amplitude = abs(csd);
+csd_cropped = csd(1:size(stack,1), 1:size(stack,2), 1:size(stack,3));
+
+% Phase with per-plane reference
+QP = angle(csd_cropped + mean(stack(:)) / s.optics.alpha);
+
+
+% QP = angle(csd + mean(stack(:))/s.optics.alpha);
 close all
 
 

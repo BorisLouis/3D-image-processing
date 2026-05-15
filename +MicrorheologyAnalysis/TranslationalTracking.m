@@ -781,7 +781,7 @@ classdef TranslationalTracking < handle
             save(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'), "FitResults");
         end
 
-        function [p_fit] = FitPopulationFractions(obj, Loop)
+        function [p_fit, FinalTrend] = FitPopulationFractions(obj, Loop)
             OutputFolder = append(obj.raw.Path, filesep, 'ecdf_fits_channel', num2str(Loop));
             % FitResults = obj.PopulationFractions;
             channel = append('ch', num2str(Loop));
@@ -802,7 +802,11 @@ classdef TranslationalTracking < handle
 
 
             load('D:\Polymer Dynamics\3_and_6min\Results.mat');
-            refDiff = DiffData.(condType)(condIdx).(channel);
+            try
+                refDiff = DiffData.(condType)(condIdx).(channel);
+            catch
+                refDiff = [2, 1];
+            end
             refTime = DiffData.time.sec;
 
             load(append(obj.raw.Path, filesep, 'StepSizeResults_Channel', num2str(Loop), '.mat'));

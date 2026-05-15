@@ -266,7 +266,7 @@ classdef trackingMethod < handle
         %%%%%%%%%%%%%%%%%%% FROM SERGEY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         
-        function [ALLDataConverted,AllFieldName] =ConvertData(input_data,ImMax)
+        function [ALLDataConverted,AllFieldName] =ConvertData(input_data,ImMax,tablecolumn)
             
             assert(istable(input_data),'Wrong format of the input data :(. Expected a table, tracking aborted!')
             
@@ -278,7 +278,7 @@ classdef trackingMethod < handle
             %careful here the indexes denominate time but if data is added
             %time may change position
             for i=1:ImMax         
-                    ALLDataConverted{i} =input_data(input_data(:,10)==i,:);
+                    ALLDataConverted{i} =input_data(input_data(:,tablecolumn)==i,:);
             end
 
         end

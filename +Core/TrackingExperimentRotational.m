@@ -371,35 +371,40 @@ classdef TrackingExperimentRotational < handle
                         disp('Found candidate file - loaded it')
                     end
 
-                    if run < 2
-                        currentTrackMov.SRLocalizeCandidate(detectParam, q);
-                        refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
-                        rot = true;
-                        currentTrackMov.applySRCal(rot,refPlane);
-                        currentTrackMov.applyZCal;
-                    else
-                        load(filename2)
-                        currentTrackMov.corrLocPos = locPos;
-                        currentTrackMov.unCorrLocPos = locPos;
-                        disp('Found localisation positions file - loaded it')
-                    end
-
-                    if run < 3
-                        if strcmp(obj.info.frame2Load, 'all')
-                            frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
-                        elseif isa(obj.info.frame2Load, 'double')
-                            frames = obj.info.frame2Load;
+                    if strcmp(detectParam.fitting, 'on')
+                        if run < 2
+                            currentTrackMov.SRLocalizeCandidate(detectParam, q);
+                            refPlane = round(currentTrackMov.calibrated{1,1}.nPlanes/2);
+                            rot = true;
+                            currentTrackMov.applySRCal(rot,refPlane);
+                            currentTrackMov.applyZCal;
+                        else
+                            load(filename2)
+                            currentTrackMov.corrLocPos = locPos;
+                            currentTrackMov.unCorrLocPos = locPos;
+                            disp('Found localisation positions file - loaded it')
                         end
-                        currentTrackMov.consolidatePlanes(frames,detectParam,q)
-                    else 
-                        load(filename3)
-                        currentTrackMov.particles = particle;
-                        disp('Found particle file - loaded it')
-                    end
-
-                    if run < 4
-                        currentTrackMov.superResolve(q);
-                        currentTrackMov.correctDrift;
+    
+                        if run < 3 
+                            if strcmp(obj.info.frame2Load, 'all')
+                                frames = 1:currentTrackMov.calibrated{1,1}.nFrames;
+                            elseif isa(obj.info.frame2Load, 'double')
+                                frames = obj.info.frame2Load;
+                            end
+                            currentTrackMov.consolidatePlanes(frames,detectParam,q)
+                        else 
+                            load(filename3)
+                            currentTrackMov.particles = particle;
+                            disp('Found particle file - loaded it')
+                        end
+    
+                        if run < 4
+                            currentTrackMov.superResolve(q);
+                            currentTrackMov.correctDrift;
+                        end
+                    else
+                        currentTrackMov.ConvCandToPart;
+                        disp('Not tracking NPs but irregular shapes - no fitting')
                     end
 
                     if run < 5
@@ -457,65 +462,217 @@ classdef TrackingExperimentRotational < handle
             disp('=================> DONE <===================');
         end
 
+        function MakeMovie(obj, sizeParticles, minSize, trailing, frameRate)
+            MovNames = fieldnames(obj.trackMovies);
 
-        function cleanedChannel = cleanTraces(obj, channel, threshold, ch)
-            numTraces = size(channel, 1);
-            merged = false(numTraces, 1); % Keep track of merged traces
-            cleanedChannel = {};
-            
-            h = waitbar(0, 'initializing channel');
-            for i = 1:numTraces
-                waitbar(i./numTraces,h, append('Cleaning traces channel ', num2str(ch)));
-                if merged(i)
-                    continue
-                else
-                    trace1 = channel{i, 1};
-                    coords1 = table2array(trace1(:, 1:2)); 
-                    time1 = table2array(trace1(:, 10));
-                    intensity1 = trace1.intensity;
-                    
-                    for j = i+1:numTraces
-                        if merged(j)
-                            continue
-                        else                    
-                            trace2 = channel{j, 1};
-                            coords2 = table2array(trace2(:, 1:2)); 
-                            time2 = table2array(trace2(:, 10));
-                            intensity2 = trace2.intensity;
-
-                            common_time = intersect(time1, time2);
-                            if ~isempty(common_time)
-                                minTimeGap = 0;
-                            else
-                                minTimeGap = min(abs(time1 - min(time2)));
-                                minTimeGap = min(minTimeGap, min(abs(time2 - min(time1))));
-                            end
+            for i = 1:numel(MovNames)
+                CurrentMovie = obj.trackMovies.(MovNames{i});
+                Traces = CurrentMovie.traces3D;
+               
+                TRAIL_COLOR  = [0 0 1];       % black traces
+                DOT_COLOR    = [1 0 0];       % red dot at current position
+                LINE_WIDTH   = 1.5;
+                DOT_SIZE     = 0.5;
+                FRAME_RATE   = 33;
+                OUTPUT_FILE  = append(CurrentMovie.raw.movInfo.Path, filesep, 'TraceMovie');
+                MIN_LENGTH   = 20;            % minimum track length to display
+             
+                trackLengths = cellfun(@(t) size(t, 1), Traces(:, 1));
+                Traces = Traces(trackLengths > MIN_LENGTH, :);
+                n_tracks = size(Traces, 1);
                 
-                            distances = sqrt(sum((mean(coords1) - mean(coords2)).^2, 2));
-                    
-                            % Check if they are within threshold distance
-                            if distances < threshold && minTimeGap < 75
-
-                                % Merge traces
-                                merged(j) = true;
-                                common_time = intersect(trace1.t, trace2.t);
-                                merged_trace = [trace1; trace2];
-                                for o = 1:size(common_time)
-                                    idx = find(merged_trace.t == common_time(o));
-                                    [~, Idx] = max(merged_trace.intensity(idx));
-                                    idx(Idx) = [];
-                                    merged_trace(idx,:) = [];
-                                end      
-                                merged_trace = sortrows(merged_trace, 10);
-                                
-                                trace1 = merged_trace; % Update trace1 with new merged data
-                            end
+                % --- Load microscopy movie --------------------------------
+                nFrames  = CurrentMovie.calibrated{1,1}.nFrames;
+     
+                startcal = strfind(CurrentMovie.calibrated{1,1}.filePath.plane2, 'calibrated');
+                filePath = append(CurrentMovie.raw.movInfo.Path, filesep, CurrentMovie.calibrated{1,1}.filePath.plane2(startcal(1):end));
+                
+                % safer explicit load:
+                frame1 = Load.Movie.tif.getFrame(filePath, 1);
+                [img_h, img_w] = size(frame1);
+                Movie = zeros(img_h, img_w, nFrames, 'like', frame1);
+                Movie(:,:,1) = frame1;
+                for f = 2:nFrames
+                    Movie(:,:,f) = Load.Movie.tif.getFrame(filePath, f);
+                end
+                fprintf('Movie loaded.\n');
+                
+                % --- Extract (frame, x, y) per trace from Traces ----------
+                % Traces(:,1) -> each cell is an n x 12 table
+                % col 3 = rowM (x), col 4 = colM (y), col 9 = t (frame)
+                track_data = cell(n_tracks, 1);
+                f_min_all  = Inf;
+                f_max_all  = -Inf;
+                
+                for k = 1:n_tracks
+                    tbl   = Traces{k, 1};              % n x 12 table
+                    frames = tbl{:, 9};               % column 't'
+                    xp     = tbl{:, 3};               % column 'rowM'
+                    yp     = tbl{:, 4};               % column 'colM'
+                
+                    [frames_s, ord] = sort(frames);
+                    track_data{k}   = [frames_s, xp(ord), yp(ord)];
+                
+                    f_min_all = min(f_min_all, frames_s(1));
+                    f_max_all = max(f_max_all, frames_s(end));
+                end
+                
+                f_start    = max(1, f_min_all);
+                f_end      = min(nFrames, f_max_all);
+                n_vid_frames = f_end - f_start + 1;
+                
+                fprintf('Rendering frames %d to %d (%d total)\n', f_start, f_end, n_vid_frames);
+                
+                % --- Figure setup -----------------------------------------
+                fig = figure('Name', 'Nanoparticle Traces', ...
+                             'Color', 'k', ...
+                             'Units', 'pixels', ...
+                             'Position', [80, 80, img_w, img_h], ...
+                             'MenuBar', 'none', ...
+                             'ToolBar', 'none');
+                
+                ax = axes('Parent', fig, ...
+                          'Units', 'pixels', ...
+                          'Position', [0, 0, img_w, img_h], ...
+                          'Color', 'k', ...
+                          'XColor', 'none', ...
+                          'YColor', 'none');
+                axis(ax, 'image', 'off');
+                hold(ax, 'on');
+                
+                % --- Normalise first frame for display --------------------
+                img_norm = mat2gray(double(Movie(:,:,f_start)));
+                h_img    = imagesc(ax, img_norm);
+                colormap(ax, gray);
+                axis(ax, 'image', 'off');
+                hold(ax, 'on');
+                
+                % --- Pre-create one line + one dot handle per trace -------
+                h_line = gobjects(n_tracks, 1);
+                h_dot  = gobjects(n_tracks, 1);
+                
+                for k = 1:n_tracks
+                    h_line(k) = plot(ax, NaN, NaN, '-', ...
+                                     'Color',     TRAIL_COLOR, ...
+                                     'LineWidth', LINE_WIDTH);
+                    h_dot(k)  = plot(ax, NaN, NaN, 'o', ...
+                                     'Color',          DOT_COLOR, ...
+                                     'MarkerFaceColor', DOT_COLOR, ...
+                                     'MarkerSize',      DOT_SIZE, ...
+                                     'LineWidth', 0.5);
+                end
+                
+                % Frame counter label
+                h_txt = text(ax, img_w * 0.02, img_h * 0.04, '', ...
+                             'Color', 'w', 'FontSize', 9, 'FontWeight', 'bold', ...
+                             'VerticalAlignment', 'top', 'Interpreter', 'none');
+                
+                % --- VideoWriter setup ------------------------------------
+                vid_out           = VideoWriter(OUTPUT_FILE, 'MPEG-4');
+                vid_out.FrameRate = FRAME_RATE;
+                vid_out.Quality   = 92;
+                open(vid_out);
+                
+                % --- Render loop ------------------------------------------
+                for f = f_start:f_end
+                    vid_idx = f - f_start + 1;
+                
+                    % Update background (normalised to [0 1] per-frame for contrast)
+                    frame_raw = double(Movie(:,:,f));
+                    set(h_img, 'CData', mat2gray(frame_raw));
+                
+                    % Update each trace up to current frame
+                    for k = 1:n_tracks
+                        td   = track_data{k};          % [frame, x, y]
+                        mask = td(:,1) <= f;
+                
+                        if sum(mask) < 1
+                            set(h_line(k), 'XData', NaN, 'YData', NaN);
+                            set(h_dot(k),  'XData', NaN, 'YData', NaN);
+                        else
+                            xp_tr = td(mask, 2);
+                            yp_tr = td(mask, 3);
+                            set(h_line(k), 'XData', yp_tr,      'YData', xp_tr);       % colM=x-axis, rowM=y-axis
+                            set(h_dot(k),  'XData', yp_tr(end), 'YData', xp_tr(end));
                         end
                     end
-                    cleanedChannel{end+1, 1} = trace1; % Store merged trace
+                
+                    set(h_txt, 'String', sprintf('frame %d', f));
+                    drawnow limitrate;
+                
+                    writeVideo(vid_out, getframe(fig));
+                
+                    if mod(vid_idx, 50) == 0
+                        fprintf('  ... %d / %d frames done\n', vid_idx, n_vid_frames);
+                    end
                 end
+                
+                close(vid_out);
+                close(fig);
+                fprintf('Done! Video saved to: %s\n', OUTPUT_FILE);
             end
-            close(h)
+        end
+    
+    
+        function cleanedChannel = cleanTraces(obj, channel, threshold, ch)
+                numTraces = size(channel, 1);
+                merged = false(numTraces, 1); % Keep track of merged traces
+                cleanedChannel = {};
+                
+                h = waitbar(0, 'initializing channel');
+                for i = 1:numTraces
+                    waitbar(i./numTraces,h, append('Cleaning traces channel ', num2str(ch)));
+                    if merged(i)
+                        continue
+                    else
+                        trace1 = channel{i, 1};
+                        coords1 = table2array(trace1(:, 1:2)); 
+                        time1 = table2array(trace1(:, 10));
+                        intensity1 = trace1.intensity;
+                        
+                        for j = i+1:numTraces
+                            if merged(j)
+                                continue
+                            else                    
+                                trace2 = channel{j, 1};
+                                coords2 = table2array(trace2(:, 1:2)); 
+                                time2 = table2array(trace2(:, 10));
+                                intensity2 = trace2.intensity;
+    
+                                common_time = intersect(time1, time2);
+                                if ~isempty(common_time)
+                                    minTimeGap = 0;
+                                else
+                                    minTimeGap = min(abs(time1 - min(time2)));
+                                    minTimeGap = min(minTimeGap, min(abs(time2 - min(time1))));
+                                end
+                    
+                                distances = sqrt(sum((mean(coords1) - mean(coords2)).^2, 2));
+                        
+                                % Check if they are within threshold distance
+                                if distances < threshold && minTimeGap < 75
+    
+                                    % Merge traces
+                                    merged(j) = true;
+                                    common_time = intersect(trace1.t, trace2.t);
+                                    merged_trace = [trace1; trace2];
+                                    for o = 1:size(common_time)
+                                        idx = find(merged_trace.t == common_time(o));
+                                        [~, Idx] = max(merged_trace.intensity(idx));
+                                        idx(Idx) = [];
+                                        merged_trace(idx,:) = [];
+                                    end      
+                                    merged_trace = sortrows(merged_trace, 10);
+                                    
+                                    trace1 = merged_trace; % Update trace1 with new merged data
+                                end
+                            end
+                        end
+                        cleanedChannel{end+1, 1} = trace1; % Store merged trace
+                    end
+                end
+                close(h)
+                
         end
 
 

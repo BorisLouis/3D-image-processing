@@ -130,7 +130,11 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 allTimes = timing(DataToTrack.t);
                 DataToTrack.rT = allTimes(:);
                 %Converts data
-                [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax);
+                if strcmp(obj.info.detectParam.fitting, 'on')
+                    [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax,10);
+                else
+                    [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax,9);
+                end
                 count = 0; 
                 %check that there are particles in frame 1
                 if or(isempty (ToTrack{1}),isempty(ToTrack{2}))
@@ -617,6 +621,37 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
             
         end
 
+         function ConvCandToPart(obj)
+            f = waitbar(0,'Initializing...');
+            SRList = [];
+                
+            for frame = 1:size(obj.candidatePos,1)
+                waitbar(frame./size(obj.candidatePos,1),f,append('Constructing particles'));
+                NumPart = size(obj.candidatePos{frame, 1}, 1);
+                SRListFrame = [obj.candidatePos{frame, 1}.row.*obj.info.pxSize, obj.candidatePos{frame, 1}.col.*obj.info.pxSize, obj.candidatePos{frame, 1}.row, obj.candidatePos{frame, 1}.col, zeros(NumPart, 1), obj.candidatePos{frame, 1}.meanIntensity, obj.candidatePos{frame, 1}.maxIntensity,...
+                                    obj.candidatePos{frame, 1}.AreaPx, zeros(NumPart,1)+frame, obj.candidatePos{frame, 1}.Eccentricity, obj.candidatePos{frame, 1}.Orientation];
+                SRList = [SRList; SRListFrame];
+                nParticles(frame) = NumPart;
+                idx2TP(frame) = frame;
+                List{frame} = obj.candidatePos{frame, 1};
+            end
+
+            Traces = [];
+            nTraces = [];
+
+            SRList = array2table(SRList, "VariableNames", {'row', 'col', 'rowM', 'colM','z', 'meanIntensity', 'maxIntensity', 'Area', 't', 'Eccentricity', 'Orientation'});
+
+            Particle.List = List; 
+            Particle.nParticles = nParticles;
+            Particle.idx2TP = idx2TP;
+            Particle.Traces = [];
+            Particle.nTraces = [];
+            Particle.SRList = SRList;
+
+            obj.particles = Particle;
+            close(f)
+        end
+
     end
     
     methods (Static)
@@ -729,8 +764,9 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
         function [checkRes] = checkZ(Z1,Z2,Thresh)
             
             checkRes = abs(Z1-Z2) <= Thresh;
-        end 
+        end       
     end
+
     methods (Access = private)
         
         function [traces3D ] = get3DTraces(obj)
@@ -861,7 +897,6 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
             filename = [obj.raw.movInfo.Path filesep dim '-ShadedErrFig'];
             saveas(Fig,filename,'svg');
         end
-        
 
     end
 end

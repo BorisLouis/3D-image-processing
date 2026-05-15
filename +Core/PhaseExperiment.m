@@ -87,31 +87,16 @@ classdef PhaseExperiment < handle
                 try
                     disp(['Retrieving data from phase file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.PhaseMovies.(fieldsN{i});
-    
-                    obj.info.optics.alpha  = 1;
-                    obj.info.optics.lambda = 0.698;
-                    obj.info.optics.dlambda = 0.070;
-                    obj.info.optics.n = 1.00;
-                    currentTrackMov.getPhaseMovie(q);
+                    if strcmp(obj.info.CalibrateAlpha, 'true')
+                        currentTrackMov.getPhaseMapPerPlane(q);
+                    else
+                        currentTrackMov.getPhaseMovie(q);
+                    end
                     obj.PhaseMovies.(fieldsN{i}) = currentTrackMov;
-                    % currentTrackMov.calibrateAlpha2(q);
-                    % 
-                    % [Results] = currentTrackMov.calibrateAlpha(q);
-                    % 
-                    % BigResults.height = [BigResults.height; Results.height];
-                    % BigResults.width = [BigResults.width; Results.width];
-                    % BigResults.center = [BigResults.center; Results.center];
-                    % BigResults.baseline = [BigResults.baseline; Results.baseline];
                 catch
                     disp(append('Failed phase masking - Movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
             end
-            % BigResults.height(BigResults.height == 0) = nan;
-            % BigResults.width(BigResults.width == 0) = nan;
-            % BigResults.center(BigResults.center == 0) = nan;
-            % BigResults.baseline(BigResults.baseline == 0) = nan;
-            % save(append(obj.path, filesep, "CalcAlphaResults.mat"), "BigResults");
-            % disp(append('saved min projection values to calc alpha - file ', obj.path))
         end
     end
 end

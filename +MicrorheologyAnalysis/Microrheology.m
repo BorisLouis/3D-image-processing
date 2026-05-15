@@ -37,107 +37,90 @@ classdef Microrheology < handle
 
         function RunAnalysis(obj)
              Movies = fieldnames(obj.Movies);
-             Results1 = [];
-             Results2 = [];
-             col2_store = [];
-             zeroIdx_store = [];
-             for j = 1 : size(Movies, 1)
-                 try
-                     CurrentMovie = obj.Movies.(Movies{j});
-                     if strcmp(obj.info.Experiment, "Rotational Tracking")
-                        CurrentMovie.LoadTraces(obj.info.FilenameRaw);
-                        CurrentMovie.Analysis;
-                     elseif strcmp(obj.info.Experiment, "Dual color tracking")
-                        for loop = 1:2
+             
+             if strcmp(obj.info.Experiment, "Dual color tracking")
+                 LoopMax = 2;
+             else
+                 LoopMax = 1;
+             end
+
+             for loop = 1:LoopMax
+                 for j = 1 : size(Movies, 1)
+                     try
+                         CurrentMovie = obj.Movies.(Movies{j});
+                         if strcmp(obj.info.Experiment, "Rotational Tracking")
+                            CurrentMovie.LoadTraces(obj.info.FilenameRaw);
+                            CurrentMovie.Analysis;
+                         elseif strcmp(obj.info.Experiment, "Dual color tracking")
                             Radius = obj.info.(append("Radius", num2str(loop)));
                             FileName = append(obj.info.FilenameRaw, num2str(loop));
                             CurrentMovie.LoadTraces(FileName);
                             if strcmp(obj.info.StepsizeAnalysis, 'on')
                                 CurrentMovie.CalculateStepsizes(loop);
                                 CurrentMovie.FitDiffPopulations(loop);
-                                if loop == 1
-                                    Results1(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
-                                elseif loop == 2
-                                    Results2(end+1,1) = CurrentMovie.PopulationFractions.D(1,1);
-                                end
                                 if ~isnan(obj.info.CutTraces)
-                                    [Results] = CurrentMovie.FitPopulationFractions(loop);
-                                    % if loop == 1
-                                    %     Results1 = [Results1; Results];
-                                    % elseif loop == 2
-                                    %     Results2 = [Results2; Results];
-                                    % end
+                                    [ResultsTrend, FitRes] = CurrentMovie.FitPopulationFractions(loop);
+                                    Results{j,1} = FitRes;
+                                    Results{j,2} = CurrentMovie.ResultsStepsize.Fit;
                                 end
                             else
                                 CurrentMovie.TracesAnalysis(Radius, loop);
                             end
-                        end
-                     else
-                         Radius = obj.info.Radius1;
-                         FileName = append(obj.info.FilenameRaw, "1");
-                         CurrentMovie.LoadTraces(FileName);
-                         CurrentMovie.TracesAnalysis(Radius, 1);
-                         CurrentMovie.PlotTrends;
-                         if ~isnan(obj.info.CutTraces)
-                             CurrentMovie.PlotDistributions(1);
+                         else
+                             Radius = obj.info.Radius1;
+                             FileName = append(obj.info.FilenameRaw, "1");
+                             CurrentMovie.LoadTraces(FileName);
+                             CurrentMovie.TracesAnalysis(Radius, 1);
+                             CurrentMovie.PlotTrends;
+                             if ~isnan(obj.info.CutTraces)
+                                 CurrentMovie.PlotDistributions(1);
+                             end
+                         end  
+                     catch
+                         disp("fail");
+                     end
+                     close all
+                 end
+    
+                 try
+                     allTimes = [];
+                     for i = 1:size(Results, 1)
+                         allTimes = [allTimes; Results{i,1}(:,1)];
+                     end
+                     allTimes = unique(round(allTimes,1));  % sorted unique timepoints
+    
+                     nTimes = length(allTimes);
+                     alignedMatrix = NaN(nTimes, 6);  % col 1 = time, cols 2-6 = samples
+                     alignedMatrix(:,1) = allTimes;
+                     BigTrend = [];
+    
+                     for i = 1:size(Results, 1)
+                         t = round(Results{i,1}(:,1), 1);   % round timepoints to 1 decimal
+                         d = Results{i,1}(:,2);             % diffusion values for this sample
+                     
+                         for k = 1:nTimes
+                             binCenter = allTimes(k);
+                             inBin = abs(t - binCenter) < 0.05;
+                             if any(inBin)
+                                 alignedMatrix(k, i+1) = mean(d(inBin));
+                             end
                          end
-                     end  
-                    
-                    data = CurrentMovie.ResultsStepsize.Fit.FullTrend{1,1};
-                    col1 = data(:, 1);
-                    col2 = data(:, 2);
-                
-                    % Find the index whose col1 value is closest to zero
-                    [~, zeroIdx] = min(abs(col1));
-                
-                    col2_store{end+1}       = col2;
-                    zeroIdx_store(end+1)    = zeroIdx;
-  
+                        BigTrend(i, 1:5) = table2array(Results{i,2}(1, 1:5));
+                     end
+                     DiffusionTrend = [alignedMatrix(:,1), mean(alignedMatrix(:,2:end), 2, 'omitnan')];
+        
+                     FitResultsCh = table(BigTrend(:,1), BigTrend(:,2), BigTrend(:,3), BigTrend(:,4), BigTrend(:,5), Results(:,1), 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point', 'Diffusion Trend'});
+                     % FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh', num2str(loop), '.mat');
+                     % save(FileNameSave, "FitResultsCh")
+    
+                     FinalResults.Fitting = FitResultsCh;
+                     FinalResults.DiffTrend = DiffusionTrend;
+        
+                     save(append(obj.raw.FilePath, filesep, 'ResCalcMSD', num2str(loop), '.mat'), 'FinalResults');
                  catch
-                     disp("fail");
+                     disp('Problem with putting data together from videos in one folder');
                  end
-                 close all
-             end
-
-
-             Results1 = array2table(Results1, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
-             FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh1.mat');
-             save(FileNameSave, "Results1")
-
-             Results2 = array2table(Results2, 'VariableNames', {'Base','Height','slope1', 'slope2','Inflection point'});
-             FileNameSave = append(obj.raw.FilePath, filesep, 'FitResultsCh2.mat');
-             save(FileNameSave, "Results2")
-
-             nCols = numel(col2_store);
-
-             if nCols > 0
-                 % How many rows exist above (and including) the zero row in each column
-                 rowsAbove = zeroIdx_store;                              % e.g. [3, 5, 2]
-             
-                 % How many rows exist below the zero row in each column
-                 rowsBelow = cellfun(@numel, col2_store) - zeroIdx_store; % e.g. [4, 2, 6]
-            
-                 % The reference zero row is placed at the maximum "above" extent
-                 refZeroRow = max(rowsAbove);
-            
-                 % Total rows needed to fit every column
-                 totalRows  = refZeroRow + max(rowsBelow);
-             
-                 AlignedMatrix = NaN(totalRows, nCols);
-            
-                 for k = 1:nCols
-                    col2    = col2_store{k};
-                    zeroIdx = zeroIdx_store(k);
-            
-                    % Row in AlignedMatrix where this column's zero-anchor sits
-                    startRow = refZeroRow - zeroIdx + 1;
-                    endRow   = startRow + numel(col2) - 1;
-            
-                    AlignedMatrix(startRow:endRow, k) = col2;
-                 end
-             end
-
-             save(append(obj.raw.FilePath, filesep, 'AverageDiffTrend.mat'), 'AlignedMatrix');
+            end
         end
     end
 end

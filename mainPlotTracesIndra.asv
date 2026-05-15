@@ -1,0 +1,30 @@
+BASE_DIR = 'E:\MultiColor - lysosome tracking\20260311-new analysis\A549 mSi';
+Folder = dir(BASE_DIR);
+FOLDERS  = {Folder(3:end).name};
+
+fprintf('=== Loading and normalising data ===\n');
+
+nFolders = numel(FOLDERS);
+DATA     = struct([]);   % one element per folder
+
+for fi = 1:nFolders
+
+    fName   = FOLDERS{fi};
+    matPath = fullfile(BASE_DIR, fName, 'Traces3D.mat');
+
+    if ~isfile(matPath)
+        warning('File not found – skipping: %s', matPath);
+        continue
+    end
+
+    S           = load(matPath, 'TrackedData');
+    TrackedData = S.TrackedData;
+    m = cellfun(@(t) size(t, 1), TrackedData) > 50;
+    TrackedData(m ~= 1) = [];
+    nTraces     = numel(TrackedData);
+    fprintf('  %-32s  %d traces\n', fName, nTraces);
+
+    tif_file = fullfile(BASE_DIR, fName, 'calibrated1', 'calibratedPlane1.tif');
+
+    
+end

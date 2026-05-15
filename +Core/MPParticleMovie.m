@@ -1249,58 +1249,28 @@ classdef MPParticleMovie < Core.MPMovie
 
             for i = 1 : 1:nFrames
                 
-                position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
-                    zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
+                if strcmp(detectParam.fitting, 'off')
+                    position = table(zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),...
+                        zeros(500,1),'VariableNames',{'row', 'col', 'meanIntensity', 'plane', 'maxIntensity', 'AreaPx', 'Eccentricity', 'Orientation'});
+                else
+                    position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
+                        zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
+                end
                 [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
                 
                 for j = 1:nPlanes
-                    % if obj.info.rotationalCalib == 1                        
-                    %     currentIM = MeanIm(:,:,j);
-                    %     %localization occurs here
-                    %     switch detectionMethod 
-                    %         case 'MaxLR'
-                    %             [ pos, meanFAR, ~ ] = Localization.smDetection(currentIM,...
-                    %                 delta, FWHM_pix, chi2 );
-                    %             if ~isempty(pos)
-                    %                 startIdx = find(position.row==0,1,'First');
-                    %                 if isempty(startIdx)
-                    %                     startIdx = length(position.row)+1;
-                    %                 end
-                    %                 pos(:,3) = meanFAR;
-                    %                 pos(:,4) = j;
-                    %                 position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
-                    %             else
-                    %             end
-                    %         case 'Intensity'
-                    % 
-                    %              bwImage = imbinarize(currentIM./max(currentIM(:)));
-                    % 
-                    %              SE = strel('disk',5);
-                    %              bwImage = imopen(bwImage,SE);
-                    %              bwImage = bwareaopen(bwImage,300);
-                    % 
-                    %              [ctr] = regionprops(bwImage,'Area','Centroid');
-                    % 
-                    %              pos = cat(1,ctr.Centroid);
-                    %              if ~isempty(pos)
-                    %                 startIdx = find(position.row==0,1,'First');
-                    %                 if isempty(startIdx)
-                    %                     startIdx = length(position.row)+1;
-                    %                 end
-                    %                  pos = flip(pos,2);
-                    %                  pos(:,3) = NaN;
-                    %                  pos(:,4) = j;
-                    %                  position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
-                    %              end
-                    %     end
-                    % else
                         currentIM = volIm(:,:,j);
                         %localization occurs here
                         switch detectionMethod 
                             case 'MaxLR'
-                                [ pos, meanFAR, ~, rawInt] = Localization.smDetection(currentIM,...
-                                    delta, FWHM_pix, chi2 );
+                                if strcmp(detectParam.fitting, 'on')
+                                    [ pos, meanFAR, ~, rawInt] = Localization.smDetection(currentIM,...
+                                        delta, FWHM_pix, chi2 );
+                                else 
+                                    [ pos, meanFAR, ~, rawInt, maxFAR, AreaPx, Eccentricity, Orientation] = Localization.smDetectionRaw(currentIM,...
+                                        delta, FWHM_pix, chi2 );
+                                end
                                 if ~isempty(pos)
                                     startIdx = find(position.row==0,1,'First');
                                     if isempty(startIdx)
@@ -1308,13 +1278,18 @@ classdef MPParticleMovie < Core.MPMovie
                                     end
                                     pos(:,3) = meanFAR;
                                     pos(:,4) = j;
-                                    if strcmp(obj.info.IntCorr, 'on')
+                                    if strcmp(obj.info.IntCorr, 'on') && ~strcmp(detectParam.fitting, 'off')
                                         currentIMList = currentIM(:);
                                         currentIMList(currentIMList == 0) = [];
                                         MedianInt = median(currentIMList);
         
                                         idx = rawInt < MedianInt;
                                         pos(idx, :) = [];
+                                    else
+                                        pos(:,5) = maxFAR;
+                                        pos(:,6) = AreaPx;
+                                        pos(:,7) = Eccentricity;
+                                        pos(:,8) = Orientation;
                                     end
                                     position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
                                 else
@@ -1591,11 +1566,7 @@ classdef MPParticleMovie < Core.MPMovie
                     newPart(5,:) = particleData(idx+2,:);
                 end
             end
-            
-            
-        
         end
-       
      end
 end
 
