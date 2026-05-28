@@ -348,7 +348,9 @@ function controls = addChannelControls(layout, type, controlsName)
                 'Plot fit on SACF', {'on','off'}, 'off'); 
             controls.SACFframes = addLabelField(layout, 'Frames to calc SACF:', '150');
             controls.FitTACF = addLabelField(layout, 'FitRange to fit diff:', '100');
-            controls.Omega = addLabelField(layout, 'Omega:', '170');
+            controls.Wavelength = addLabelField(layout, 'Wavelength:', '561');
+            controls.NA = addLabelField(layout, 'NA:', '1.20');
+            controls.LimitViscMap = addLabelField(layout, 'Upper limit viscmap:', '3');
 
     end
 

@@ -541,18 +541,18 @@ classdef MultiModalExperiment < handle
                   end
               end
 
-              if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
-                  if strcmp(obj.info1.CalibrateAlpha, 'true')
-                    obj.PhaseCalibrationPerPlane;
-                    %obj.PhaseCalibration;
-                  else
-                    obj.PhaseTracking;
-                  end
-              elseif all(ismember({'Segmentation', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
-                  obj.SegmentTracking;
-              elseif all(ismember({'Translational Tracking', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
-                  obj.CalculateLocError;
-              end
+              % if all(ismember({'Phase', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
+              %     if strcmp(obj.info1.CalibrateAlpha, 'true')
+              %       obj.PhaseCalibrationPerPlane;
+              %       %obj.PhaseCalibration;
+              %     else
+              %       obj.PhaseTracking;
+              %     end
+              % elseif all(ismember({'Segmentation', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
+              %     obj.SegmentTracking;
+              % elseif all(ismember({'Translational Tracking', 'Translational Tracking'}, {obj.info.Channel1, obj.info.Channel2}))
+              %     obj.CalculateLocError;
+              % end
           end
 
           function retrieveTrackData(obj,detectParam, trackParam)

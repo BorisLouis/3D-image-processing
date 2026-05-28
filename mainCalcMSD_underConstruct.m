@@ -21,7 +21,7 @@ MAX_COORD   = IMAGE_SIZE * PIXEL_SIZE;   % 41472 nm  ← FIXED (was 500)
 ExpTime = 0.2;
 
 % ---- Data folders -----------------------------------------------------
-BASE_DIR = 'E:\MultiColor - lysosome tracking\Dna_NB';
+BASE_DIR = 'D:\MultiColor - lysosome tracking\20260311-new analysis\test2';
 Folder   = dir(BASE_DIR);
 Folder([Folder.isdir] ~= 1) = [];
 FOLDERS  = {Folder(3:end).name};
@@ -43,7 +43,7 @@ WIN_STEP   = 10;    % stride between windows
 LOCAL_HALF = 7;     % half-width for local alpha / Rg estimate within a window
 
 % ---- Manual labelling -------------------------------------------------
-LABEL            = 0;
+LABEL            = 1;
 MIN_LABEL_TOTAL  = 1200;
 MIN_LABEL_ACTIVE = 400;
 

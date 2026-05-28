@@ -6,7 +6,7 @@ path2ZCal = [];
 path2SRCal = [];
 
 %file info
-file.path  = 'D:\Data Hannah\testdata Hannah\Multiplane';
+file.path  = 'D:\Data Hannah\Steven\Cells_16ms_121.5PxSize';
 path2Cal = [];
 
 [info, info1, info2, file] = UserInput.infoGUI(file);

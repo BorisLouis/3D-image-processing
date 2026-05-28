@@ -152,9 +152,7 @@ classdef MPTICSMovie < Core.MPMovie
                 Tau = [0, (1:size(obj.AutocorrMap{1,1},3)).*obj.info.ExpTime]';
                 Tau(end) = [];
 
-                for c = 1:obj.calibrated{1, 1}.nPlanes
-                    obj.Omegas{1, 1}.wAvg = obj.info.Omega;
-                    omega_um = obj.Omegas{1, 1}.wAvg*10^(-3);               
+                for c = 1:obj.calibrated{1, 1}.nPlanes              
                     data = obj.AutocorrMap{c,1};
                     blockSize = obj.info.TICSWindow;
     
@@ -247,7 +245,8 @@ classdef MPTICSMovie < Core.MPMovie
                         R2_map(i,j) = 1 - SS_res / SS_tot;
                     
                         % --- Derived quantities ---
-                        D = omega_um^2 ./ (4*LifeTime);
+                        omega_um = (0.61*obj.info.Wavelength)./obj.info.NA.*10^(-3);
+                        D = omega_um ./ (4*LifeTime);
                         eta(i,j) = (1.380649e-23 * obj.info.Temperature) / ...
                                    (6*pi * obj.info.Radius*1e-9 * D*1e-12) * 1e3;
                         diff(i,j) = D;
@@ -268,7 +267,7 @@ classdef MPTICSMovie < Core.MPMovie
                     colormap(BlackJet);          % <-- apply colormap here
                     cb = colorbar;               % <-- no arguments here
                     cb.Label.String = 'Viscosity (cP)';
-                    caxis([0 10])
+                    caxis([0 obj.info.LimitViscMap])
                     title(append('Viscosity map - av visc ', num2str(median(etaRes, 'all', 'omitnan')), ' +/- ', num2str(std(etaRes(:), 'omitnan')), ' cP'));
                     Fig1Path = append(obj.raw.movInfo.Path, filesep, 'ViscosityMap_Plane', num2str(c), '.png');
                     saveas(Fig1, Fig1Path);

@@ -659,7 +659,7 @@ classdef MPDDMMovie < Core.MPMovie
                  Upper = [obj.info.FitMaxDiffLim, max(tofit)];
                  Start = [obj.info.FitDiffEstim, tofit(1) - (tofit(2) - tofit(1))];
                  % [f, gov]     = fit(tau(:),tofit(:),equation, 'Lower', Lower, 'Upper', Upper, 'StartPoint', Start);
-                 [f, gov]     = fit(tau(:),tofit(:),'0.5*a*x');
+                 [f, gov]     = fit(tau(:),tofit(:),'4*a*x+b');
 
                  % if gov.rsquare > 0
                      g = coeffvalues(f);

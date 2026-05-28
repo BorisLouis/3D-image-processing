@@ -25,8 +25,8 @@ clear; close all; clc;
 %  USER SETTINGS  ← adjust paths only
 %% ======================================================================
 
-LABELS_FILE  = 'E:\MultiColor - lysosome tracking\20260311-new analysis\GoodTrainingData\manual_labels_v3.mat';
-NETWORK_FILE = 'E:\MultiColor - lysosome tracking\Dna_NB\network_v3.mat';
+LABELS_FILE  = 'D:\MultiColor - lysosome tracking\20260311-new analysis\GoodTrainingData\manual_labels_v3.mat';
+NETWORK_FILE = 'D:\MultiColor - lysosome tracking\Dna_NB\network_v3.mat';
 
 % Classification threshold (must match mainCalcMSD_underConstruct.m)
 FRAME_ACTIVE_THR = 0.90;
