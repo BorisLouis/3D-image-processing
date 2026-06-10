@@ -11,19 +11,19 @@ MainFolder = dir(FilePath);
 name = append(Experiment, Ext);
 MainFolder([MainFolder.isdir] ~= 1) = [];
 
-AllMovieResults = [];
-for j = 3 : size(MainFolder,1)
-    try
-        folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
-        idx = contains({folder.name},FilenameRaw);
-        folder(~idx) = [];
+if strcmp(Experiment, 'Dual color tracking')
+    Loop = 2;
+else
+    Loop = 1;
+end
+for l = 1:Loop
+    AllMovieResults = [];
+    for j = 3 : size(MainFolder,1)
+        try
+            folder = dir(append(MainFolder(j).folder, filesep, append(MainFolder(j).name)));
+            idx = contains({folder.name},FilenameRaw);
+            folder(~idx) = [];
 
-        if strcmp(Experiment, 'Dual color tracking')
-            Loop = 2;
-        else
-            Loop = 1;
-        end
-        for l = 1:Loop
             if Loop == 2
                 if l == 1
                     Filename = append(FilenameRaw, '1');
@@ -44,33 +44,14 @@ for j = 3 : size(MainFolder,1)
             name = fieldnames(tmpData);
             data = tmpData.(name{1});
 
-            if strcmp(Path(end-4:end), 'n0_1')
-                Temp = 303.15;
-            elseif strcmp(Path(end-4:end), 'n2_1')
-                Temp = 304.15;
-            elseif strcmp(Path(end-4:end), 'n4_1')
-                Temp = 305.15;
-            elseif strcmp(Path(end-4:end), 'n6_1')
-                Temp = 306.15;
-            elseif strcmp(Path(end-4:end), 'n8_1')
-                Temp = 307.15;
-            elseif strcmp(Path(end-4:end), '10_1')
-                Temp = 308.15;
-            elseif strcmp(Path(end-4:end), '13_1')
-                Temp = 296.15;
-            end
-        
-        %% Processing
+
+            %% Processing
             if ~strcmp(Experiment, 'Rotational Tracking')
-                try
-                    allHeight = cellfun(@height,data.traces(:,1));
-                    idx = allHeight>MinSize;
-                    currMov = data(idx, 1);
-                catch
-                    allHeight = cellfun(@height,data(:,1));
-                    idx = allHeight>MinSize;
-                    currMov = data(idx, 1);
-                end
+       
+                allHeight = cellfun(@height,data);
+                idx = allHeight>MinSize;
+                currMov = data(1,idx);
+        
                 if isempty(currMov)
                     error(append('No traces found that are longer than MinSize (', num2str(MinSize), ' datapoints)'))
                 end
@@ -322,36 +303,15 @@ for j = 3 : size(MainFolder,1)
     
                 AllMovieResults = [AllMovieResults, allRes];
             end
+        catch
+            disp(append('Failed to calculate movie ', MainFolder(j).name));
         end
-    catch
-        disp(append('Failed to calculate movie ', MainFolder(j).name));
     end
+    save(append(FilePath, filesep, 'msdResults_', num2str(l), '.mat'), "AllMovieResults");
 end
 close(f)
 
-save(FilePath, "AllMovieResults");
 
-if strcmp(Experiment, 'Tracking-Segmentation')
-    name = 'msdResSegmentation';
-    AllMovieResultsMask = AllMovieResults([AllMovieResults.Mask] == 1);
-    AllMask = rmfield(AllMovieResultsMask, {'msdX', 'msdY', 'msdZ', 'msdR', 'tau'});
-    AllMask = struct2table(AllMask);
-    writetable(AllMask,append(FilePath, filesep, name, '.xlsx'),'Sheet','data - mask');
-    AllMovieResultsNoMask = AllMovieResults([AllMovieResults.Mask] == 0);
-    AllNoMask = rmfield(AllMovieResultsNoMask, {'msdX', 'msdY', 'msdZ', 'msdR', 'tau'});
-    AllNoMask = struct2table(AllNoMask);
-    writetable(AllNoMask,append(FilePath, filesep, name, '.xlsx'),'Sheet','data - no mask');
-    writecell({AllMovieResultsMask.msdR}',append(FilePath, filesep, name, '.xlsx'),'Sheet','msdR - mask');
-    writecell({AllMovieResultsNoMask.msdR}',append(FilePath, filesep, name, '.xlsx'),'Sheet','msdR - no mask');
-elseif strcmp(Experiment, 'Tracking-Phase')
-    name = 'msdResPhase';
-elseif strcmp(Experiment, 'Tracking')
-    name = 'msdRes';
-elseif strcmp(Experiment, 'Rotational Tracking')
-    name = 'msadResRot';
-end
-AllMovieResultsTable = struct2table(AllMovieResults);
-writetable(AllMovieResultsTable,append(FilePath, filesep, name, '.xlsx'),'Sheet',1,'Range','D1');
 
 
 

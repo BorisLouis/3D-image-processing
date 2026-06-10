@@ -495,8 +495,8 @@ classdef MultiModalExperiment < handle
                     frame = obj.info.TestFrame;
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
-                    obj.MoviesCh1.saveData(1);
-                    obj.MoviesCh1.MakeMovie;
+                    % obj.MoviesCh1.saveData(1);
+                    % obj.MoviesCh1.MakeMovie;
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
                     frame = obj.info.TestFrame;
                     testMov = obj.MoviesCh1.trackMovies.mov1;
@@ -534,7 +534,7 @@ classdef MultiModalExperiment < handle
                   elseif strcmp(obj.info.Channel2, 'Translational Tracking')
                         val2Use = 'bestFocus';
                         obj.MoviesCh2.retrieveTrackData(obj.MoviesCh2.info.detectParam,obj.MoviesCh2.info.trackParam, 2);
-                        obj.MoviesCh2.saveData(2);
+                        %obj.MoviesCh2.saveData(2);
                         %obj.MoviesCh2.MakeMovie;
                    elseif strcmp(obj.info.Channel2, 'TICS')
                         obj.MoviesCh1.retrieveTICSData(2);

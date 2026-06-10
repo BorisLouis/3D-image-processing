@@ -1,4 +1,4 @@
-function [ pos, meanFAR, FAR, rawInt, maxFAR, AreaPx, Eccentricity, Orientation] = smDetectionRaw( im, delta, FWHM_pix, chi2 )
+function [ pos, meanFAR, FAR, rawInt, maxFAR, sumFAR AreaPx, Eccentricity, Orientation] = smDetectionRaw( im, delta, FWHM_pix, chi2 )
 %smDetection finds the positions where a single molecule is most probably
 %located in the input image using the generalized likelihood ratio test.
 %   These postions should be further tested to ensure that a SM is in fact
@@ -16,11 +16,14 @@ BW = bwareaopen(BW, 4,8);
 L  = bwlabel(BW);
 % get the mean intensity and centroid of each detected molecule
 % stats = regionprops(L,im,'MeanIntensity','WeightedCentroid');
-stats = regionprops(L,FAR,'MeanIntensity', 'MaxIntensity', 'WeightedCentroid', 'Area', 'Eccentricity', 'Orientation');
+stats = regionprops(L,FAR,'MeanIntensity', 'MaxIntensity', 'PixelValues', 'WeightedCentroid', 'Area', 'Eccentricity', 'Orientation');
 % generate outputs
 pos      = cat(1,stats.WeightedCentroid);
 meanFAR    = cat(1,stats.MeanIntensity);
 maxFAR = cat(1, stats.MaxIntensity);
+for i = 1:size(stats, 1)
+    sumFAR(i,1) = sum(stats(i).PixelValues);
+end
 AreaPx = cat(1, stats.Area);
 Eccentricity = cat(1, stats.Eccentricity);
 Orientation = cat(1, stats.Orientation);

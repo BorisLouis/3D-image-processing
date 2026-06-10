@@ -133,7 +133,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 if strcmp(obj.info.detectParam.fitting, 'on')
                     [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax,10);
                 else
-                    [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax,9);
+                    [ToTrack,AllField] = Core.trackingMethod.ConvertData(DataToTrack,ImMax,10);
                 end
                 count = 0; 
                 %check that there are particles in frame 1
@@ -629,7 +629,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
                 waitbar(frame./size(obj.candidatePos,1),f,append('Constructing particles'));
                 NumPart = size(obj.candidatePos{frame, 1}, 1);
                 SRListFrame = [obj.candidatePos{frame, 1}.row.*obj.info.pxSize, obj.candidatePos{frame, 1}.col.*obj.info.pxSize, obj.candidatePos{frame, 1}.row, obj.candidatePos{frame, 1}.col, zeros(NumPart, 1), obj.candidatePos{frame, 1}.meanIntensity, obj.candidatePos{frame, 1}.maxIntensity,...
-                                    obj.candidatePos{frame, 1}.AreaPx, zeros(NumPart,1)+frame, obj.candidatePos{frame, 1}.Eccentricity, obj.candidatePos{frame, 1}.Orientation];
+                                    obj.candidatePos{frame, 1}.TotIntensity, obj.candidatePos{frame, 1}.AreaPx, zeros(NumPart,1)+frame, obj.candidatePos{frame, 1}.Eccentricity, obj.candidatePos{frame, 1}.Orientation];
                 SRList = [SRList; SRListFrame];
                 nParticles(frame) = NumPart;
                 idx2TP(frame) = frame;
@@ -639,7 +639,7 @@ classdef MPTrackingMovieRotational < Core.MPLocMovie
             Traces = [];
             nTraces = [];
 
-            SRList = array2table(SRList, "VariableNames", {'row', 'col', 'rowM', 'colM','z', 'meanIntensity', 'maxIntensity', 'Area', 't', 'Eccentricity', 'Orientation'});
+            SRList = array2table(SRList, "VariableNames", {'row', 'col', 'rowM', 'colM','z', 'meanIntensity', 'maxIntensity', 'TotIntensity', 'Area', 't', 'Eccentricity', 'Orientation'});
 
             Particle.List = List; 
             Particle.nParticles = nParticles;

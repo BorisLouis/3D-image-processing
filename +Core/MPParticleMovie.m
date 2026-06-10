@@ -1250,8 +1250,8 @@ classdef MPParticleMovie < Core.MPMovie
             for i = 1 : 1:nFrames
                 
                 if strcmp(detectParam.fitting, 'off')
-                    position = table(zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),...
-                        zeros(500,1),'VariableNames',{'row', 'col', 'meanIntensity', 'plane', 'maxIntensity', 'AreaPx', 'Eccentricity', 'Orientation'});
+                    position = table(zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),...
+                        zeros(500,1),'VariableNames',{'row', 'col', 'meanIntensity', 'plane', 'maxIntensity', 'TotIntensity', 'AreaPx', 'Eccentricity', 'Orientation'});
                 else
                     position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
                         zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
@@ -1268,7 +1268,7 @@ classdef MPParticleMovie < Core.MPMovie
                                     [ pos, meanFAR, ~, rawInt] = Localization.smDetection(currentIM,...
                                         delta, FWHM_pix, chi2 );
                                 else 
-                                    [ pos, meanFAR, ~, rawInt, maxFAR, AreaPx, Eccentricity, Orientation] = Localization.smDetectionRaw(currentIM,...
+                                    [ pos, meanFAR, ~, rawInt, maxFAR, sumFAR, AreaPx, Eccentricity, Orientation] = Localization.smDetectionRaw(currentIM,...
                                         delta, FWHM_pix, chi2 );
                                 end
                                 if ~isempty(pos)
@@ -1287,9 +1287,10 @@ classdef MPParticleMovie < Core.MPMovie
                                         pos(idx, :) = [];
                                     else
                                         pos(:,5) = maxFAR;
-                                        pos(:,6) = AreaPx;
-                                        pos(:,7) = Eccentricity;
-                                        pos(:,8) = Orientation;
+                                        pos(:,6) = sumFAR;
+                                        pos(:,7) = AreaPx;
+                                        pos(:,8) = Eccentricity;
+                                        pos(:,9) = Orientation;
                                     end
                                     position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
                                 else
