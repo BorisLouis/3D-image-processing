@@ -1258,6 +1258,17 @@ classdef MPParticleMovie < Core.MPMovie
                 end
                 [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
+                if isscalar(obj.info.IntCorr)
+                    volIm = double(volIm);
+                    volIm = volIm - prctile(volIm(:), 1);          % or your known bias; low-percentile ≈ dark level
+                    sigma = size(volIm,1)/8;                  % large: illumination varies slowly across FOV
+                    volIm = imflatfield(volIm, sigma);           % divides by smoothed self-estimate, renormalizes
+                    r = ceil(3 * obj.info.FWHM);           % disk > in-focus PSF, < defocused-blob scale
+                    volIm = imtophat(volIm, strel('disk', r));
+
+                    % volIm = volIm - imopen(volIm, strel('disk', obj.info.IntCorr));
+                end
+                
                 
                 for j = 1:nPlanes
                         currentIM = volIm(:,:,j);
