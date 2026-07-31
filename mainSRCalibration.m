@@ -3,16 +3,9 @@ clear
 clc
 close all;
 %% get path to SRCalibration
-
-<<<<<<< HEAD
-file.path = 'D:\Polymer Dynamics\20251004\2DCal';
+file.path = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
 file.ext  = '.ome.tif';
-path2Cal  = 'D:\Polymer Dynamics\20251004\2DCal';
-=======
-file.path = 'D:\Polymer Dynamics\20260121\2DCal';
-file.ext  = '.ome.tif';
-path2Cal  = 'D:\Polymer Dynamics\20260121\2DCal';
->>>>>>> 1927bfea7804a1814a3277c5899c3d031208d162
+path2Cal  = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';
@@ -30,6 +23,8 @@ info.Dimension = '3D';
 info.IntCorr = 'off';
 info.Channel1 = 'Translational Tracking';
 info.Channel2 = 'Translational Tracking';
+info.AlignChannels = 'off';
+info.IntCorr = 'on';
 
 testSRCal = Core.SRCalibrationMultiModal(file,path2Cal,info);
 
@@ -41,9 +36,11 @@ testSRCal.retrieveSRCalMov;
 detectParam{1}.delta = 6;
 detectParam{1}.chi2  = 50;
 detectParam{1}.consThresh = 4;
+detectParam{1}.fitting = 'on';
 detectParam{2}.delta = 6;
 detectParam{2}.chi2  = 40;
 detectParam{2}.consThresh = 15;
+detectParam{2}.fitting = 'on';
 
 trackParam.commonPlanes = 1; 
 trackParam.euDistPx = 20;

@@ -173,7 +173,9 @@ classdef SRCalibrationMultiModal < handle
             obj.MoviesCh2.corrRotation(refPlane,2);
             obj.MoviesCh2.checkAccuracy(refPlane,2);
 
-            obj.CalcAccuracyChannels(refPlane);
+            if strcmp(obj.info.AlignChannels, 'on')
+              obj.CalcAccuracyChannels(refPlane);
+            end
         end
 
         function [rotMat,corrData] = CalcAccuracyChannels(obj,refPlane)
@@ -194,7 +196,7 @@ classdef SRCalibrationMultiModal < handle
 
                     idx1 = find((diff(PartCh1.partNum)) < 0);
                     idx2 = find((diff(PartCh2.partNum)) < 0);
-                    for z = 1:(size(idx1, 1)+1)
+                    for z = 1:min((size(idx1, 1)), (size(idx2, 1)))
                         if z == 1
                             Start1 = 1;
                             Start2 = 1;

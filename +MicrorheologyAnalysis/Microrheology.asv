@@ -121,6 +121,8 @@ classdef Microrheology < handle
                      catch
                          disp('Problem with putting data together from videos in one folder');
                      end
+                 else
+                     
                  end
             end
         end

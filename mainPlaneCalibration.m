@@ -14,7 +14,7 @@ clear
 close all
 clc
 
-file.path  = 'D:\Data Hannah\multiplane\20260325\2Dcal';
+file.path  = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
 file.ext   = '.ome.tif';
 info.runMethod = 'run';
 info.nChan = 4; %Number of images in 1 channel from 1 camera (mostly 4)
