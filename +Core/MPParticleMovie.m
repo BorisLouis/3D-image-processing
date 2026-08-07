@@ -1251,7 +1251,7 @@ classdef MPParticleMovie < Core.MPMovie
                 end
                 [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
-                if isscalar(obj.info.IntCorr)
+                if and(isscalar(obj.info.IntCorr), obj.info.IntCorr ~= 0)
                     for ii = 1:size(volIm, 3)
                         volImPlane = volIm(:,:,ii);
                         volImPlane = double(volImPlane);

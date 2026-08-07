@@ -3,9 +3,9 @@ clear
 clc
 close all;
 %% get path to SRCalibration
-file.path = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
+file.path = 'E:\Data Steven\testdata yuzu\2d cal';
 file.ext  = '.ome.tif';
-path2Cal  = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
+path2Cal  = 'E:\Data Steven\testdata yuzu\2d cal';
 
 %% Initialize a zCalibration Object
 info.type = 'normal';

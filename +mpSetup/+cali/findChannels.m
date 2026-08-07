@@ -5,6 +5,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
 %and background
     %From Rafa:
     Raw = im;
+    im = im - repmat(mean(imopen(im, strel('disk', 250)), 1), size(im, 1), 1);
     sig = im(20:end-20,:);
     sig = sig(:);
     bg = im(:,1000:1040);
@@ -50,6 +51,7 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
     else
         tHold = Misc.tholdSigBg(bg,sig);
         % % tHold = 130;
+        imCorr = im;
         im = im>tHold;
         %remove small pixel
         im = bwareaopen(im,21);
@@ -58,6 +60,12 @@ function [ chC, bgC, common_w ] = findChannels( im, doFigure,nChan,DarkFieldPhas
         im = imclose(im,se);
         im = bwareaopen(im,16);
 
+        [ok, imClean] = Misc.checkPlanes(im, 4);
+        if ok
+            im = imClean;                  % all good, just drop the junk
+        else
+            [im, planeBoxes] = Misc.findPlanesRobust(imCorr, 4);
+        end
     end
    
 

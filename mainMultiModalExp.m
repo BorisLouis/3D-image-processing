@@ -3,11 +3,11 @@ clear
 close all;
 %calibration info
 path2ZCal = [];
-path2SRCal = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
+path2SRCal = 'E:\Data Steven\testdata yuzu\2d cal';
 
 %file info
-file.path  = 'E:\Data Steven\test_3D_multiplane_2channel\data';
-path2Cal = 'E:\Data Steven\test_3D_multiplane_2channel\2DCal';
+file.path  = 'E:\Data Steven\testdata yuzu\data';
+path2Cal = 'E:\Data Steven\testdata yuzu\2d cal';
 
 [info, info1, info2, file] = UserInput.infoGUI(file);
 
