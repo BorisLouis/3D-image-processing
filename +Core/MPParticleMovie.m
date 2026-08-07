@@ -1250,14 +1250,25 @@ classdef MPParticleMovie < Core.MPMovie
             for i = 1 : 1:nFrames
                 
                 if strcmp(detectParam.fitting, 'off')
-                    position = table(zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),...
-                        zeros(500,1),'VariableNames',{'row', 'col', 'meanIntensity', 'plane', 'maxIntensity', 'AreaPx', 'Eccentricity', 'Orientation'});
+                    position = table(zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),zeros(500,1),...
+                        zeros(500,1),'VariableNames',{'row', 'col', 'meanIntensity', 'plane', 'maxIntensity', 'TotIntensity', 'AreaPx', 'Eccentricity', 'Orientation'});
                 else
                     position = table(zeros(500,1),zeros(500,1),zeros(500,1),...
                         zeros(500,1),'VariableNames',{'row', 'col', 'meanFAR','plane'});
                 end
                 [volIm] = obj.getFrame(frames(i),q);
                 nPlanes = size(volIm,3);
+                if isscalar(obj.info.IntCorr)
+                    volIm = double(volIm);
+                    volIm = volIm - prctile(volIm(:), 1);          % or your known bias; low-percentile ≈ dark level
+                    sigma = size(volIm,1)/8;                  % large: illumination varies slowly across FOV
+                    volIm = imflatfield(volIm, sigma);           % divides by smoothed self-estimate, renormalizes
+                    r = ceil(3 * obj.info.FWHM);           % disk > in-focus PSF, < defocused-blob scale
+                    volIm = imtophat(volIm, strel('disk', r));
+
+                    % volIm = volIm - imopen(volIm, strel('disk', obj.info.IntCorr));
+                end
+                
                 
                 for j = 1:nPlanes
                         currentIM = volIm(:,:,j);
@@ -1268,7 +1279,7 @@ classdef MPParticleMovie < Core.MPMovie
                                     [ pos, meanFAR, ~, rawInt] = Localization.smDetection(currentIM,...
                                         delta, FWHM_pix, chi2 );
                                 else 
-                                    [ pos, meanFAR, ~, rawInt, maxFAR, AreaPx, Eccentricity, Orientation] = Localization.smDetectionRaw(currentIM,...
+                                    [ pos, meanFAR, ~, rawInt, maxFAR, sumFAR, AreaPx, Eccentricity, Orientation] = Localization.smDetectionRaw(currentIM,...
                                         delta, FWHM_pix, chi2 );
                                 end
                                 if ~isempty(pos)
@@ -1287,9 +1298,10 @@ classdef MPParticleMovie < Core.MPMovie
                                         pos(idx, :) = [];
                                     else
                                         pos(:,5) = maxFAR;
-                                        pos(:,6) = AreaPx;
-                                        pos(:,7) = Eccentricity;
-                                        pos(:,8) = Orientation;
+                                        pos(:,6) = sumFAR;
+                                        pos(:,7) = AreaPx;
+                                        pos(:,8) = Eccentricity;
+                                        pos(:,9) = Orientation;
                                     end
                                     position(startIdx:startIdx+size(pos,1)-1,:) = array2table(pos);
                                 else

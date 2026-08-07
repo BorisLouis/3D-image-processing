@@ -16,8 +16,6 @@
 %  Output files:
 %    syntheticModel.mat   - learned model (reusable)
 %    simulated_labels.mat - synthetic windows in manual_labels_v3 format
-%
-%  Author : Steven Huysecom - 2026
 %% =========================================================================
 
 clear; close all; clc;

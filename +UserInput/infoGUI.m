@@ -287,7 +287,7 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.fitMethod = addDropdown(layout, 'fitMethod', {'Phasor', 'Gauss'}, 'Phasor');
             controls.zMethod = addDropdown(layout, 'zMethod', {'Intensity', '3DFit', 'PSFE'}, 'Intensity');
             controls.detectionMethod = addDropdown(layout, 'detectionMethod', {'Intensity', 'MaxLR'}, 'MaxLR');
-            controls.IntCorr = addDropdown(layout, 'Intensity correction', {'on', 'off'}, 'on');
+            controls.IntCorr = addLabelField(layout, 'Background substraction', '10');
             controls.Fitting = addDropdown(layout, 'Fitting', {'on', 'off'}, 'on');
             controls.euDist = addLabelField(layout, 'euDist (nm)', '1500');
             controls.delta = addLabelField(layout, 'delta', '10');
@@ -344,6 +344,7 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.Radius = addLabelField(layout, 'Particle Radius (nm):', '20');
             controls.Temperature = addLabelField(layout, 'Temperature (K):', '296.15');
             controls.TICSWindow = addLabelField(layout, 'TICS window:', '2');
+            controls.CalcOmega = addDropdown(layout, 'Calculate Omega (SACF)', {'true', 'false'}, 'true');
             controls.PlotSACFfit = addDropdown(layout, ...
                 'Plot fit on SACF', {'on','off'}, 'off'); 
             controls.SACFframes = addLabelField(layout, 'Frames to calc SACF:', '150');
@@ -352,6 +353,24 @@ function controls = addChannelControls(layout, type, controlsName)
             controls.NA = addLabelField(layout, 'NA:', '1.20');
             controls.LimitViscMap = addLabelField(layout, 'Upper limit viscmap:', '3');
 
+            % Link CalcOmega to the enable state of its dependent fields
+            controls.CalcOmega.ValueChangedFcn = @(src, event) onCalcOmegaChange(src);
+
+            % Apply the initial state based on the default CalcOmega value
+            onCalcOmegaChange(controls.CalcOmega);
+
+    end
+
+    %% --- Nested CalcOmega callback ---
+    function onCalcOmegaChange(src)
+        isOn = strcmp(src.Value, 'true');
+
+        % CalcOmega = true  -> PlotSACFfit & SACFframes active, FitTACF & LimitViscMap inactive
+        % CalcOmega = false -> PlotSACFfit & SACFframes inactive, FitTACF & LimitViscMap active
+        controls.PlotSACFfit.Enable = isOn;
+        controls.SACFframes.Enable  = isOn;
+        controls.FitTACF.Enable     = ~isOn;
+        controls.LimitViscMap.Enable = ~isOn;
     end
 
     %% --- Nested scanning callback ---

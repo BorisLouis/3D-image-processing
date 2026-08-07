@@ -373,18 +373,34 @@ classdef MultiModalExperiment < handle
                             end 
         
  
-                            f = figure;          
+                            f = figure;
                             imagesc(double(Frame))
                             colormap("gray");
+                            axis image
                             title(append(folder2Mov(i).name, ' - Frame ', num2str(obj.info.TestFrame)));
-        
-                            h = drawfreehand();
-                            Mask = createMask(h);
-                            se = strel('disk', Dilation);
-                            mask{i, 1} = imdilate(Mask, se);
+                            ax = gca;
+                            
+                            combinedMask = false(size(Frame, 1), size(Frame, 2));
+                            nContours = 0;
+                            
+                            keepGoing = true;
+                            while keepGoing
+                                h = drawfreehand(ax, 'Closed', true);
+                                if isvalid(h) && ~isempty(h.Position)
+                                    combinedMask = xor(combinedMask, createMask(h));
+                                    nContours = nContours + 1;
+                                end
+                                choice = questdlg( ...
+                                    sprintf('%d contour(s) drawn so far.', nContours), ...
+                                    'Multiple ROI', 'Draw another', 'OK', 'OK');
+                                keepGoing = strcmp(choice, 'Draw another');
+                            end
+                            
                             close(f)
-    
-                            MaskToSave = mask{i,1};
+                            
+                            se = strel('disk', Dilation);
+                            mask{i, 1} = imdilate(combinedMask, se);
+                            MaskToSave = mask{i, 1};
                             save(append(folder2Mov(i).folder, filesep, folder2Mov(i).name, filesep, 'ROI.mat'), "MaskToSave");
                             
     
@@ -496,7 +512,7 @@ classdef MultiModalExperiment < handle
                     val2Use = 'bestFocus';
                     obj.MoviesCh1.retrieveTrackData(obj.MoviesCh1.info.detectParam,obj.MoviesCh1.info.trackParam, 1);
                     obj.MoviesCh1.saveData(1);
-                    obj.MoviesCh1.MakeMovie;
+                    % obj.MoviesCh1.MakeMovie;
               elseif strcmp(obj.info.Channel1, 'Rotational Tracking')
                     frame = obj.info.TestFrame;
                     testMov = obj.MoviesCh1.trackMovies.mov1;

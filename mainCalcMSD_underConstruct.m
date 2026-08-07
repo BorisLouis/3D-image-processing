@@ -21,7 +21,7 @@ MAX_COORD   = IMAGE_SIZE * PIXEL_SIZE;   % 41472 nm  ← FIXED (was 500)
 ExpTime = 0.2;
 
 % ---- Data folders -----------------------------------------------------
-BASE_DIR = 'D:\MultiColor - lysosome tracking\20260311-new analysis\test2';
+BASE_DIR = 'D:\MultiColor - lysosome tracking\20250617_DNA origami tracking\170626_NB_HepG2';
 Folder   = dir(BASE_DIR);
 Folder([Folder.isdir] ~= 1) = [];
 FOLDERS  = {Folder(3:end).name};
@@ -29,13 +29,17 @@ FOLDERS  = {Folder(3:end).name};
 % ---- Column indices ---------------------------------------------------
 COL_X             = 1;
 COL_Y             = 2;
-COL_FRAME         = 9;
-COL_EXPOSURE      = 12;
+COL_FRAME         = 10;
+COL_EXPOSURE      = 13;
 COL_INTENSITYMEAN = 6;
 COL_INTENSITYMAX  = 7;
+COL_INTENSITYTOT  = 8;
+COL_AREA          = 9;    % regionprops Area        [px²]
+COL_ECCENTRICITY  = 11;   % regionprops Eccentricity [0–1]
+COL_ORIENTATION   = 12;   % regionprops Orientation  [degrees, -90..90]
 
 % ---- Quality filter ---------------------------------------------------
-MIN_TRACE_LENGTH = 200;
+MIN_TRACE_LENGTH = 15;
 
 % ---- Window parameters ------------------------------------------------
 WIN_SIZE   = 50;    % frames per window
@@ -43,7 +47,7 @@ WIN_STEP   = 10;    % stride between windows
 LOCAL_HALF = 7;     % half-width for local alpha / Rg estimate within a window
 
 % ---- Manual labelling -------------------------------------------------
-LABEL            = 1;
+LABEL            = 0;
 MIN_LABEL_TOTAL  = 1200;
 MIN_LABEL_ACTIVE = 400;
 
@@ -52,7 +56,7 @@ MIN_LABEL_ACTIVE = 400;
 % REAL_LABELS_FILE : real manually labelled windows – merged with simulated
 %                    before training so the network sees both distributions
 LABELS_FILE      = fullfile(BASE_DIR, 'simulated_labels.mat');
-REAL_LABELS_FILE = 'E:\MultiColor - lysosome tracking\20260311-new analysis\GoodTrainingData\manual_labels_v3.mat';
+REAL_LABELS_FILE = 'D:\MultiColor - lysosome tracking\20250617_DNA origami tracking\170626_NB_HepG2\manual_labels_v3.mat';
 TRAIN        = 0;
 CNN_EPOCHS   = 50;
 CNN_BATCH    = 32;
@@ -64,7 +68,7 @@ RenderVideos = 1;   % 1 = render MP4 videos in Section 6
 
 % ---- Classification threshold -----------------------------------------
 ACTIVE_WIN_FRAC  = 0.10;
-FRAME_ACTIVE_THR = 0.80;
+FRAME_ACTIVE_THR = 0.90;
 
 
 %% ======================================================================
@@ -77,7 +81,7 @@ nFolders = numel(FOLDERS);
 DATA     = struct([]);
 
 for fi = 1:nFolders
-
+   
     fName   = FOLDERS{fi};
     matPath = fullfile(BASE_DIR, fName, 'Traces3D.mat');
     if ~isfile(matPath)
@@ -105,18 +109,36 @@ for fi = 1:nFolders
         rT    = tbl{:, COL_EXPOSURE};
         intenMean = nan(n,1);
         intenMax  = nan(n,1);
+        intenTot  = nan(n,1);
+        area      = nan(n,1);
+        eccen     = nan(n,1);
+        orient    = nan(n,1);
         if ~isempty(COL_INTENSITYMEAN) && COL_INTENSITYMEAN <= width(tbl)
             intenMean = tbl{:, COL_INTENSITYMEAN};
         end
         if ~isempty(COL_INTENSITYMAX) && COL_INTENSITYMAX <= width(tbl)
             intenMax = tbl{:, COL_INTENSITYMAX};
         end
+        if COL_INTENSITYTOT <= width(tbl)
+            intenTot = tbl{:, COL_INTENSITYTOT};
+        end
+        if COL_AREA <= width(tbl)
+            area  = tbl{:, COL_AREA};
+        end
+        if COL_ECCENTRICITY <= width(tbl)
+            eccen = tbl{:, COL_ECCENTRICITY};
+        end
+        if COL_ORIENTATION <= width(tbl)
+            orient = tbl{:, COL_ORIENTATION};
+        end
 
         xS = x - x(1);
         yS = y - y(1);
 
         rawTraces{ti} = struct('x',xS,'y',yS,'t',t,'rT',rT, ...
-            'intensityMean',intenMean,'intensityMax',intenMax);
+            'intensityMean',intenMean,'intensityMax',intenMax, ...
+            'intensityTot',intenTot,'area',area, ...
+            'eccentricity',eccen,'orientation',orient);
         msdData{ti}   = computeMSD(xS, yS);
         valid(ti)     = true;
     end
@@ -355,7 +377,7 @@ if TRAIN == 1
 
     l2reg = 0.02;
 
-    layersLSTM = [
+    layersCNN = [
         sequenceInputLayer(10, 'Name','in', 'Normalization','none')
 
         % First BiLSTM outputs the FULL SEQUENCE so the second layer
@@ -375,7 +397,7 @@ if TRAIN == 1
         classificationLayer('Name','out','Classes',trainClasses,'ClassWeights',classWeights)
     ];
 
-    optsLSTM = trainingOptions('adam', ...
+    optsCNN = trainingOptions('adam', ...
         'MaxEpochs',            CNN_EPOCHS, ...
         'MiniBatchSize',        CNN_BATCH, ...
         'InitialLearnRate',     CNN_LR, ...
@@ -545,6 +567,10 @@ for fi = 1:nFolders
         dy = diff(raw.y(:));
         intMean      = raw.intensityMean(:);
         intMax       = raw.intensityMax(:);
+        intTot       = raw.intensityTot(:);
+        areaVec      = raw.area(:);
+        eccenVec     = raw.eccentricity(:);
+        orientVec    = raw.orientation(:);
         stepSizes_nm = sqrt(dx.^2 + dy.^2);
 
         actRuns  = findRuns(isActFr(1:nSteps));
@@ -556,6 +582,10 @@ for fi = 1:nFolders
         runDAC           = zeros(nActRuns, 1);
         runIntensityMean = zeros(nActRuns, 1);
         runIntensityMax  = zeros(nActRuns, 1);
+        runIntensityTot  = zeros(nActRuns, 1);
+        runArea          = zeros(nActRuns, 1);
+        runEccentricity  = zeros(nActRuns, 1);
+        runOrientation   = zeros(nActRuns, 1);
 
         for r = 1:nActRuns
             rs = actRuns(r,1);
@@ -565,6 +595,10 @@ for fi = 1:nFolders
             runSpeeds_nm(r)     = mean(stepSizes_nm(rs:re));
             runIntensityMean(r) = median(intMean(rs:re), 'omitnan');
             runIntensityMax(r)  = median(intMax(rs:re),  'omitnan');
+            runIntensityTot(r)  = median(intTot(rs:re),  'omitnan');
+            runArea(r)          = median(areaVec(rs:re),   'omitnan');
+            runEccentricity(r)  = median(eccenVec(rs:re),  'omitnan');
+            runOrientation(r)   = median(orientVec(rs:re), 'omitnan');
 
             dxR = dx(rs:re);  dyR = dy(rs:re);
             ssR = sqrt(dxR.^2 + dyR.^2) + 1e-15;
@@ -607,6 +641,10 @@ for fi = 1:nFolders
         s.valid              = true;
         s.intensityMean      = runIntensityMean;
         s.intensityMax       = runIntensityMax;
+        s.intensityTot       = runIntensityTot;
+        s.area               = runArea;
+        s.eccentricity       = runEccentricity;
+        s.orientation        = runOrientation;
 
         tStats{ti} = s;
     end
@@ -844,7 +882,174 @@ end
 
 
 %% ======================================================================
-%  SECTION 9 – ANALYSIS TABLES
+%  SECTION 9 – MOTOR NUMBER ESTIMATION  (v/D, one state per run)
+%
+%  ASSUMPTION: each active run operates at a single motor-number state.
+%
+%  PASS 1 — Per lysosome: estimate D from frames with P(active) < 0.1.
+%            Per active run: compute vD = mean_speed / D.
+%  PASS 2 — Grid search for fundamental v1D such that all vD values snap
+%            to integer multiples (AIC penalises more motor states).
+%  PASS 3 — Assign integer motor number to every run.
+%            Back-fill any NaN runs that have a valid D.
+%
+%  Motor number = NaN only when the lysosome has no low-P frames for D.
+%% ======================================================================
+
+fprintf('=== Motor number estimation (v/D, single state per run) ===\n');
+
+MIN_NON_ACT_FRAMES   = 20;   % min frames with P(active)<0.1 for D estimate
+PACTIVE_BROWNIAN_THR = 0.1;  % P(active) threshold defining Brownian frames
+MAX_MOTORS           = 6;    % max motor states in grid search
+
+% -----------------------------------------------------------------------
+% PASS 1 – D per lysosome, vD per active run
+% allVD columns: [vD, fi, ti, r]
+% -----------------------------------------------------------------------
+allVD = [];
+
+for fi = 1:nFolders
+    if isempty(DATA(fi).name), continue; end
+
+    for ti = 1:DATA(fi).nTraces
+        if ~DATA(fi).valid(ti) || ~DATA(fi).isActive(ti), continue; end
+        if isempty(DATA(fi).traceStats) || ...
+           numel(DATA(fi).traceStats) < ti || ...
+           isempty(DATA(fi).traceStats{ti}), continue; end
+
+        s   = DATA(fi).traceStats{ti};
+        raw = DATA(fi).rawTraces{ti};
+
+        nSteps        = numel(raw.x) - 1;
+        dx_raw        = diff(raw.x(:));
+        dy_raw        = diff(raw.y(:));
+        stepSizes_raw = sqrt(dx_raw.^2 + dy_raw.^2);
+
+        % D from strictly Brownian frames (P(active) < 0.1)
+        frameScoreAll = s.frameScore(:)';
+        if numel(frameScoreAll) < nSteps
+            frameScoreAll(end+1:nSteps) = 1;
+        end
+        nonActIdx = find(frameScoreAll(1:nSteps) < PACTIVE_BROWNIAN_THR);
+
+        D_i = NaN;
+        if numel(nonActIdx) >= MIN_NON_ACT_FRAMES
+            D_i = mean(stepSizes_raw(nonActIdx).^2) / 4;   % nm²/frame
+            if D_i <= 0, D_i = NaN; end
+        end
+        DATA(fi).traceStats{ti}.D_brownian    = D_i;
+        DATA(fi).traceStats{ti}.runMotorNumber = nan(s.nActiveRuns, 1);
+
+        if isnan(D_i), continue; end
+
+        for r = 1:s.nActiveRuns
+            v_r = s.runSpeeds_nm(r);
+            if isnan(v_r) || v_r <= 0, continue; end
+            allVD(end+1,:) = [v_r/D_i, fi, ti, r]; %#ok<AGROW>
+        end
+    end
+end
+
+fprintf('  Active runs with vD: %d\n', size(allVD,1));
+
+% -----------------------------------------------------------------------
+% PASS 2 – grid search for fundamental v1D spacing
+% -----------------------------------------------------------------------
+
+if size(allVD,1) < 4
+    warning('Too few runs (%d) for motor number analysis. Skipping.', size(allVD,1));
+    v1D_fit = NaN;  bestN = 0;
+    fprintf('Motor number estimation skipped.\n\n');
+
+else
+    vDvals = allVD(:,1);
+    vDmax  = quantile(vDvals, 0.99);
+
+    fprintf('  vD range: [%.4g, %.4g]\n', min(vDvals), vDmax);
+
+    nGrid    = 500;
+    v1D_min  = max(min(vDvals)/MAX_MOTORS, vDmax/1000);
+    v1D_vec  = linspace(v1D_min, vDmax, nGrid);
+    ssr_grid  = zeros(nGrid,1);
+    nMot_grid = zeros(nGrid,1);
+
+    for gi = 1:nGrid
+        v1D_c = v1D_vec(gi);
+        nEst  = max(1, min(MAX_MOTORS, round(vDvals / v1D_c)));
+        ssr_grid(gi)  = sum((vDvals - nEst*v1D_c).^2);
+        nMot_grid(gi) = numel(unique(nEst));
+    end
+
+    n_obs    = numel(vDvals);
+    aic_grid = n_obs * log(max(ssr_grid/n_obs, 1e-15)) + 2*(nMot_grid+1);
+
+    [~, bestGi] = min(aic_grid);
+    v1D_fit     = v1D_vec(bestGi);
+    nAssigned   = max(1, min(MAX_MOTORS, round(vDvals / v1D_fit)));
+    bestN       = max(nAssigned);
+
+    fprintf('  Best v1D = %.4g  |  Motor states found: 1 to %d\n\n', v1D_fit, bestN);
+
+    % Plots
+    figure('Name','v/D motor number assignment','Color','w','Position',[80 80 750 400]);
+    subplot(1,2,1); hold on;
+    cmap_n = lines(bestN);
+    for n = 1:bestN
+        idx_n = nAssigned == n;
+        scatter(find(idx_n), vDvals(idx_n), 50, cmap_n(n,:), 'filled');
+        yline(n*v1D_fit,'--','Color',cmap_n(n,:),'LineWidth',1.5, ...
+              'Label',sprintf('n=%d (%.4g)',n,n*v1D_fit), ...
+              'LabelVerticalAlignment','bottom');
+    end
+    xlabel('Run index'); ylabel('v/D  [1/nm]');
+    title(sprintf('v/D assignment  |  v_{1D}=%.4g', v1D_fit)); grid on;
+
+    subplot(1,2,2);
+    histogram(nAssigned, 0.5:1:bestN+0.5,'FaceColor',[0.4 0.6 0.9],'EdgeColor','w');
+    xlabel('Motor number n'); ylabel('Count');
+    title('Motor number distribution'); xticks(1:bestN); grid on;
+
+    figure('Name','AIC grid – v1D','Color','w','Position',[100 100 500 300]);
+    plot(v1D_vec, aic_grid, 'b-','LineWidth',1); hold on;
+    plot(v1D_fit, aic_grid(bestGi),'r*','MarkerSize',12,'LineWidth',2);
+    xlabel('v_{1D} [1/nm]'); ylabel('AIC');
+    title(sprintf('Grid search  |  best v_{1D}=%.4g', v1D_fit)); grid on;
+
+    % -------------------------------------------------------------------
+    % PASS 3 – store motor number for every run in allVD
+    % -------------------------------------------------------------------
+    for k = 1:size(allVD,1)
+        fi_k = allVD(k,2);  ti_k = allVD(k,3);  r_k = allVD(k,4);
+        DATA(fi_k).traceStats{ti_k}.runMotorNumber(r_k) = nAssigned(k);
+    end
+
+    % Back-fill: runs still NaN that have a valid D
+    for fi = 1:nFolders
+        if isempty(DATA(fi).name), continue; end
+        for ti = 1:DATA(fi).nTraces
+            if ~DATA(fi).valid(ti) || ~DATA(fi).isActive(ti), continue; end
+            if isempty(DATA(fi).traceStats) || ...
+               numel(DATA(fi).traceStats) < ti || ...
+               isempty(DATA(fi).traceStats{ti}), continue; end
+            D_i = DATA(fi).traceStats{ti}.D_brownian;
+            if isnan(D_i) || D_i <= 0, continue; end
+            nR = DATA(fi).traceStats{ti}.nActiveRuns;
+            for r = 1:nR
+                if ~isnan(DATA(fi).traceStats{ti}.runMotorNumber(r)), continue; end
+                v_r = DATA(fi).traceStats{ti}.runSpeeds_nm(r);
+                if isnan(v_r) || v_r <= 0, continue; end
+                nEst = max(1, min(bestN, round((v_r/D_i) / v1D_fit)));
+                DATA(fi).traceStats{ti}.runMotorNumber(r) = nEst;
+            end
+        end
+    end
+
+    fprintf('Motor number assignment complete.\n\n');
+end
+
+
+%% ======================================================================
+%  SECTION 10 – ANALYSIS TABLES
 %% ======================================================================
 
 fprintf('\n==================== ANALYSIS TABLES ====================\n');
@@ -871,6 +1076,10 @@ for fi = 1:nFolders
             alpha_br = NaN;
             intensityMean = median(raw.intensityMean, 'omitnan');
             intensityMax  = median(raw.intensityMax,  'omitnan');
+            intensityTot  = median(raw.intensityTot,  'omitnan');
+            area_tr       = median(raw.area,          'omitnan');
+            eccen_tr      = median(raw.eccentricity,  'omitnan');
+            orient_tr     = median(raw.orientation,   'omitnan');
 
             if nLag >= 2
                 msd_nm2 = msd(1:nLag, 2) .* MAX_COORD^2;
@@ -891,7 +1100,9 @@ for fi = 1:nFolders
             meanStep_nm = mean(sqrt(dx.^2 + dy.^2));
 
             browRows{end+1} = {DATA(fi).name, ti, nSteps, ...
-                D_nm2, alpha_br, Rg_nm, meanStep_nm, intensityMean, intensityMax}; %#ok<AGROW>
+                D_nm2, alpha_br, Rg_nm, meanStep_nm, ...
+                intensityMean, intensityMax, intensityTot, ...
+                area_tr, eccen_tr, orient_tr}; %#ok<AGROW>
 
         else
             if isempty(DATA(fi).traceStats) || ...
@@ -908,11 +1119,22 @@ for fi = 1:nFolders
                     pauseAfter = NaN;
                 end
 
+                motorNumber = NaN;
+                vD_run      = NaN;
+                if isfield(s,'runMotorNumber') && numel(s.runMotorNumber) >= r
+                    motorNumber = s.runMotorNumber(r);
+                end
+                if isfield(s,'D_brownian') && ~isnan(s.D_brownian) && s.D_brownian > 0
+                    vD_run = s.runSpeeds_nm(r) / s.D_brownian;
+                end
+
                 actRows{end+1} = {DATA(fi).name, ti, r, ...
                     s.runLengths_steps(r), s.runLengths_um(r), ...
                     s.runSpeeds_nm(r), s.runDAC(r), ...
                     pauseAfter, s.nActiveRuns, s.pctTimeActive, ...
-                    s.intensityMean(r), s.intensityMax(r)}; %#ok<AGROW>
+                    s.intensityMean(r), s.intensityMax(r), s.intensityTot(r), ...
+                    s.area(r), s.eccentricity(r), s.orientation(r), ...
+                    motorNumber, vD_run}; %#ok<AGROW>
             end
         end
     end
@@ -921,7 +1143,9 @@ end
 if ~isempty(browRows)
     BrownTable = cell2table(vertcat(browRows{:}), 'VariableNames', ...
         {'Folder','TraceID','N_frames','DiffCoeff_nm2_per_frame', ...
-         'Alpha','Rg_nm','MeanStepSize_nm','Intensity_mean','Intensity_max'});
+         'Alpha','Rg_nm','MeanStepSize_nm', ...
+         'Intensity_mean','Intensity_max','Intensity_tot', ...
+         'Area_px2','Eccentricity','Orientation_deg'});
     fprintf('\n--- TABLE A: Brownian / Non-Active Traces (%d traces) ---\n', height(BrownTable));
     disp(BrownTable);
     writetable(BrownTable, fullfile(BASE_DIR, 'Table_Brownian.xlsx'));
@@ -935,7 +1159,10 @@ if ~isempty(actRows)
     ActiveTable = cell2table(vertcat(actRows{:}), 'VariableNames', ...
         {'Folder','TraceID','RunIndex','RunLength_steps','RunLength_um', ...
          'Speed_nm_per_frame','Directionality_DAC','PauseAfter_steps', ...
-         'N_ActiveRuns_in_trace','PctTimeActive','Intensity_mean','Intensity_max'});
+         'N_ActiveRuns_in_trace','PctTimeActive', ...
+         'Intensity_mean','Intensity_max','Intensity_tot', ...
+         'Area_px2','Eccentricity','Orientation_deg', ...
+         'MotorNumber','vD_per_nm'});
     fprintf('\n--- TABLE B: Active Runs (%d runs in %d traces) ---\n', ...
         height(ActiveTable), numel(unique(ActiveTable.TraceID)));
     disp(ActiveTable);

@@ -82,20 +82,35 @@ classdef TICSExperiment < handle
             %Extraction of Data
             nfields = numel(fieldsN);
             allTraces = [];
+            ViscName = cell([nfields, 1]);
+            ViscValuesMean = nan([nfields, 1]);
+            ViscValuesStd = nan([nfields, 1]);
             for i = 1: nfields
                 try
                     disp(['Retrieving data from TICS file ' num2str(i) ' / ' num2str(nfields) ' ...']);
                     currentTrackMov = obj.TICSMovies.(fieldsN{i});
-                    % currentTrackMov.info.PxSize = str2num(erase(erase(currentTrackMov.calibrated{1, 1}.mainPath(strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'px')+2:strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'px')+4), '\'), '_'));
-                    % currentTrackMov.info.Radius = str2num(erase(erase(currentTrackMov.calibrated{1, 1}.mainPath(strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'r')+1:strfind(currentTrackMov.calibrated{1, 1}.mainPath, 'r')+3), '\'), '_'));
                     currentTrackMov.LoadAllFrames;
-                    % currentTrackMov.calculateOmega;
+            
+                    currentTrackMov.calculateOmega;
                     currentTrackMov.getAutocorrmap;
                     currentTrackMov.getDiffusionmap;
+      
                 catch
                     disp(append('Failed TICS movie ', num2str(i), ' / ', num2str(nfields), ' ...'));
                 end
+
+                ViscName(i,1) = {currentTrackMov.raw.fullPath};
+                ViscValuesMean(i, 1) = currentTrackMov.Results{1, 1}.ViscMean;
+                ViscValuesStd(i, 1) = currentTrackMov.Results{1, 1}.ViscStd;
+
+                ViscAnalysis = MicrorheologyAnalysis.analyzeViscosityMap(currentTrackMov.ViscosityMap{1, 1}, 'PixelSize', currentTrackMov.info.PxSize,...
+                    'ClipNegative', 1, 'PatchPercentile', 75, 'ThresholdSweep', [50:5:95], 'NumGrayLevels', 16,...
+                    'NVariogramPairs', 200000, 'PlotResults', 0, 'Title', currentTrackMov.raw.movInfo.Path);
+                save(append(currentTrackMov.raw.movInfo.Path, filesep, 'ViscosityMapAnalysis.mat'), "ViscAnalysis");
             end
+            
+            ViscResults = table(ViscName, ViscValuesMean, ViscValuesStd, 'VariableNames', {'file', 'mean visc (cP)', 'std visc (cP)'});
+            save(append(obj.path, filesep, 'TICSResults_viscosity.mat'), "ViscResults");
         end
     end
 end
