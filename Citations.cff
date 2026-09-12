@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: >-
+  If you use this work, please cite this repository using
+  its Zenodo DOI and the associated paper, if applicable.
+type: software
+title: "3D-Image-Processing"
+authors:
+  - family-names: "Louis"
+    given-names: "Boris"
+    orcid: "https://orcid.org/0000-0003-2882-6907"
+version: "1.0.0"
+date-released: "2026-09-12"
+doi: ""
+repository-code: "https://github.com/BorisLouis/3D-image-processing"
+
+references:
+  - type: article
+    title: "Fast-tracking of single emitters in large volumes with nanometer precision"
+    authors:
+      - family-names: "Louis"
+        given-names: "Boris"
+      - family-names: "Camacho"
+        given-names: "Rafael"
+      - family-names: "Bresolí-Obach"
+        given-names: "Roger"
+      - family-names: "Abakumov"
+        given-names: "Sergey"
+      - family-names: "Vandaele"
+        given-names: "Johannes"
+      - family-names: "Kudo"
+        given-names: "Testsuhiro"
+      - family-names: "Masuhara"
+        given-names: "Hiroshi"
+      - family-names: "Scheblykin"
+        given-names: "Ivan G."
+      - family-names: "Hofkens"
+        given-names: "Johan"
+      - family-names: "Rocha"
+        given-names: "Susana"
+    journal: "Optics Express"
+    volume: "28"
+    issue: "19"
+    start: "28656"
+    end: "28671"
+    year: 2020
+    doi: "10.1364/OE.401557"
